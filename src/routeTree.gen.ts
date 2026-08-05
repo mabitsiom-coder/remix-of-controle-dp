@@ -10,6 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AlertasRouteImport } from './routes/alertas'
+import { Route as AssistenteRouteImport } from './routes/assistente'
+import { Route as BiRouteImport } from './routes/bi'
 import { Route as CalendarioRouteImport } from './routes/calendario'
 import { Route as ChecklistsRouteImport } from './routes/checklists'
 import { Route as DocumentosRouteImport } from './routes/documentos'
@@ -25,6 +28,21 @@ import { Route as EmpresasEmpresaIdRouteImport } from './routes/empresas.$empres
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlertasRoute = AlertasRouteImport.update({
+  id: '/alertas',
+  path: '/alertas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssistenteRoute = AssistenteRouteImport.update({
+  id: '/assistente',
+  path: '/assistente',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BiRoute = BiRouteImport.update({
+  id: '/bi',
+  path: '/bi',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CalendarioRoute = CalendarioRouteImport.update({
@@ -85,6 +103,9 @@ const EmpresasEmpresaIdRoute = EmpresasEmpresaIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/alertas': typeof AlertasRoute
+  '/assistente': typeof AssistenteRoute
+  '/bi': typeof BiRoute
   '/calendario': typeof CalendarioRoute
   '/checklists': typeof ChecklistsRoute
   '/documentos': typeof DocumentosRoute
@@ -99,6 +120,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/alertas': typeof AlertasRoute
+  '/assistente': typeof AssistenteRoute
+  '/bi': typeof BiRoute
   '/calendario': typeof CalendarioRoute
   '/checklists': typeof ChecklistsRoute
   '/documentos': typeof DocumentosRoute
@@ -114,6 +138,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/alertas': typeof AlertasRoute
+  '/assistente': typeof AssistenteRoute
+  '/bi': typeof BiRoute
   '/calendario': typeof CalendarioRoute
   '/checklists': typeof ChecklistsRoute
   '/documentos': typeof DocumentosRoute
@@ -130,6 +157,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/alertas'
+    | '/assistente'
+    | '/bi'
     | '/calendario'
     | '/checklists'
     | '/documentos'
@@ -144,6 +174,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/alertas'
+    | '/assistente'
+    | '/bi'
     | '/calendario'
     | '/checklists'
     | '/documentos'
@@ -158,6 +191,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/alertas'
+    | '/assistente'
+    | '/bi'
     | '/calendario'
     | '/checklists'
     | '/documentos'
@@ -173,6 +209,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AlertasRoute: typeof AlertasRoute
+  AssistenteRoute: typeof AssistenteRoute
+  BiRoute: typeof BiRoute
   CalendarioRoute: typeof CalendarioRoute
   ChecklistsRoute: typeof ChecklistsRoute
   DocumentosRoute: typeof DocumentosRoute
@@ -193,6 +232,27 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/alertas': {
+      id: '/alertas'
+      path: '/alertas'
+      fullPath: '/alertas'
+      preLoaderRoute: typeof AlertasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assistente': {
+      id: '/assistente'
+      path: '/assistente'
+      fullPath: '/assistente'
+      preLoaderRoute: typeof AssistenteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bi': {
+      id: '/bi'
+      path: '/bi'
+      fullPath: '/bi'
+      preLoaderRoute: typeof BiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/calendario': {
@@ -277,6 +337,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AlertasRoute: AlertasRoute,
+  AssistenteRoute: AssistenteRoute,
+  BiRoute: BiRoute,
   CalendarioRoute: CalendarioRoute,
   ChecklistsRoute: ChecklistsRoute,
   DocumentosRoute: DocumentosRoute,
@@ -292,3 +355,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
