@@ -4,10 +4,10 @@ import { AlertTriangle, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { empresas } from "@/lib/mock-data";
+import { empresas, type Empresa } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/empresas/$empresaId")({
-  loader: ({ params }) => {
+  loader: ({ params }): { empresa: Empresa } => {
     const empresa = empresas.find((e) => e.id === params.empresaId);
     if (!empresa) throw notFound();
     return { empresa };
