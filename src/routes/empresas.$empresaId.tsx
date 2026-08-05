@@ -32,7 +32,7 @@ export const Route = createFileRoute("/empresas/$empresaId")({
 });
 
 function EmpresaDetalhe() {
-  const { empresa } = Route.useLoaderData();
+  const { empresa } = Route.useLoaderData() as { empresa: Empresa };
   const p = empresa.particularidades;
   const desatualizada = empresa.diasSemRevisao > 30;
 
