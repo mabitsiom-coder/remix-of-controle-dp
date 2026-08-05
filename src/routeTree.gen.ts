@@ -10,33 +10,219 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AlertasRouteImport } from './routes/alertas'
+import { Route as AssistenteRouteImport } from './routes/assistente'
+import { Route as BiRouteImport } from './routes/bi'
+import { Route as CalendarioRouteImport } from './routes/calendario'
+import { Route as ChecklistsRouteImport } from './routes/checklists'
+import { Route as DocumentosRouteImport } from './routes/documentos'
+import { Route as ErrosRouteImport } from './routes/erros'
+import { Route as FolhaRouteImport } from './routes/folha'
+import { Route as ObrigacoesRouteImport } from './routes/obrigacoes'
+import { Route as SstRouteImport } from './routes/sst'
+import { Route as TarefasRouteImport } from './routes/tarefas'
+import { Route as TreinamentosRouteImport } from './routes/treinamentos'
+import { Route as EmpresasIndexRouteImport } from './routes/empresas.index'
+import { Route as EmpresasEmpresaIdRouteImport } from './routes/empresas.$empresaId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AlertasRoute = AlertasRouteImport.update({
+  id: '/alertas',
+  path: '/alertas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssistenteRoute = AssistenteRouteImport.update({
+  id: '/assistente',
+  path: '/assistente',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BiRoute = BiRouteImport.update({
+  id: '/bi',
+  path: '/bi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalendarioRoute = CalendarioRouteImport.update({
+  id: '/calendario',
+  path: '/calendario',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChecklistsRoute = ChecklistsRouteImport.update({
+  id: '/checklists',
+  path: '/checklists',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocumentosRoute = DocumentosRouteImport.update({
+  id: '/documentos',
+  path: '/documentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ErrosRoute = ErrosRouteImport.update({
+  id: '/erros',
+  path: '/erros',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FolhaRoute = FolhaRouteImport.update({
+  id: '/folha',
+  path: '/folha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ObrigacoesRoute = ObrigacoesRouteImport.update({
+  id: '/obrigacoes',
+  path: '/obrigacoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SstRoute = SstRouteImport.update({
+  id: '/sst',
+  path: '/sst',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TarefasRoute = TarefasRouteImport.update({
+  id: '/tarefas',
+  path: '/tarefas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TreinamentosRoute = TreinamentosRouteImport.update({
+  id: '/treinamentos',
+  path: '/treinamentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmpresasIndexRoute = EmpresasIndexRouteImport.update({
+  id: '/empresas/',
+  path: '/empresas/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmpresasEmpresaIdRoute = EmpresasEmpresaIdRouteImport.update({
+  id: '/empresas/$empresaId',
+  path: '/empresas/$empresaId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/alertas': typeof AlertasRoute
+  '/assistente': typeof AssistenteRoute
+  '/bi': typeof BiRoute
+  '/calendario': typeof CalendarioRoute
+  '/checklists': typeof ChecklistsRoute
+  '/documentos': typeof DocumentosRoute
+  '/erros': typeof ErrosRoute
+  '/folha': typeof FolhaRoute
+  '/obrigacoes': typeof ObrigacoesRoute
+  '/sst': typeof SstRoute
+  '/tarefas': typeof TarefasRoute
+  '/treinamentos': typeof TreinamentosRoute
+  '/empresas/$empresaId': typeof EmpresasEmpresaIdRoute
+  '/empresas/': typeof EmpresasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/alertas': typeof AlertasRoute
+  '/assistente': typeof AssistenteRoute
+  '/bi': typeof BiRoute
+  '/calendario': typeof CalendarioRoute
+  '/checklists': typeof ChecklistsRoute
+  '/documentos': typeof DocumentosRoute
+  '/erros': typeof ErrosRoute
+  '/folha': typeof FolhaRoute
+  '/obrigacoes': typeof ObrigacoesRoute
+  '/sst': typeof SstRoute
+  '/tarefas': typeof TarefasRoute
+  '/treinamentos': typeof TreinamentosRoute
+  '/empresas/$empresaId': typeof EmpresasEmpresaIdRoute
+  '/empresas': typeof EmpresasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/alertas': typeof AlertasRoute
+  '/assistente': typeof AssistenteRoute
+  '/bi': typeof BiRoute
+  '/calendario': typeof CalendarioRoute
+  '/checklists': typeof ChecklistsRoute
+  '/documentos': typeof DocumentosRoute
+  '/erros': typeof ErrosRoute
+  '/folha': typeof FolhaRoute
+  '/obrigacoes': typeof ObrigacoesRoute
+  '/sst': typeof SstRoute
+  '/tarefas': typeof TarefasRoute
+  '/treinamentos': typeof TreinamentosRoute
+  '/empresas/$empresaId': typeof EmpresasEmpresaIdRoute
+  '/empresas/': typeof EmpresasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/alertas'
+    | '/assistente'
+    | '/bi'
+    | '/calendario'
+    | '/checklists'
+    | '/documentos'
+    | '/erros'
+    | '/folha'
+    | '/obrigacoes'
+    | '/sst'
+    | '/tarefas'
+    | '/treinamentos'
+    | '/empresas/$empresaId'
+    | '/empresas/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/alertas'
+    | '/assistente'
+    | '/bi'
+    | '/calendario'
+    | '/checklists'
+    | '/documentos'
+    | '/erros'
+    | '/folha'
+    | '/obrigacoes'
+    | '/sst'
+    | '/tarefas'
+    | '/treinamentos'
+    | '/empresas/$empresaId'
+    | '/empresas'
+  id:
+    | '__root__'
+    | '/'
+    | '/alertas'
+    | '/assistente'
+    | '/bi'
+    | '/calendario'
+    | '/checklists'
+    | '/documentos'
+    | '/erros'
+    | '/folha'
+    | '/obrigacoes'
+    | '/sst'
+    | '/tarefas'
+    | '/treinamentos'
+    | '/empresas/$empresaId'
+    | '/empresas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AlertasRoute: typeof AlertasRoute
+  AssistenteRoute: typeof AssistenteRoute
+  BiRoute: typeof BiRoute
+  CalendarioRoute: typeof CalendarioRoute
+  ChecklistsRoute: typeof ChecklistsRoute
+  DocumentosRoute: typeof DocumentosRoute
+  ErrosRoute: typeof ErrosRoute
+  FolhaRoute: typeof FolhaRoute
+  ObrigacoesRoute: typeof ObrigacoesRoute
+  SstRoute: typeof SstRoute
+  TarefasRoute: typeof TarefasRoute
+  TreinamentosRoute: typeof TreinamentosRoute
+  EmpresasEmpresaIdRoute: typeof EmpresasEmpresaIdRoute
+  EmpresasIndexRoute: typeof EmpresasIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +234,124 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/alertas': {
+      id: '/alertas'
+      path: '/alertas'
+      fullPath: '/alertas'
+      preLoaderRoute: typeof AlertasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assistente': {
+      id: '/assistente'
+      path: '/assistente'
+      fullPath: '/assistente'
+      preLoaderRoute: typeof AssistenteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bi': {
+      id: '/bi'
+      path: '/bi'
+      fullPath: '/bi'
+      preLoaderRoute: typeof BiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calendario': {
+      id: '/calendario'
+      path: '/calendario'
+      fullPath: '/calendario'
+      preLoaderRoute: typeof CalendarioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checklists': {
+      id: '/checklists'
+      path: '/checklists'
+      fullPath: '/checklists'
+      preLoaderRoute: typeof ChecklistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/documentos': {
+      id: '/documentos'
+      path: '/documentos'
+      fullPath: '/documentos'
+      preLoaderRoute: typeof DocumentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/erros': {
+      id: '/erros'
+      path: '/erros'
+      fullPath: '/erros'
+      preLoaderRoute: typeof ErrosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/folha': {
+      id: '/folha'
+      path: '/folha'
+      fullPath: '/folha'
+      preLoaderRoute: typeof FolhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/obrigacoes': {
+      id: '/obrigacoes'
+      path: '/obrigacoes'
+      fullPath: '/obrigacoes'
+      preLoaderRoute: typeof ObrigacoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sst': {
+      id: '/sst'
+      path: '/sst'
+      fullPath: '/sst'
+      preLoaderRoute: typeof SstRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tarefas': {
+      id: '/tarefas'
+      path: '/tarefas'
+      fullPath: '/tarefas'
+      preLoaderRoute: typeof TarefasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/treinamentos': {
+      id: '/treinamentos'
+      path: '/treinamentos'
+      fullPath: '/treinamentos'
+      preLoaderRoute: typeof TreinamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/empresas/': {
+      id: '/empresas/'
+      path: '/empresas'
+      fullPath: '/empresas/'
+      preLoaderRoute: typeof EmpresasIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/empresas/$empresaId': {
+      id: '/empresas/$empresaId'
+      path: '/empresas/$empresaId'
+      fullPath: '/empresas/$empresaId'
+      preLoaderRoute: typeof EmpresasEmpresaIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AlertasRoute: AlertasRoute,
+  AssistenteRoute: AssistenteRoute,
+  BiRoute: BiRoute,
+  CalendarioRoute: CalendarioRoute,
+  ChecklistsRoute: ChecklistsRoute,
+  DocumentosRoute: DocumentosRoute,
+  ErrosRoute: ErrosRoute,
+  FolhaRoute: FolhaRoute,
+  ObrigacoesRoute: ObrigacoesRoute,
+  SstRoute: SstRoute,
+  TarefasRoute: TarefasRoute,
+  TreinamentosRoute: TreinamentosRoute,
+  EmpresasEmpresaIdRoute: EmpresasEmpresaIdRoute,
+  EmpresasIndexRoute: EmpresasIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
