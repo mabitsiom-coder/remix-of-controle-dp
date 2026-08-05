@@ -11,10 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CalendarioRouteImport } from './routes/calendario'
+import { Route as ChecklistsRouteImport } from './routes/checklists'
+import { Route as DocumentosRouteImport } from './routes/documentos'
+import { Route as ErrosRouteImport } from './routes/erros'
 import { Route as FolhaRouteImport } from './routes/folha'
 import { Route as ObrigacoesRouteImport } from './routes/obrigacoes'
 import { Route as SstRouteImport } from './routes/sst'
 import { Route as TarefasRouteImport } from './routes/tarefas'
+import { Route as TreinamentosRouteImport } from './routes/treinamentos'
 import { Route as EmpresasIndexRouteImport } from './routes/empresas.index'
 import { Route as EmpresasEmpresaIdRouteImport } from './routes/empresas.$empresaId'
 
@@ -26,6 +30,21 @@ const IndexRoute = IndexRouteImport.update({
 const CalendarioRoute = CalendarioRouteImport.update({
   id: '/calendario',
   path: '/calendario',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChecklistsRoute = ChecklistsRouteImport.update({
+  id: '/checklists',
+  path: '/checklists',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocumentosRoute = DocumentosRouteImport.update({
+  id: '/documentos',
+  path: '/documentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ErrosRoute = ErrosRouteImport.update({
+  id: '/erros',
+  path: '/erros',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FolhaRoute = FolhaRouteImport.update({
@@ -48,6 +67,11 @@ const TarefasRoute = TarefasRouteImport.update({
   path: '/tarefas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TreinamentosRoute = TreinamentosRouteImport.update({
+  id: '/treinamentos',
+  path: '/treinamentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EmpresasIndexRoute = EmpresasIndexRouteImport.update({
   id: '/empresas/',
   path: '/empresas/',
@@ -62,20 +86,28 @@ const EmpresasEmpresaIdRoute = EmpresasEmpresaIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calendario': typeof CalendarioRoute
+  '/checklists': typeof ChecklistsRoute
+  '/documentos': typeof DocumentosRoute
+  '/erros': typeof ErrosRoute
   '/folha': typeof FolhaRoute
   '/obrigacoes': typeof ObrigacoesRoute
   '/sst': typeof SstRoute
   '/tarefas': typeof TarefasRoute
+  '/treinamentos': typeof TreinamentosRoute
   '/empresas/$empresaId': typeof EmpresasEmpresaIdRoute
   '/empresas/': typeof EmpresasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calendario': typeof CalendarioRoute
+  '/checklists': typeof ChecklistsRoute
+  '/documentos': typeof DocumentosRoute
+  '/erros': typeof ErrosRoute
   '/folha': typeof FolhaRoute
   '/obrigacoes': typeof ObrigacoesRoute
   '/sst': typeof SstRoute
   '/tarefas': typeof TarefasRoute
+  '/treinamentos': typeof TreinamentosRoute
   '/empresas/$empresaId': typeof EmpresasEmpresaIdRoute
   '/empresas': typeof EmpresasIndexRoute
 }
@@ -83,10 +115,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/calendario': typeof CalendarioRoute
+  '/checklists': typeof ChecklistsRoute
+  '/documentos': typeof DocumentosRoute
+  '/erros': typeof ErrosRoute
   '/folha': typeof FolhaRoute
   '/obrigacoes': typeof ObrigacoesRoute
   '/sst': typeof SstRoute
   '/tarefas': typeof TarefasRoute
+  '/treinamentos': typeof TreinamentosRoute
   '/empresas/$empresaId': typeof EmpresasEmpresaIdRoute
   '/empresas/': typeof EmpresasIndexRoute
 }
@@ -95,30 +131,42 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/calendario'
+    | '/checklists'
+    | '/documentos'
+    | '/erros'
     | '/folha'
     | '/obrigacoes'
     | '/sst'
     | '/tarefas'
+    | '/treinamentos'
     | '/empresas/$empresaId'
     | '/empresas/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/calendario'
+    | '/checklists'
+    | '/documentos'
+    | '/erros'
     | '/folha'
     | '/obrigacoes'
     | '/sst'
     | '/tarefas'
+    | '/treinamentos'
     | '/empresas/$empresaId'
     | '/empresas'
   id:
     | '__root__'
     | '/'
     | '/calendario'
+    | '/checklists'
+    | '/documentos'
+    | '/erros'
     | '/folha'
     | '/obrigacoes'
     | '/sst'
     | '/tarefas'
+    | '/treinamentos'
     | '/empresas/$empresaId'
     | '/empresas/'
   fileRoutesById: FileRoutesById
@@ -126,10 +174,14 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalendarioRoute: typeof CalendarioRoute
+  ChecklistsRoute: typeof ChecklistsRoute
+  DocumentosRoute: typeof DocumentosRoute
+  ErrosRoute: typeof ErrosRoute
   FolhaRoute: typeof FolhaRoute
   ObrigacoesRoute: typeof ObrigacoesRoute
   SstRoute: typeof SstRoute
   TarefasRoute: typeof TarefasRoute
+  TreinamentosRoute: typeof TreinamentosRoute
   EmpresasEmpresaIdRoute: typeof EmpresasEmpresaIdRoute
   EmpresasIndexRoute: typeof EmpresasIndexRoute
 }
@@ -148,6 +200,27 @@ declare module '@tanstack/react-router' {
       path: '/calendario'
       fullPath: '/calendario'
       preLoaderRoute: typeof CalendarioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checklists': {
+      id: '/checklists'
+      path: '/checklists'
+      fullPath: '/checklists'
+      preLoaderRoute: typeof ChecklistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/documentos': {
+      id: '/documentos'
+      path: '/documentos'
+      fullPath: '/documentos'
+      preLoaderRoute: typeof DocumentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/erros': {
+      id: '/erros'
+      path: '/erros'
+      fullPath: '/erros'
+      preLoaderRoute: typeof ErrosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/folha': {
@@ -178,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TarefasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/treinamentos': {
+      id: '/treinamentos'
+      path: '/treinamentos'
+      fullPath: '/treinamentos'
+      preLoaderRoute: typeof TreinamentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/empresas/': {
       id: '/empresas/'
       path: '/empresas'
@@ -198,10 +278,14 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalendarioRoute: CalendarioRoute,
+  ChecklistsRoute: ChecklistsRoute,
+  DocumentosRoute: DocumentosRoute,
+  ErrosRoute: ErrosRoute,
   FolhaRoute: FolhaRoute,
   ObrigacoesRoute: ObrigacoesRoute,
   SstRoute: SstRoute,
   TarefasRoute: TarefasRoute,
+  TreinamentosRoute: TreinamentosRoute,
   EmpresasEmpresaIdRoute: EmpresasEmpresaIdRoute,
   EmpresasIndexRoute: EmpresasIndexRoute,
 }
