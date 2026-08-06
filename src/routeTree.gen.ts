@@ -18,6 +18,7 @@ import { Route as ChecklistsRouteImport } from './routes/checklists'
 import { Route as DocumentosRouteImport } from './routes/documentos'
 import { Route as ErrosRouteImport } from './routes/erros'
 import { Route as FolhaRouteImport } from './routes/folha'
+import { Route as GanttRouteImport } from './routes/gantt'
 import { Route as ObrigacoesRouteImport } from './routes/obrigacoes'
 import { Route as SstRouteImport } from './routes/sst'
 import { Route as TarefasRouteImport } from './routes/tarefas'
@@ -70,6 +71,11 @@ const FolhaRoute = FolhaRouteImport.update({
   path: '/folha',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GanttRoute = GanttRouteImport.update({
+  id: '/gantt',
+  path: '/gantt',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ObrigacoesRoute = ObrigacoesRouteImport.update({
   id: '/obrigacoes',
   path: '/obrigacoes',
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/documentos': typeof DocumentosRoute
   '/erros': typeof ErrosRoute
   '/folha': typeof FolhaRoute
+  '/gantt': typeof GanttRoute
   '/obrigacoes': typeof ObrigacoesRoute
   '/sst': typeof SstRoute
   '/tarefas': typeof TarefasRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/documentos': typeof DocumentosRoute
   '/erros': typeof ErrosRoute
   '/folha': typeof FolhaRoute
+  '/gantt': typeof GanttRoute
   '/obrigacoes': typeof ObrigacoesRoute
   '/sst': typeof SstRoute
   '/tarefas': typeof TarefasRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/documentos': typeof DocumentosRoute
   '/erros': typeof ErrosRoute
   '/folha': typeof FolhaRoute
+  '/gantt': typeof GanttRoute
   '/obrigacoes': typeof ObrigacoesRoute
   '/sst': typeof SstRoute
   '/tarefas': typeof TarefasRoute
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/documentos'
     | '/erros'
     | '/folha'
+    | '/gantt'
     | '/obrigacoes'
     | '/sst'
     | '/tarefas'
@@ -182,6 +192,7 @@ export interface FileRouteTypes {
     | '/documentos'
     | '/erros'
     | '/folha'
+    | '/gantt'
     | '/obrigacoes'
     | '/sst'
     | '/tarefas'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/documentos'
     | '/erros'
     | '/folha'
+    | '/gantt'
     | '/obrigacoes'
     | '/sst'
     | '/tarefas'
@@ -217,6 +229,7 @@ export interface RootRouteChildren {
   DocumentosRoute: typeof DocumentosRoute
   ErrosRoute: typeof ErrosRoute
   FolhaRoute: typeof FolhaRoute
+  GanttRoute: typeof GanttRoute
   ObrigacoesRoute: typeof ObrigacoesRoute
   SstRoute: typeof SstRoute
   TarefasRoute: typeof TarefasRoute
@@ -290,6 +303,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FolhaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/gantt': {
+      id: '/gantt'
+      path: '/gantt'
+      fullPath: '/gantt'
+      preLoaderRoute: typeof GanttRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/obrigacoes': {
       id: '/obrigacoes'
       path: '/obrigacoes'
@@ -345,6 +365,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocumentosRoute: DocumentosRoute,
   ErrosRoute: ErrosRoute,
   FolhaRoute: FolhaRoute,
+  GanttRoute: GanttRoute,
   ObrigacoesRoute: ObrigacoesRoute,
   SstRoute: SstRoute,
   TarefasRoute: TarefasRoute,
