@@ -8,6 +8,7 @@ import {
   Receipt,
   ListChecks,
   KanbanSquare,
+  GanttChartSquare,
   FolderOpen,
   TriangleAlert,
   GraduationCap,
