@@ -513,3 +513,66 @@ export const slaMensal = [
   { mes: "Jun", sla: 93, retrabalho: 7.2 },
   { mes: "Jul", sla: 94.3, retrabalho: 6.1 },
 ];
+
+export type TarefaGantt = {
+  id: string;
+  titulo: string;
+  empresa: string;
+  responsavel: string;
+  categoria: "Folha" | "eSocial" | "SST" | "Obrigações" | "Férias" | "Rescisão" | "Interno";
+  inicio: number;
+  fim: number;
+  progresso: number;
+  status: "atrasada" | "andamento" | "planejada" | "concluida";
+};
+
+export const tarefasGantt: TarefaGantt[] = [
+  { id: "g1", titulo: "Publicação do controle de contrato de experiência", empresa: "Todas", responsavel: "Ana Beatriz", categoria: "Interno", inicio: 1, fim: 6, progresso: 100, status: "concluida" },
+  { id: "g2", titulo: "Fechamento das folhas de pagamento do dia 30", empresa: "Metalúrgica Andrade", responsavel: "Camila Rocha", categoria: "Folha", inicio: 1, fim: 4, progresso: 80, status: "atrasada" },
+  { id: "g3", titulo: "Envio da solicitação PADRÃO da publicação da folha", empresa: "Todas", responsavel: "Rafael Prado", categoria: "Folha", inicio: 4, fim: 5, progresso: 60, status: "atrasada" },
+  { id: "g4", titulo: "Envio do evento S-1200 Remuneração", empresa: "Todas", responsavel: "Diego Menezes", categoria: "eSocial", inicio: 5, fim: 6, progresso: 45, status: "atrasada" },
+  { id: "g5", titulo: "Envio do evento S-1210 Pagamento", empresa: "Todas", responsavel: "Diego Menezes", categoria: "eSocial", inicio: 6, fim: 7, progresso: 30, status: "andamento" },
+  { id: "g6", titulo: "Envio do evento S-1299 Fechamento", empresa: "Todas", responsavel: "Diego Menezes", categoria: "eSocial", inicio: 8, fim: 9, progresso: 20, status: "andamento" },
+  { id: "g7", titulo: "Publicação do controle de férias", empresa: "Rede Bom Preço", responsavel: "Juliana Reis", categoria: "Férias", inicio: 8, fim: 9, progresso: 25, status: "andamento" },
+  { id: "g8", titulo: "Controle de aniversariantes do mês seguinte", empresa: "Todas", responsavel: "Ana Beatriz", categoria: "Interno", inicio: 8, fim: 9, progresso: 10, status: "andamento" },
+  { id: "g9", titulo: "Calcular provisão de Férias e 13º — rotina automática", empresa: "Todas", responsavel: "Equipe DP", categoria: "Folha", inicio: 8, fim: 31, progresso: 15, status: "andamento" },
+  { id: "g10", titulo: "SST — Verificar programas vencendo e atualizar planilha", empresa: "Transportes Vale", responsavel: "Tatiane Lopes", categoria: "SST", inicio: 9, fim: 10, progresso: 0, status: "planejada" },
+  { id: "g11", titulo: "SST — Envio do controle de exames médicos", empresa: "Clientes contratantes", responsavel: "Tatiane Lopes", categoria: "SST", inicio: 9, fim: 10, progresso: 0, status: "planejada" },
+  { id: "g12", titulo: "SST — Cadastro dos ambientes de trabalho", empresa: "Construtora Horizonte", responsavel: "Tatiane Lopes", categoria: "SST", inicio: 9, fim: 11, progresso: 0, status: "planejada" },
+  { id: "g13", titulo: "Adiantamento salarial — rotina em lote", empresa: "Todas", responsavel: "Rafael Prado", categoria: "Folha", inicio: 10, fim: 12, progresso: 0, status: "planejada" },
+  { id: "g14", titulo: "Consultar arquivo do empréstimo consignado", empresa: "Todas", responsavel: "Rafael Prado", categoria: "Interno", inicio: 10, fim: 12, progresso: 0, status: "planejada" },
+  { id: "g15", titulo: "DCTFWeb 07/2026", empresa: "Todas", responsavel: "Equipe Fiscal", categoria: "Obrigações", inicio: 12, fim: 15, progresso: 0, status: "planejada" },
+  { id: "g16", titulo: "FGTS Digital — geração e conferência de guias", empresa: "Todas", responsavel: "Equipe DP", categoria: "Obrigações", inicio: 13, fim: 17, progresso: 0, status: "planejada" },
+  { id: "g17", titulo: "Rescisão — Paulo Nunes", empresa: "Construtora Horizonte", responsavel: "Juliana Reis", categoria: "Rescisão", inicio: 18, fim: 20, progresso: 0, status: "planejada" },
+  { id: "g18", titulo: "Férias coletivas — programação", empresa: "Metalúrgica Andrade", responsavel: "Camila Rocha", categoria: "Férias", inicio: 18, fim: 24, progresso: 0, status: "planejada" },
+  { id: "g19", titulo: "Revisão de particularidades da carteira", empresa: "Todas", responsavel: "Paulo Serra", categoria: "Interno", inicio: 22, fim: 28, progresso: 0, status: "planejada" },
+  { id: "g20", titulo: "Provisão de 13º salário", empresa: "Todas", responsavel: "Equipe DP", categoria: "Folha", inicio: 24, fim: 31, progresso: 0, status: "planejada" },
+];
+
+export const evolucaoConclusao = [
+  { dia: 1, planejado: 3, concluido: 3 },
+  { dia: 4, planejado: 7, concluido: 6 },
+  { dia: 6, planejado: 12, concluido: 9 },
+  { dia: 8, planejado: 20, concluido: 15 },
+  { dia: 11, planejado: 28, concluido: 22 },
+  { dia: 14, planejado: 38, concluido: 31 },
+  { dia: 17, planejado: 48, concluido: 40 },
+  { dia: 20, planejado: 58, concluido: 49 },
+  { dia: 24, planejado: 70, concluido: 60 },
+  { dia: 28, planejado: 82, concluido: 71 },
+  { dia: 31, planejado: 90, concluido: 79 },
+];
+
+export type Reuniao = {
+  id: string;
+  titulo: string;
+  dia: number;
+  hora: string;
+  participantes: string;
+};
+
+export const reunioesIniciais: Reuniao[] = [
+  { id: "r1", titulo: "Alinhamento de fechamento da folha", dia: 5, hora: "09:00", participantes: "Camila, Paulo" },
+  { id: "r2", titulo: "Reunião de carteira", dia: 14, hora: "14:30", participantes: "Ana Beatriz, equipe DP" },
+  { id: "r3", titulo: "Revisão de SST com clínica", dia: 21, hora: "10:00", participantes: "Tatiane, Dr. Lima" },
+];
