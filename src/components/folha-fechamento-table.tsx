@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Check, Minus, Search, Slash } from "lucide-react";
 
 import {
   competencias,
@@ -28,22 +28,35 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+const etapaIcon: Record<EtapaStatus, typeof Check | null> = {
+  pendente: null,
+  andamento: Minus,
+  concluido: Check,
+  na: Slash,
+};
+
 function EtapaCell({ value, onChange }: { value: EtapaStatus; onChange: (v: EtapaStatus) => void }) {
   const meta = etapaStatusMeta[value];
+  const Icon = etapaIcon[value];
   return (
     <button
       type="button"
+      role="checkbox"
+      aria-checked={value === "concluido"}
       title={`${meta.label} — clique para alterar`}
       aria-label={meta.label}
       onClick={() =>
         onChange(etapaStatusOrder[(etapaStatusOrder.indexOf(value) + 1) % etapaStatusOrder.length]!)
       }
       className={cn(
-        "mx-auto flex h-7 w-7 items-center justify-center rounded-md transition-transform hover:scale-110",
-        meta.bg,
+        "mx-auto flex h-6 w-6 items-center justify-center rounded-[5px] border-2 transition-colors",
+        value === "concluido" && "border-success bg-success/15 text-success",
+        value === "andamento" && "border-warning bg-warning/10 text-warning",
+        value === "na" && "border-muted-foreground/30 bg-muted text-muted-foreground",
+        value === "pendente" && "border-border bg-background text-transparent hover:border-primary/50",
       )}
     >
-      <span className={cn("h-3 w-3 rounded-full", meta.dot)} />
+      {Icon ? <Icon className="h-4 w-4" strokeWidth={3} /> : <Check className="h-4 w-4" strokeWidth={3} />}
     </button>
   );
 }
@@ -309,11 +322,11 @@ export function FolhaFechamentoTable() {
       <div className="flex flex-wrap items-center gap-4 text-[11px] text-muted-foreground">
         {etapaStatusOrder.map((s) => (
           <span key={s} className="flex items-center gap-1.5">
-            <span className={cn("h-2.5 w-2.5 rounded-full", etapaStatusMeta[s].dot)} />
+            <EtapaCell value={s} onChange={() => {}} />
             {etapaStatusMeta[s].label}
           </span>
         ))}
-        <span>Clique na marcação para alternar o estado.</span>
+        <span>Clique na caixa para marcar/desmarcar.</span>
       </div>
     </div>
   );
