@@ -2,7 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, User } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
+import { FolhaFechamentoTable } from "@/components/folha-fechamento-table";
 import { etapasFolha, folhas } from "@/lib/mock-data";
+
 
 export const Route = createFileRoute("/folha")({
   head: () => ({
