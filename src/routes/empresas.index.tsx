@@ -1,0 +1,127 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
+import { AlertTriangle, Users, Building2 } from "lucide-react";
+
+import { PageHeader } from "@/components/page-header";
+import { StatusBadge } from "@/components/status-badge";
+import { Input } from "@/components/ui/input";
+import { useEmpresas } from "@/lib/empresas-store";
+import { NovaEmpresaDialog } from "@/components/nova-empresa-dialog";
+import { GerenciarCadastrosDialog } from "@/components/gerenciar-cadastros-dialog";
+
+export const Route = createFileRoute("/empresas/")({
+  head: () => ({
+    meta: [
+      { title: "Cadastro de Empresas — DP Control" },
+      {
+        name: "description",
+        content:
+          "Ficha completa de cada cliente: carteira, analista, certificado digital, riscos e particularidades da folha.",
+      },
+      { property: "og:title", content: "Cadastro de Empresas — DP Control" },
+      { property: "og:description", content: "Fichas completas e particularidades operacionais por cliente." },
+    ],
+  }),
+  component: Empresas,
+});
+
+function Empresas() {
+  const [busca, setBusca] = useState("");
+  const { empresas } = useEmpresas();
+
+  const lista = empresas.filter(
+    (e) =>
+      e.nome.toLowerCase().includes(busca.toLowerCase()) ||
+      e.cnpj.includes(busca) ||
+      e.analista.toLowerCase().includes(busca.toLowerCase()),
+  );
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Cadastro de Empresas"
+        description="Ficha permanente, particularidades e histórico de cada cliente"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <GerenciarCadastrosDialog />
+            <NovaEmpresaDialog />
+          </div>
+        }
+      />
+
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <Input
+          placeholder="Buscar por nome, CNPJ ou analista..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          className="max-w-md"
+        />
+        <div className="text-xs text-muted-foreground">
+          Total: <strong className="text-foreground">{empresas.length}</strong> empresas cadastradas
+        </div>
+      </div>
+
+      {lista.length === 0 ? (
+        <div className="surface-panel flex flex-col items-center justify-center p-12 text-center">
+          <Building2 className="h-10 w-10 text-muted-foreground/50 mb-3" />
+          <h3 className="text-base font-semibold">Nenhuma empresa encontrada</h3>
+          <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+            Nenhuma empresa corresponde aos critérios de busca ou nenhuma empresa foi cadastrada ainda.
+          </p>
+          <div className="mt-4">
+            <NovaEmpresaDialog />
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {lista.map((e) => (
+            <Link
+              key={e.id}
+              to="/empresas/$empresaId"
+              params={{ empresaId: e.id }}
+              className="surface-panel block p-4 transition-all hover:-translate-y-0.5 hover:border-primary/50"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h2 className="truncate text-sm font-semibold">{e.nome}</h2>
+                  <p className="text-xs text-muted-foreground">{e.cnpj}</p>
+                </div>
+                <StatusBadge status={e.status} />
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-y-2 text-xs">
+                <Info label="Regime" value={e.regime} />
+                <Info label="Carteira" value={e.carteira} />
+                <Info label="Analista" value={e.analista} />
+                <Info label="Supervisor" value={e.supervisor} />
+              </div>
+
+              <div className="mt-4 flex items-center justify-between border-t pt-3">
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Users className="h-3.5 w-3.5" /> {e.funcionarios} funcionários
+                </span>
+                {e.diasSemRevisao > 30 ? (
+                  <span className="flex items-center gap-1 text-xs font-medium text-destructive">
+                    <AlertTriangle className="h-3.5 w-3.5" /> {e.diasSemRevisao} dias sem revisão
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Revisado há {e.diasSemRevisao} dias</span>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="truncate font-medium">{value}</p>
+    </div>
+  );
+}
+
