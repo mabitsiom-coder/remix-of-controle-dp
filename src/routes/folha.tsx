@@ -2,7 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ShieldCheck, User } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
+import { FolhaFechamentoTable } from "@/components/folha-fechamento-table";
 import { etapasFolha, folhas } from "@/lib/mock-data";
+
 
 export const Route = createFileRoute("/folha")({
   head: () => ({
@@ -24,10 +26,16 @@ function FolhaPage() {
     <div className="space-y-6">
       <PageHeader
         title="Folha de Pagamento"
-        description="Pipeline operacional por empresa e competência · controle de aprovação"
+        description="Tarefas de fechamento por empresa e competência · pipeline operacional"
       />
 
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold">Controle de fechamento por competência</h2>
+        <FolhaFechamentoTable />
+      </section>
+
       <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+
         {etapasFolha.map((etapa) => {
           const itens = folhas.filter((f) => f.etapa === etapa);
           return (
