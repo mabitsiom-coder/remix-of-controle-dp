@@ -322,11 +322,11 @@ export function FolhaFechamentoTable() {
       <div className="flex flex-wrap items-center gap-4 text-[11px] text-muted-foreground">
         {etapaStatusOrder.map((s) => (
           <span key={s} className="flex items-center gap-1.5">
-            <span className={cn("h-2.5 w-2.5 rounded-full", etapaStatusMeta[s].dot)} />
+            <EtapaCell value={s} onChange={() => {}} />
             {etapaStatusMeta[s].label}
           </span>
         ))}
-        <span>Clique na marcação para alternar o estado.</span>
+        <span>Clique na caixa para marcar/desmarcar.</span>
       </div>
     </div>
   );
