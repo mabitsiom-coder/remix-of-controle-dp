@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+git import { useState, useEffect } from "react";
 import { empresas as mockEmpresas, type Empresa } from "./mock-data";
 import { vincularEmpresaAoGrupo } from "./grupos-store";
 
