@@ -1,41 +1,40 @@
 import { createAPIFileRoute } from "@tanstack/react-start/api";
 import { empresas, kpis, errosPorTipo, pendenciasPorEmpresa, transmissoes } from "@/lib/mock-data";
 
+function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers":
+      "Content-Type, Authorization, Accept, MCP-Protocol-Version, Mcp-Session-Id, Last-Event-ID",
+    "Access-Control-Expose-Headers": "Mcp-Session-Id",
+  };
+}
+
+function createResponse(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      ...corsHeaders(),
+      "Content-Type": "application/json",
+      "MCP-Protocol-Version": "2025-03-26",
+    },
+  });
+}
+
 export const APIRoute = createAPIFileRoute("/api/mcp")({
   OPTIONS: async () => {
     return new Response(null, {
       status: 204,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
-      },
+      headers: corsHeaders(),
     });
   },
 
   GET: async () => {
-    return new Response(
-      JSON.stringify(
-        {
-          jsonrpc: "2.0",
-          status: "online",
-          protocolVersion: "2025-03-26",
-          serverInfo: {
-            name: "dp-control-center",
-            version: "1.0.0",
-          },
-        },
-        null,
-        2
-      ),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          "Access-Control-Allow-Origin": "*",
-        },
-      }
-    );
+    return new Response(null, {
+      status: 405,
+      headers: { Allow: "POST, OPTIONS" },
+    });
   },
 
   POST: async ({ request }) => {
@@ -43,7 +42,7 @@ export const APIRoute = createAPIFileRoute("/api/mcp")({
       const body = await request.json();
       const { jsonrpc, id, method, params } = body;
 
-      const reqId = id !== undefined ? id : 1;
+      const reqId = id;
 
       // 1. method: initialize
       if (method === "initialize") {
@@ -65,8 +64,9 @@ export const APIRoute = createAPIFileRoute("/api/mcp")({
 
       // 2. method: notifications/initialized
       if (method === "notifications/initialized") {
-        return createResponse({
-          jsonrpc: "2.0",
+        return new Response(null, {
+          status: 202,
+          headers: corsHeaders(),
         });
       }
 
@@ -154,55 +154,34 @@ export const APIRoute = createAPIFileRoute("/api/mcp")({
           });
         }
 
-        return createResponse(
-          {
-            jsonrpc: "2.0",
-            id: reqId,
-            error: {
-              code: -32601,
-              message: `Ferramenta '${name}' não encontrada`,
-            },
-          },
-          404
-        );
-      }
-
-      // Se for um método desconhecido
-      return createResponse(
-        {
+        return createResponse({
           jsonrpc: "2.0",
           id: reqId,
           error: {
             code: -32601,
-            message: `Método '${method}' não suportado`,
+            message: `Ferramenta '${name}' não encontrada`,
           },
+        });
+      }
+
+      // Método desconhecido -> erro JSON-RPC com HTTP 200
+      return createResponse({
+        jsonrpc: "2.0",
+        id: reqId,
+        error: {
+          code: -32601,
+          message: `Método '${method}' não suportado`,
         },
-        400
-      );
-    } catch (err: any) {
-      return createResponse(
-        {
-          jsonrpc: "2.0",
-          id: 1,
-          error: {
-            code: -32700,
-            message: "Parse error / JSON inválido",
-          },
+      });
+    } catch {
+      return createResponse({
+        jsonrpc: "2.0",
+        id: null,
+        error: {
+          code: -32700,
+          message: "Parse error / JSON inválido",
         },
-        400
-      );
+      });
     }
   },
 });
-
-function createResponse(data: any, status: number = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
-    },
-  });
-}
