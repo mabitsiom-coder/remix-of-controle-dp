@@ -26,8 +26,11 @@ import { Route as SstRouteImport } from './routes/sst'
 import { Route as TarefasRouteImport } from './routes/tarefas'
 import { Route as TreinamentosRouteImport } from './routes/treinamentos'
 import { Route as UsuariosRouteImport } from './routes/usuarios'
+import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as EmpresasIndexRouteImport } from './routes/empresas.index'
 import { Route as EmpresasEmpresaIdRouteImport } from './routes/empresas.$empresaId'
+import { Route as ApiChatgptConsultaRouteImport } from './routes/api/chatgpt/consulta'
+import { Route as ApiChatgptOpenapiDotjsonRouteImport } from './routes/api/chatgpt/openapi[.]json'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -114,6 +117,11 @@ const UsuariosRoute = UsuariosRouteImport.update({
   path: '/usuarios',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMcpRoute = ApiMcpRouteImport.update({
+  id: '/api/mcp',
+  path: '/api/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EmpresasIndexRoute = EmpresasIndexRouteImport.update({
   id: '/empresas/',
   path: '/empresas/',
@@ -124,6 +132,17 @@ const EmpresasEmpresaIdRoute = EmpresasEmpresaIdRouteImport.update({
   path: '/empresas/$empresaId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiChatgptConsultaRoute = ApiChatgptConsultaRouteImport.update({
+  id: '/api/chatgpt/consulta',
+  path: '/api/chatgpt/consulta',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatgptOpenapiDotjsonRoute =
+  ApiChatgptOpenapiDotjsonRouteImport.update({
+    id: '/api/chatgpt/openapi.json',
+    path: '/api/chatgpt/openapi.json',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -143,8 +162,11 @@ export interface FileRoutesByFullPath {
   '/tarefas': typeof TarefasRoute
   '/treinamentos': typeof TreinamentosRoute
   '/usuarios': typeof UsuariosRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/empresas/$empresaId': typeof EmpresasEmpresaIdRoute
   '/empresas/': typeof EmpresasIndexRoute
+  '/api/chatgpt/consulta': typeof ApiChatgptConsultaRoute
+  '/api/chatgpt/openapi.json': typeof ApiChatgptOpenapiDotjsonRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -164,8 +186,11 @@ export interface FileRoutesByTo {
   '/tarefas': typeof TarefasRoute
   '/treinamentos': typeof TreinamentosRoute
   '/usuarios': typeof UsuariosRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/empresas/$empresaId': typeof EmpresasEmpresaIdRoute
   '/empresas': typeof EmpresasIndexRoute
+  '/api/chatgpt/consulta': typeof ApiChatgptConsultaRoute
+  '/api/chatgpt/openapi.json': typeof ApiChatgptOpenapiDotjsonRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -186,8 +211,11 @@ export interface FileRoutesById {
   '/tarefas': typeof TarefasRoute
   '/treinamentos': typeof TreinamentosRoute
   '/usuarios': typeof UsuariosRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/empresas/$empresaId': typeof EmpresasEmpresaIdRoute
   '/empresas/': typeof EmpresasIndexRoute
+  '/api/chatgpt/consulta': typeof ApiChatgptConsultaRoute
+  '/api/chatgpt/openapi.json': typeof ApiChatgptOpenapiDotjsonRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -209,8 +237,11 @@ export interface FileRouteTypes {
     | '/tarefas'
     | '/treinamentos'
     | '/usuarios'
+    | '/api/mcp'
     | '/empresas/$empresaId'
     | '/empresas/'
+    | '/api/chatgpt/consulta'
+    | '/api/chatgpt/openapi.json'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -230,8 +261,11 @@ export interface FileRouteTypes {
     | '/tarefas'
     | '/treinamentos'
     | '/usuarios'
+    | '/api/mcp'
     | '/empresas/$empresaId'
     | '/empresas'
+    | '/api/chatgpt/consulta'
+    | '/api/chatgpt/openapi.json'
   id:
     | '__root__'
     | '/'
@@ -251,8 +285,11 @@ export interface FileRouteTypes {
     | '/tarefas'
     | '/treinamentos'
     | '/usuarios'
+    | '/api/mcp'
     | '/empresas/$empresaId'
     | '/empresas/'
+    | '/api/chatgpt/consulta'
+    | '/api/chatgpt/openapi.json'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -273,8 +310,11 @@ export interface RootRouteChildren {
   TarefasRoute: typeof TarefasRoute
   TreinamentosRoute: typeof TreinamentosRoute
   UsuariosRoute: typeof UsuariosRoute
+  ApiMcpRoute: typeof ApiMcpRoute
   EmpresasEmpresaIdRoute: typeof EmpresasEmpresaIdRoute
   EmpresasIndexRoute: typeof EmpresasIndexRoute
+  ApiChatgptConsultaRoute: typeof ApiChatgptConsultaRoute
+  ApiChatgptOpenapiDotjsonRoute: typeof ApiChatgptOpenapiDotjsonRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -398,6 +438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsuariosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/mcp': {
+      id: '/api/mcp'
+      path: '/api/mcp'
+      fullPath: '/api/mcp'
+      preLoaderRoute: typeof ApiMcpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/empresas/': {
       id: '/empresas/'
       path: '/empresas'
@@ -410,6 +457,20 @@ declare module '@tanstack/react-router' {
       path: '/empresas/$empresaId'
       fullPath: '/empresas/$empresaId'
       preLoaderRoute: typeof EmpresasEmpresaIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chatgpt/consulta': {
+      id: '/api/chatgpt/consulta'
+      path: '/api/chatgpt/consulta'
+      fullPath: '/api/chatgpt/consulta'
+      preLoaderRoute: typeof ApiChatgptConsultaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chatgpt/openapi.json': {
+      id: '/api/chatgpt/openapi.json'
+      path: '/api/chatgpt/openapi.json'
+      fullPath: '/api/chatgpt/openapi.json'
+      preLoaderRoute: typeof ApiChatgptOpenapiDotjsonRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -433,19 +494,12 @@ const rootRouteChildren: RootRouteChildren = {
   TarefasRoute: TarefasRoute,
   TreinamentosRoute: TreinamentosRoute,
   UsuariosRoute: UsuariosRoute,
+  ApiMcpRoute: ApiMcpRoute,
   EmpresasEmpresaIdRoute: EmpresasEmpresaIdRoute,
   EmpresasIndexRoute: EmpresasIndexRoute,
+  ApiChatgptConsultaRoute: ApiChatgptConsultaRoute,
+  ApiChatgptOpenapiDotjsonRoute: ApiChatgptOpenapiDotjsonRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

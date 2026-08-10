@@ -86,16 +86,16 @@ export function saveStoredUsers(users: Usuario[]) {
 }
 
 export function getCurrentUser(): Usuario {
-  if (typeof window === "undefined") return initialUsers[0];
+  if (typeof window === "undefined") return initialUsers[0]!;
   try {
     const item = localStorage.getItem(CURRENT_USER_KEY);
     if (!item) {
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(initialUsers[0]));
-      return initialUsers[0];
+      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(initialUsers[0]!));
+      return initialUsers[0]!;
     }
     return JSON.parse(item);
   } catch (error) {
-    return initialUsers[0];
+    return initialUsers[0]!;
   }
 }
 
@@ -175,12 +175,12 @@ export function removeUsuario(id: string) {
 
   const atual = getCurrentUser();
   if (atual.id === id) {
-    setCurrentUser(novaLista[0]);
+    setCurrentUser(novaLista[0]!);
   }
 }
 
 export function useAuth() {
-  const [currentUser, setCurrUser] = useState<Usuario>(initialUsers[0]);
+  const [currentUser, setCurrUser] = useState<Usuario>(initialUsers[0]!);
   const [usuarios, setUsuarios] = useState<Usuario[]>(initialUsers);
 
   const refreshState = () => {
