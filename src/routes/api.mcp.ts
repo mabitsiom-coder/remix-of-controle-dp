@@ -98,6 +98,8 @@ export const APIRoute = createAPIFileRoute("/api/mcp")({
                       description: "ID ou slug específico da empresa",
                     },
                   },
+                  required: ["tipo"],
+                  additionalProperties: false,
                 },
               },
             ],
