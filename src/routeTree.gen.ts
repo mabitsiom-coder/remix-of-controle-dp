@@ -26,6 +26,7 @@ import { Route as SstRouteImport } from './routes/sst'
 import { Route as TarefasRouteImport } from './routes/tarefas'
 import { Route as TreinamentosRouteImport } from './routes/treinamentos'
 import { Route as UsuariosRouteImport } from './routes/usuarios'
+import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as EmpresasIndexRouteImport } from './routes/empresas.index'
 import { Route as EmpresasEmpresaIdRouteImport } from './routes/empresas.$empresaId'
 
@@ -114,6 +115,11 @@ const UsuariosRoute = UsuariosRouteImport.update({
   path: '/usuarios',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMcpRoute = ApiMcpRouteImport.update({
+  id: '/api/mcp',
+  path: '/api/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EmpresasIndexRoute = EmpresasIndexRouteImport.update({
   id: '/empresas/',
   path: '/empresas/',
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/tarefas': typeof TarefasRoute
   '/treinamentos': typeof TreinamentosRoute
   '/usuarios': typeof UsuariosRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/empresas/$empresaId': typeof EmpresasEmpresaIdRoute
   '/empresas/': typeof EmpresasIndexRoute
 }
@@ -164,6 +171,7 @@ export interface FileRoutesByTo {
   '/tarefas': typeof TarefasRoute
   '/treinamentos': typeof TreinamentosRoute
   '/usuarios': typeof UsuariosRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/empresas/$empresaId': typeof EmpresasEmpresaIdRoute
   '/empresas': typeof EmpresasIndexRoute
 }
@@ -186,6 +194,7 @@ export interface FileRoutesById {
   '/tarefas': typeof TarefasRoute
   '/treinamentos': typeof TreinamentosRoute
   '/usuarios': typeof UsuariosRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/empresas/$empresaId': typeof EmpresasEmpresaIdRoute
   '/empresas/': typeof EmpresasIndexRoute
 }
@@ -209,6 +218,7 @@ export interface FileRouteTypes {
     | '/tarefas'
     | '/treinamentos'
     | '/usuarios'
+    | '/api/mcp'
     | '/empresas/$empresaId'
     | '/empresas/'
   fileRoutesByTo: FileRoutesByTo
@@ -230,6 +240,7 @@ export interface FileRouteTypes {
     | '/tarefas'
     | '/treinamentos'
     | '/usuarios'
+    | '/api/mcp'
     | '/empresas/$empresaId'
     | '/empresas'
   id:
@@ -251,6 +262,7 @@ export interface FileRouteTypes {
     | '/tarefas'
     | '/treinamentos'
     | '/usuarios'
+    | '/api/mcp'
     | '/empresas/$empresaId'
     | '/empresas/'
   fileRoutesById: FileRoutesById
@@ -273,6 +285,7 @@ export interface RootRouteChildren {
   TarefasRoute: typeof TarefasRoute
   TreinamentosRoute: typeof TreinamentosRoute
   UsuariosRoute: typeof UsuariosRoute
+  ApiMcpRoute: typeof ApiMcpRoute
   EmpresasEmpresaIdRoute: typeof EmpresasEmpresaIdRoute
   EmpresasIndexRoute: typeof EmpresasIndexRoute
 }
@@ -398,6 +411,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsuariosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/mcp': {
+      id: '/api/mcp'
+      path: '/api/mcp'
+      fullPath: '/api/mcp'
+      preLoaderRoute: typeof ApiMcpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/empresas/': {
       id: '/empresas/'
       path: '/empresas'
@@ -433,6 +453,7 @@ const rootRouteChildren: RootRouteChildren = {
   TarefasRoute: TarefasRoute,
   TreinamentosRoute: TreinamentosRoute,
   UsuariosRoute: UsuariosRoute,
+  ApiMcpRoute: ApiMcpRoute,
   EmpresasEmpresaIdRoute: EmpresasEmpresaIdRoute,
   EmpresasIndexRoute: EmpresasIndexRoute,
 }
