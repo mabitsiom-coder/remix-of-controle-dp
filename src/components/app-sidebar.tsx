@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   UserCog,
   Users,
+  Plug,
   LogOut,
 } from "lucide-react";
 
