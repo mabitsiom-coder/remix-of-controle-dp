@@ -152,5 +152,7 @@
 @utility surface-panel {
   background-color: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 2px oklch(0.24 0.035 255 / 5%), 0 1px 12px oklch(0.24 0.035 255 / 4%);
 }
+
