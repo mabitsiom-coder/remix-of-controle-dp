@@ -45,7 +45,7 @@ const openApiSchemaExemplo = `{
     { "url": "${typeof window !== "undefined" ? window.location.origin : "https://seu-dominio.com"}" }
   ],
   "paths": {
-    "/api/chatgpt/consulta": {
+    "/api/public/chatgpt/consulta": {
       "get": {
         "operationId": "consultarDadosDP",
         "summary": "Consulta informações e relatórios do Departamento Pessoal",
@@ -76,9 +76,9 @@ function Assistente() {
   const [loadingTest, setLoadingTest] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
 
-  const apiEndpointUrl = typeof window !== "undefined" ? `${window.location.origin}/api/chatgpt/consulta` : "/api/chatgpt/consulta";
-  const mcpEndpointUrl = typeof window !== "undefined" ? `${window.location.origin}/api/mcp` : "/api/mcp";
-  const openApiUrl = typeof window !== "undefined" ? `${window.location.origin}/api/chatgpt/openapi.json` : "/api/chatgpt/openapi.json";
+  const apiEndpointUrl = typeof window !== "undefined" ? `${window.location.origin}/api/public/chatgpt/consulta` : "/api/public/chatgpt/consulta";
+  const mcpEndpointUrl = typeof window !== "undefined" ? `${window.location.origin}/api/public/mcp` : "/api/public/mcp";
+  const openApiUrl = typeof window !== "undefined" ? `${window.location.origin}/api/public/chatgpt/openapi.json` : "/api/public/chatgpt/openapi.json";
 
   const handleCopy = (text: string, type: "url" | "mcp" | "schema" | "prompt") => {
     navigator.clipboard.writeText(text);
@@ -102,11 +102,11 @@ function Assistente() {
     setLoadingTest(true);
     try {
       if (targetEndpoint === "openapi") {
-        const res = await fetch(`/api/chatgpt/consulta?tipo=${tipoQuery}&busca=${encodeURIComponent(buscaQuery)}`);
+        const res = await fetch(`/api/public/chatgpt/consulta?tipo=${tipoQuery}&busca=${encodeURIComponent(buscaQuery)}`);
         const data = await res.json();
         setTestResult(data);
       } else {
-        const res = await fetch("/api/mcp", {
+        const res = await fetch("/api/public/mcp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -260,8 +260,8 @@ function Assistente() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="openapi">OpenAPI 3.0 REST (`/api/chatgpt/consulta`)</SelectItem>
-                      <SelectItem value="mcp">Adaptador MCP Protocol (`/api/mcp`)</SelectItem>
+                      <SelectItem value="openapi">OpenAPI 3.0 REST (`/api/public/chatgpt/consulta`)</SelectItem>
+                      <SelectItem value="mcp">Adaptador MCP Protocol (`/api/public/mcp`)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

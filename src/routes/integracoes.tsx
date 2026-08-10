@@ -60,9 +60,9 @@ function IntegracoesPage() {
     setOrigin(window.location.origin);
   }, []);
 
-  const mcpUrl = `${origin}/api/mcp`;
-  const openApiUrl = `${origin}/api/chatgpt/openapi.json`;
-  const consultaUrl = `${origin}/api/chatgpt/consulta`;
+  const mcpUrl = `${origin}/api/public/mcp`;
+  const openApiUrl = `${origin}/api/public/chatgpt/openapi.json`;
+  const consultaUrl = `${origin}/api/public/chatgpt/consulta`;
 
   const mcpConfig = `{
   "mcpServers": {

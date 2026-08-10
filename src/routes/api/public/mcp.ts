@@ -22,7 +22,7 @@ function createResponse(data: unknown, status = 200) {
   });
 }
 
-export const Route = createFileRoute("/api/mcp")({
+export const Route = createFileRoute("/api/public/mcp")({
   server: {
     handlers: {
   OPTIONS: async () => {
