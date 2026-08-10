@@ -1,4 +1,4 @@
-import { createAPIFileRoute } from "@tanstack/react-start/api";
+import { createFileRoute } from "@tanstack/react-router";
 import { empresas, kpis, errosPorTipo, pendenciasPorEmpresa, transmissoes } from "@/lib/mock-data";
 
 function corsHeaders() {
@@ -22,7 +22,9 @@ function createResponse(data: unknown, status = 200) {
   });
 }
 
-export const APIRoute = createAPIFileRoute("/api/mcp")({
+export const Route = createFileRoute("/api/mcp")({
+  server: {
+    handlers: {
   OPTIONS: async () => {
     return new Response(null, {
       status: 204,
@@ -37,7 +39,7 @@ export const APIRoute = createAPIFileRoute("/api/mcp")({
     });
   },
 
-  POST: async ({ request }) => {
+  POST: async ({ request }: { request: Request }) => {
     try {
       const body = await request.json();
       const { jsonrpc, id, method, params } = body;
@@ -185,5 +187,7 @@ export const APIRoute = createAPIFileRoute("/api/mcp")({
         },
       });
     }
+  },
+    },
   },
 });
