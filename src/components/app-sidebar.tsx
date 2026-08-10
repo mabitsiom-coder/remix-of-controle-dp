@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   UserCog,
   Users,
+  Plug,
   LogOut,
 } from "lucide-react";
 
@@ -76,6 +77,7 @@ const grupos = [
     label: "Administração",
     items: [
       { title: "Usuários & Acesso", url: "/usuarios", icon: UserCog },
+      { title: "API & Integrações", url: "/integracoes", icon: Plug },
     ],
   },
 ];
