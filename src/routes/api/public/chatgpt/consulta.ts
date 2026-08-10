@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { empresas, kpis, errosPorTipo, pendenciasPorEmpresa, transmissoes } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/api/chatgpt/consulta")({
+export const Route = createFileRoute("/api/public/chatgpt/consulta")({
   server: {
     handlers: {
       GET: async ({ request }: { request: Request }) => {

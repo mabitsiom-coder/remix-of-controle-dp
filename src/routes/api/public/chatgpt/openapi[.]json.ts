@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/api/chatgpt/openapi.json")({
+export const Route = createFileRoute("/api/public/chatgpt/openapi.json")({
   server: {
     handlers: {
   GET: async ({ request }: { request: Request }) => {
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/api/chatgpt/openapi.json")({
         },
       ],
       paths: {
-        "/api/chatgpt/consulta": {
+        "/api/public/chatgpt/consulta": {
           get: {
             operationId: "consultarDadosDP",
             summary: "Consulta informações e relatórios do Departamento Pessoal",
