@@ -21,6 +21,7 @@ import { Route as ErrosRouteImport } from './routes/erros'
 import { Route as FolhaRouteImport } from './routes/folha'
 import { Route as GanttRouteImport } from './routes/gantt'
 import { Route as GruposRouteImport } from './routes/grupos'
+import { Route as IntegracoesRouteImport } from './routes/integracoes'
 import { Route as ObrigacoesRouteImport } from './routes/obrigacoes'
 import { Route as SstRouteImport } from './routes/sst'
 import { Route as TarefasRouteImport } from './routes/tarefas'
@@ -92,6 +93,11 @@ const GruposRoute = GruposRouteImport.update({
   path: '/grupos',
   getParentRoute: () => rootRouteImport,
 } as any)
+const IntegracoesRoute = IntegracoesRouteImport.update({
+  id: '/integracoes',
+  path: '/integracoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ObrigacoesRoute = ObrigacoesRouteImport.update({
   id: '/obrigacoes',
   path: '/obrigacoes',
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/folha': typeof FolhaRoute
   '/gantt': typeof GanttRoute
   '/grupos': typeof GruposRoute
+  '/integracoes': typeof IntegracoesRoute
   '/obrigacoes': typeof ObrigacoesRoute
   '/sst': typeof SstRoute
   '/tarefas': typeof TarefasRoute
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/folha': typeof FolhaRoute
   '/gantt': typeof GanttRoute
   '/grupos': typeof GruposRoute
+  '/integracoes': typeof IntegracoesRoute
   '/obrigacoes': typeof ObrigacoesRoute
   '/sst': typeof SstRoute
   '/tarefas': typeof TarefasRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/folha': typeof FolhaRoute
   '/gantt': typeof GanttRoute
   '/grupos': typeof GruposRoute
+  '/integracoes': typeof IntegracoesRoute
   '/obrigacoes': typeof ObrigacoesRoute
   '/sst': typeof SstRoute
   '/tarefas': typeof TarefasRoute
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/folha'
     | '/gantt'
     | '/grupos'
+    | '/integracoes'
     | '/obrigacoes'
     | '/sst'
     | '/tarefas'
@@ -256,6 +266,7 @@ export interface FileRouteTypes {
     | '/folha'
     | '/gantt'
     | '/grupos'
+    | '/integracoes'
     | '/obrigacoes'
     | '/sst'
     | '/tarefas'
@@ -280,6 +291,7 @@ export interface FileRouteTypes {
     | '/folha'
     | '/gantt'
     | '/grupos'
+    | '/integracoes'
     | '/obrigacoes'
     | '/sst'
     | '/tarefas'
@@ -305,6 +317,7 @@ export interface RootRouteChildren {
   FolhaRoute: typeof FolhaRoute
   GanttRoute: typeof GanttRoute
   GruposRoute: typeof GruposRoute
+  IntegracoesRoute: typeof IntegracoesRoute
   ObrigacoesRoute: typeof ObrigacoesRoute
   SstRoute: typeof SstRoute
   TarefasRoute: typeof TarefasRoute
@@ -403,6 +416,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GruposRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/integracoes': {
+      id: '/integracoes'
+      path: '/integracoes'
+      fullPath: '/integracoes'
+      preLoaderRoute: typeof IntegracoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/obrigacoes': {
       id: '/obrigacoes'
       path: '/obrigacoes'
@@ -489,6 +509,7 @@ const rootRouteChildren: RootRouteChildren = {
   FolhaRoute: FolhaRoute,
   GanttRoute: GanttRoute,
   GruposRoute: GruposRoute,
+  IntegracoesRoute: IntegracoesRoute,
   ObrigacoesRoute: ObrigacoesRoute,
   SstRoute: SstRoute,
   TarefasRoute: TarefasRoute,
@@ -503,3 +524,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
