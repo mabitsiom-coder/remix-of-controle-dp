@@ -1,7 +1,9 @@
-import { createAPIFileRoute } from "@tanstack/react-start/api";
+import { createFileRoute } from "@tanstack/react-router";
 
-export const APIRoute = createAPIFileRoute("/api/chatgpt/openapi.json")({
-  GET: async ({ request }) => {
+export const Route = createFileRoute("/api/chatgpt/openapi.json")({
+  server: {
+    handlers: {
+  GET: async ({ request }: { request: Request }) => {
     const url = new URL(request.url);
     const origin = url.origin;
 
@@ -111,5 +113,7 @@ export const APIRoute = createAPIFileRoute("/api/chatgpt/openapi.json")({
         "Access-Control-Allow-Origin": "*",
       },
     });
+  },
+    },
   },
 });
