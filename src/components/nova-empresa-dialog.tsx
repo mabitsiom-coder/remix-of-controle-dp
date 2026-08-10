@@ -489,7 +489,7 @@ export function NovaEmpresaDialog({
                   </div>
                   <Switch
                     id="duplaConferencia"
-                    checked={formData.duplaConferencia}
+                    checked={formData.duplaConferencia ?? false}
                     onCheckedChange={(checked) =>
                       setFormData({ ...formData, duplaConferencia: checked })
                     }
