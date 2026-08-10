@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Building2, UserCheck, ShieldAlert, FileText, CheckCircle2, Settings } from "lucide-react";
+import { Plus, Building2, UserCheck, ShieldAlert, FileText, CheckCircle2, Settings, Search, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -40,6 +40,7 @@ export function NovaEmpresaDialog({
   const [activeTab, setActiveTab] = useState("dados");
   const { analistas, supervisores, carteiras } = useCadastros();
   const { grupos } = useGrupos();
+  const [isLoadingCnpj, setIsLoadingCnpj] = useState(false);
 
   const [formData, setFormData] = useState<NovaEmpresaForm>({
     nome: "",
@@ -127,6 +128,59 @@ export function NovaEmpresaDialog({
     }
   };
 
+  const preencherDadosTeste = () => {
+    setFormData({
+      nome: "Empresa de Teste Automático LTDA",
+      cnpj: "12.345.678/0001-99",
+      regime: "Simples Nacional",
+      grupoId: "none",
+      responsavel: "João Teste (Diretor)",
+      contador: "Marcos Teste",
+      carteira: carteiras[0]?.nome || "Carteira Industrial A",
+      analista: analistas[0]?.nome || "Camila Rocha",
+      supervisor: supervisores[0]?.nome || "Paulo Serra",
+      funcionarios: 45,
+      convenio: "Sindicato de Teste",
+      certificadoDigital: "A1 — Ativo (1 ano)",
+      procuracao: "e-CAC Válida",
+      risco: "medio",
+      status: "ativa",
+      fechamento: "Fechamento dia 20, apuração do dia 21 ao 20.",
+      envio: "Envio portal",
+      duplaConferencia: true,
+      fluxoAprovacao: "Analista → Supervisor",
+      observacoes: "Dados preenchidos automaticamente para teste.",
+    });
+    toast.success("Dados de teste preenchidos com sucesso!");
+  };
+
+  const buscarCnpj = async () => {
+    const cnpjNumeros = formData.cnpj.replace(/\D/g, "");
+    if (cnpjNumeros.length !== 14) {
+      toast.error("Preencha um CNPJ válido com 14 dígitos para buscar.");
+      return;
+    }
+
+    setIsLoadingCnpj(true);
+    try {
+      const response = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjNumeros}`);
+      if (!response.ok) throw new Error("CNPJ não encontrado");
+      
+      const data = await response.json();
+      
+      setFormData(prev => ({
+        ...prev,
+        nome: data.razao_social || data.nome_fantasia || prev.nome,
+      }));
+      toast.success("Dados do CNPJ preenchidos automaticamente!");
+    } catch (error) {
+      toast.error("Não foi possível buscar os dados desse CNPJ.");
+      console.error(error);
+    } finally {
+      setIsLoadingCnpj(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -138,16 +192,21 @@ export function NovaEmpresaDialog({
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto sm:rounded-xl p-6">
         <DialogHeader>
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Building2 className="h-5 w-5" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-semibold">Nova Empresa</DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  Cadastre os dados cadastrais, responsável, equipe técnica e regras da folha.
+                </DialogDescription>
+              </div>
             </div>
-            <div>
-              <DialogTitle className="text-lg font-semibold">Nova Empresa</DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground">
-                Cadastre os dados cadastrais, responsável, equipe técnica e regras da folha.
-              </DialogDescription>
-            </div>
+            <Button type="button" variant="outline" size="sm" onClick={preencherDadosTeste} className="gap-1.5 h-8 text-xs">
+              <Wand2 className="h-3.5 w-3.5" /> Preencher Teste
+            </Button>
           </div>
         </DialogHeader>
 
@@ -185,14 +244,30 @@ export function NovaEmpresaDialog({
                   <Label htmlFor="cnpj" className="text-xs font-medium">
                     CNPJ <span className="text-destructive">*</span>
                   </Label>
-                  <Input
-                    id="cnpj"
-                    placeholder="00.000.000/0001-00"
-                    value={formData.cnpj}
-                    onChange={(e) => setFormData({ ...formData, cnpj: formatCNPJ(e.target.value) })}
-                    maxLength={18}
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="cnpj"
+                      placeholder="00.000.000/0001-00"
+                      value={formData.cnpj}
+                      onChange={(e) => setFormData({ ...formData, cnpj: formatCNPJ(e.target.value) })}
+                      maxLength={18}
+                      required
+                    />
+                    <Button 
+                      type="button" 
+                      variant="secondary" 
+                      onClick={buscarCnpj}
+                      disabled={isLoadingCnpj}
+                      className="px-3"
+                      title="Buscar dados do CNPJ"
+                    >
+                      {isLoadingCnpj ? (
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
