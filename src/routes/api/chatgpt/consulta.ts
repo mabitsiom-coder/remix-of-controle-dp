@@ -4,36 +4,50 @@ import { empresas, kpis, errosPorTipo, pendenciasPorEmpresa, transmissoes } from
 export const Route = createFileRoute("/api/chatgpt/consulta")({
   server: {
     handlers: {
-  GET: async ({ request }: { request: Request }) => {
-    const url = new URL(request.url);
-    const tipo = url.searchParams.get("tipo") || "tudo";
-    const busca = (url.searchParams.get("busca") || "").toLowerCase().trim();
-    const empresaId = url.searchParams.get("empresaId") || "";
+      GET: async ({ request }: { request: Request }) => {
+        const url = new URL(request.url);
+        const tipo = url.searchParams.get("tipo") || "tudo";
+        const busca = (url.searchParams.get("busca") || "").toLowerCase().trim();
+        const empresaId = url.searchParams.get("empresaId") || "";
 
-    return handleConsulta({ tipo, busca, empresaId     },
+        return handleConsulta({ tipo, busca, empresaId });
+      },
+      POST: async ({ request }: { request: Request }) => {
+        try {
+          const body = (await request.json()) as {
+            tipo?: string;
+            busca?: string;
+            empresaId?: string;
+          };
+          return handleConsulta({
+            tipo: body.tipo || "tudo",
+            busca: (body.busca || "").toLowerCase().trim(),
+            empresaId: body.empresaId || "",
+          });
+        } catch {
+          return handleConsulta({ tipo: "tudo", busca: "", empresaId: "" });
+        }
+      },
+    },
   },
 });
-  },
-  POST: async ({ request }: { request: Request }) => {
-    try {
-      const body = await request.json();
-      const tipo = body.tipo || "tudo";
-      const busca = (body.busca || "").toLowerCase().trim();
-      const empresaId = body.empresaId || "";
 
-      return handleConsulta({ tipo, busca, empresaId });
-    } catch {
-      return handleConsulta({ tipo: "tudo", busca: "", empresaId: "" });
-    }
-  },
-});
-
-function handleConsulta({ tipo, busca, empresaId }: { tipo: string; busca: string; empresaId: string }) {
+function handleConsulta({
+  tipo,
+  busca,
+  empresaId,
+}: {
+  tipo: string;
+  busca: string;
+  empresaId: string;
+}) {
   let empresasFiltradas = empresas;
 
   if (empresaId) {
     empresasFiltradas = empresasFiltradas.filter(
-      (e) => e.id.toLowerCase() === empresaId.toLowerCase() || e.nome.toLowerCase().includes(empresaId.toLowerCase())
+      (e) =>
+        e.id.toLowerCase() === empresaId.toLowerCase() ||
+        e.nome.toLowerCase().includes(empresaId.toLowerCase()),
     );
   }
 
@@ -44,11 +58,11 @@ function handleConsulta({ tipo, busca, empresaId }: { tipo: string; busca: strin
         e.cnpj.includes(busca) ||
         e.responsavel.toLowerCase().includes(busca) ||
         e.status.toLowerCase().includes(busca) ||
-        e.particularidades.observacoes.toLowerCase().includes(busca)
+        e.particularidades.observacoes.toLowerCase().includes(busca),
     );
   }
 
-  const payload: Record<string, any> = {
+  const payload: Record<string, unknown> = {
     sucesso: true,
     timestamp: new Date().toISOString(),
     parametros: { tipo, busca, empresaId },
@@ -85,8 +99,8 @@ function handleConsulta({ tipo, busca, empresaId }: { tipo: string; busca: strin
     payload["transmissoesRecentes"] = transmissoes;
   }
 
-  // Resumo inteligente formatado para o ChatGPT entender imediatamente
-  payload["resumoExecutivo"] = `Encontradas ${empresasFiltradas.length} empresas com os parâmetros pesquisados. Status geral de DP: ${kpis.find((k) => k.label === "Empresas em Atraso")?.value || 0} em atraso e ${kpis.find((k) => k.label === "Folhas Pendentes")?.value || 0} folhas pendentes.`;
+  payload["resumoExecutivo"] =
+    `Encontradas ${empresasFiltradas.length} empresas com os parâmetros pesquisados. Status geral de DP: ${kpis.find((k) => k.label === "Empresas em Atraso")?.value || 0} em atraso e ${kpis.find((k) => k.label === "Folhas Pendentes")?.value || 0} folhas pendentes.`;
 
   return new Response(JSON.stringify(payload, null, 2), {
     status: 200,
