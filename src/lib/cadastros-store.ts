@@ -6,6 +6,8 @@ export type Analista = {
   email: string;
   cargo: string;
   status: "ativo" | "inativo";
+  carteiraId?: string;
+  assistenteId?: string;
 };
 
 export type Supervisor = {
@@ -23,10 +25,21 @@ export type Carteira = {
   categoria: string;
 };
 
+// Tipo genérico para os novos cargos
+export type Membro = {
+  id: string;
+  nome: string;
+  email: string;
+  cargo: string; // categoria do cargo (Gerente, Auditoria, etc.)
+  nivel?: string; // nivel dentro do cargo (opcional)
+  status: "ativo" | "inativo";
+};
+
 const STORAGE_KEYS = {
   ANALISTAS: "dp_control_analistas_v1",
   SUPERVISORES: "dp_control_supervisores_v1",
   CARTEIRAS: "dp_control_carteiras_v1",
+  MEMBROS: "dp_control_membros_v1",
 };
 
 const EVENT_NAME = "cadastros-updated";
@@ -52,6 +65,8 @@ const initialCarteiras: Carteira[] = [
   { id: "carteira-5", nome: "Carteira Construção", descricao: "Construtoras e empreiteiras", categoria: "Construção" },
   { id: "carteira-6", nome: "Carteira Serviços", descricao: "Empresas de tecnologia, consultoria e serviços gerais", categoria: "Serviços" },
 ];
+
+const initialMembros: Membro[] = [];
 
 // Helper de Leitura
 function getStored<T>(key: string, fallback: T[]): T[] {
@@ -157,16 +172,44 @@ export function updateCarteira(id: string, dados: Partial<Omit<Carteira, "id">>)
   );
 }
 
+// APIs para Membros (novos cargos)
+export function getMembros(): Membro[] {
+  return getStored(STORAGE_KEYS.MEMBROS, initialMembros);
+}
+
+export function addMembro(dados: Omit<Membro, "id">): Membro {
+  const id = `membro-${Date.now().toString(36)}`;
+  const novo: Membro = { ...dados, id };
+  const atuais = getMembros();
+  saveStored(STORAGE_KEYS.MEMBROS, [...atuais, novo]);
+  return novo;
+}
+
+export function removeMembro(id: string) {
+  const atuais = getMembros();
+  saveStored(STORAGE_KEYS.MEMBROS, atuais.filter((m) => m.id !== id));
+}
+
+export function updateMembro(id: string, dados: Partial<Omit<Membro, "id">>) {
+  const atuais = getMembros();
+  saveStored(
+    STORAGE_KEYS.MEMBROS,
+    atuais.map((m) => (m.id === id ? { ...m, ...dados } : m))
+  );
+}
+
 // Hook React Unificado
 export function useCadastros() {
   const [analistas, setAnalistas] = useState<Analista[]>([]);
   const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
   const [carteiras, setCarteiras] = useState<Carteira[]>([]);
+  const [membros, setMembros] = useState<Membro[]>([]);
 
   const loadAll = () => {
     setAnalistas(getAnalistas());
     setSupervisores(getSupervisores());
     setCarteiras(getCarteiras());
+    setMembros(getMembros());
   };
 
   useEffect(() => {
@@ -189,6 +232,7 @@ export function useCadastros() {
     analistas,
     supervisores,
     carteiras,
+    membros,
     addAnalista,
     removeAnalista,
     updateAnalista,
@@ -198,5 +242,8 @@ export function useCadastros() {
     addCarteira,
     removeCarteira,
     updateCarteira,
+    addMembro,
+    removeMembro,
+    updateMembro,
   };
 }

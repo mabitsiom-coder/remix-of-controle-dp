@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AlertasRouteImport } from './routes/alertas'
 import { Route as AssistenteRouteImport } from './routes/assistente'
 import { Route as BiRouteImport } from './routes/bi'
+import { Route as CadastrosRouteImport } from './routes/cadastros'
 import { Route as CalendarioRouteImport } from './routes/calendario'
 import { Route as CarteirasRouteImport } from './routes/carteiras'
 import { Route as ChecklistsRouteImport } from './routes/checklists'
@@ -51,6 +52,11 @@ const AssistenteRoute = AssistenteRouteImport.update({
 const BiRoute = BiRouteImport.update({
   id: '/bi',
   path: '/bi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CadastrosRoute = CadastrosRouteImport.update({
+  id: '/cadastros',
+  path: '/cadastros',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CalendarioRoute = CalendarioRouteImport.update({
@@ -156,6 +162,7 @@ export interface FileRoutesByFullPath {
   '/alertas': typeof AlertasRoute
   '/assistente': typeof AssistenteRoute
   '/bi': typeof BiRoute
+  '/cadastros': typeof CadastrosRoute
   '/calendario': typeof CalendarioRoute
   '/carteiras': typeof CarteirasRoute
   '/checklists': typeof ChecklistsRoute
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/alertas': typeof AlertasRoute
   '/assistente': typeof AssistenteRoute
   '/bi': typeof BiRoute
+  '/cadastros': typeof CadastrosRoute
   '/calendario': typeof CalendarioRoute
   '/carteiras': typeof CarteirasRoute
   '/checklists': typeof ChecklistsRoute
@@ -207,6 +215,7 @@ export interface FileRoutesById {
   '/alertas': typeof AlertasRoute
   '/assistente': typeof AssistenteRoute
   '/bi': typeof BiRoute
+  '/cadastros': typeof CadastrosRoute
   '/calendario': typeof CalendarioRoute
   '/carteiras': typeof CarteirasRoute
   '/checklists': typeof ChecklistsRoute
@@ -234,6 +243,7 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/assistente'
     | '/bi'
+    | '/cadastros'
     | '/calendario'
     | '/carteiras'
     | '/checklists'
@@ -259,6 +269,7 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/assistente'
     | '/bi'
+    | '/cadastros'
     | '/calendario'
     | '/carteiras'
     | '/checklists'
@@ -284,6 +295,7 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/assistente'
     | '/bi'
+    | '/cadastros'
     | '/calendario'
     | '/carteiras'
     | '/checklists'
@@ -310,6 +322,7 @@ export interface RootRouteChildren {
   AlertasRoute: typeof AlertasRoute
   AssistenteRoute: typeof AssistenteRoute
   BiRoute: typeof BiRoute
+  CadastrosRoute: typeof CadastrosRoute
   CalendarioRoute: typeof CalendarioRoute
   CarteirasRoute: typeof CarteirasRoute
   ChecklistsRoute: typeof ChecklistsRoute
@@ -359,6 +372,13 @@ declare module '@tanstack/react-router' {
       path: '/bi'
       fullPath: '/bi'
       preLoaderRoute: typeof BiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cadastros': {
+      id: '/cadastros'
+      path: '/cadastros'
+      fullPath: '/cadastros'
+      preLoaderRoute: typeof CadastrosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/calendario': {
@@ -502,6 +522,7 @@ const rootRouteChildren: RootRouteChildren = {
   AlertasRoute: AlertasRoute,
   AssistenteRoute: AssistenteRoute,
   BiRoute: BiRoute,
+  CadastrosRoute: CadastrosRoute,
   CalendarioRoute: CalendarioRoute,
   CarteirasRoute: CarteirasRoute,
   ChecklistsRoute: ChecklistsRoute,

@@ -27,7 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createEmpresa, type NovaEmpresaForm } from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
 import { useGrupos } from "@/lib/grupos-store";
-import { GerenciarCadastrosDialog } from "@/components/gerenciar-cadastros-dialog";
+import { Link } from "@tanstack/react-router";
 
 export function NovaEmpresaDialog({
   trigger,
@@ -358,13 +358,11 @@ export function NovaEmpresaDialog({
                 <span className="text-xs text-muted-foreground">
                   Precisa cadastrar um novo Analista, Supervisor ou Carteira?
                 </span>
-                <GerenciarCadastrosDialog
-                  trigger={
-                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1">
-                      <Settings className="h-3 w-3" /> Gerenciar Opções
-                    </Button>
-                  }
-                />
+                <Button asChild type="button" variant="outline" size="sm" className="h-7 text-xs gap-1">
+                  <Link to="/cadastros">
+                    <Settings className="h-3 w-3" /> Gerenciar Opções
+                  </Link>
+                </Button>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">

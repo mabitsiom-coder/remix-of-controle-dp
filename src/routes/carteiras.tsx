@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useEmpresas } from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
-import { GerenciarCadastrosDialog } from "@/components/gerenciar-cadastros-dialog";
 
 export const Route = createFileRoute("/carteiras")({
   head: () => ({
@@ -103,7 +102,11 @@ function CarteirasPage() {
         description="Distribuição operacional de empresas, equipe e capacidade por carteira"
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <GerenciarCadastrosDialog />
+            <Button asChild variant="outline" className="gap-1.5 text-xs shadow-sm">
+              <Link to="/cadastros">
+                <Briefcase className="h-4 w-4" /> Gerenciar Equipe & Carteiras
+              </Link>
+            </Button>
           </div>
         }
       />

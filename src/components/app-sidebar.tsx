@@ -76,6 +76,7 @@ const grupos = [
   {
     label: "Administração",
     items: [
+      { title: "Cadastros do Sistema", url: "/cadastros", icon: ShieldCheck },
       { title: "Usuários & Acesso", url: "/usuarios", icon: UserCog },
       { title: "API & Integrações", url: "/integracoes", icon: Plug },
     ],
