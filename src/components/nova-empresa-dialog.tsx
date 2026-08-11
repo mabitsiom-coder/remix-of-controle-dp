@@ -48,7 +48,6 @@ export function NovaEmpresaDialog({
     regime: "Simples Nacional",
     grupoId: "none",
     responsavel: "",
-    contador: "",
     carteira: carteiras[0]?.nome || "Carteira Industrial A",
     analista: analistas[0]?.nome || "Camila Rocha",
     supervisor: supervisores[0]?.nome || "Paulo Serra",
@@ -101,7 +100,6 @@ export function NovaEmpresaDialog({
         cnpj: "",
         regime: "Simples Nacional",
         responsavel: "",
-        contador: "",
         carteira: "Carteira Industrial A",
         analista: "Camila Rocha",
         supervisor: "Paulo Serra",
@@ -135,7 +133,6 @@ export function NovaEmpresaDialog({
       regime: "Simples Nacional",
       grupoId: "none",
       responsavel: "João Teste (Diretor)",
-      contador: "Marcos Teste",
       carteira: carteiras[0]?.nome || "Carteira Industrial A",
       analista: analistas[0]?.nome || "Camila Rocha",
       supervisor: supervisores[0]?.nome || "Paulo Serra",
@@ -339,17 +336,7 @@ export function NovaEmpresaDialog({
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="contador" className="text-xs font-medium">
-                    Contador Responsável
-                  </Label>
-                  <Input
-                    id="contador"
-                    placeholder="Ex: Marcos Vieira"
-                    value={formData.contador}
-                    onChange={(e) => setFormData({ ...formData, contador: e.target.value })}
-                  />
-                </div>
+
 
                 <div className="space-y-1.5">
                   <Label htmlFor="convenio" className="text-xs font-medium">

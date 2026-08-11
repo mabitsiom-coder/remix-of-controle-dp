@@ -81,7 +81,6 @@ function EmpresaDetalhe() {
         <TabsContent value="cadastro" className="mt-4">
           <div className="surface-panel grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
             <Campo label="Responsável" value={empresa.responsavel} />
-            <Campo label="Contador" value={empresa.contador} />
             <Campo label="Carteira" value={empresa.carteira} />
             <Campo label="Analista" value={empresa.analista} />
             <Campo label="Supervisor" value={empresa.supervisor} />

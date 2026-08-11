@@ -71,7 +71,6 @@ export type Empresa = {
   cnpj: string;
   regime: string;
   responsavel: string;
-  contador: string;
   carteira: string;
   analista: string;
   supervisor: string;
@@ -101,8 +100,7 @@ export const empresas: Empresa[] = [
     nome: "Metalúrgica Andrade Ltda",
     cnpj: "12.345.678/0001-90",
     regime: "Lucro Real",
-    responsavel: "Sr. Antônio Andrade",
-    contador: "Marcos Vieira",
+    responsavel: "Carlos Andrade",
     carteira: "Carteira Industrial A",
     analista: "Camila Rocha",
     supervisor: "Paulo Serra",
@@ -135,7 +133,6 @@ export const empresas: Empresa[] = [
     cnpj: "98.765.432/0001-11",
     regime: "Lucro Presumido",
     responsavel: "Sra. Helena Duarte",
-    contador: "Marcos Vieira",
     carteira: "Carteira Varejo",
     analista: "Diego Menezes",
     supervisor: "Paulo Serra",
@@ -165,9 +162,8 @@ export const empresas: Empresa[] = [
     nome: "Transportes Vale S/A",
     cnpj: "45.111.222/0001-33",
     regime: "Lucro Real",
-    responsavel: "Sr. Bruno Vale",
-    contador: "Renata Alencar",
-    carteira: "Carteira Logística",
+    responsavel: "Roberto Carlos",
+    carteira: "Carteira Serviços C",
     analista: "Tatiane Lopes",
     supervisor: "Ana Beatriz",
     funcionarios: 208,
@@ -197,7 +193,6 @@ export const empresas: Empresa[] = [
     cnpj: "77.888.999/0001-55",
     regime: "Simples Nacional",
     responsavel: "Dra. Sofia Camargo",
-    contador: "Renata Alencar",
     carteira: "Carteira Saúde",
     analista: "Rafael Prado",
     supervisor: "Ana Beatriz",
@@ -227,9 +222,8 @@ export const empresas: Empresa[] = [
     nome: "Construtora Horizonte",
     cnpj: "33.222.111/0001-77",
     regime: "Lucro Presumido",
-    responsavel: "Sr. Élio Barros",
-    contador: "Marcos Vieira",
-    carteira: "Carteira Construção",
+    responsavel: "Luciana Martins",
+    carteira: "Carteira Comercial B",
     analista: "Juliana Reis",
     supervisor: "Paulo Serra",
     funcionarios: 173,

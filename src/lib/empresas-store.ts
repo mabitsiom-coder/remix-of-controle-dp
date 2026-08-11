@@ -41,7 +41,6 @@ export type NovaEmpresaForm = {
   regime: string;
   grupoId?: string;
   responsavel: string;
-  contador: string;
   carteira: string;
   analista: string;
   supervisor: string;
@@ -78,7 +77,6 @@ export function createEmpresa(dados: NovaEmpresaForm): Empresa {
     cnpj: dados.cnpj,
     regime: dados.regime || "Simples Nacional",
     responsavel: dados.responsavel || "Não informado",
-    contador: dados.contador || "Não informado",
     carteira: dados.carteira || "Carteira Geral",
     analista: dados.analista || "Camila Rocha",
     supervisor: dados.supervisor || "Paulo Serra",

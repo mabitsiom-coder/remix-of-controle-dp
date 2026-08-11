@@ -59,26 +59,25 @@ export function ImportarEmpresasDialog({
           const regime = row[2]?.trim() || "Simples Nacional";
           const grupoId = "none"; // Hardcoded default, can be extended if we match names
           const responsavel = row[4]?.trim() || "";
-          const contador = row[5]?.trim() || "";
-          const carteira = row[6]?.trim() || "Carteira Geral";
-          const analista = row[7]?.trim() || "Sistema";
-          const supervisor = row[8]?.trim() || "Sistema";
-          const funcionarios = parseInt(row[9]?.trim() || "1", 10);
-          const convenio = row[10]?.trim() || "";
-          const certificadoDigital = row[11]?.trim() || "";
-          const procuracao = row[12]?.trim() || "";
+          const carteira = row[5]?.trim() || "Carteira Geral";
+          const analista = row[6]?.trim() || "Sistema";
+          const supervisor = row[7]?.trim() || "Sistema";
+          const funcionarios = parseInt(row[8]?.trim() || "1", 10);
+          const convenio = row[9]?.trim() || "";
+          const certificadoDigital = row[10]?.trim() || "";
+          const procuracao = row[11]?.trim() || "";
           
-          let risco = row[13]?.trim().toLowerCase() as "baixo" | "medio" | "alto";
+          let risco = row[12]?.trim().toLowerCase() as "baixo" | "medio" | "alto";
           if (!["baixo", "medio", "alto"].includes(risco)) risco = "baixo";
 
-          let status = row[14]?.trim().toLowerCase() as "ativa" | "atencao" | "atraso";
+          let status = row[13]?.trim().toLowerCase() as "ativa" | "atencao" | "atraso";
           if (!["ativa", "atencao", "atraso"].includes(status)) status = "ativa";
 
-          const fechamento = row[15]?.trim() || "";
-          const envio = row[16]?.trim() || "";
-          const duplaConferencia = row[17]?.trim().toLowerCase() === "sim";
-          const fluxoAprovacao = row[18]?.trim() || "";
-          const observacoes = row[19]?.trim() || "";
+          const fechamento = row[14]?.trim() || "";
+          const envio = row[15]?.trim() || "";
+          const duplaConferencia = row[16]?.trim().toLowerCase() === "sim";
+          const fluxoAprovacao = row[17]?.trim() || "";
+          const observacoes = row[18]?.trim() || "";
 
           createEmpresa({
             nome,
@@ -86,7 +85,6 @@ export function ImportarEmpresasDialog({
             regime,
             grupoId,
             responsavel,
-            contador,
             carteira,
             analista,
             supervisor,
