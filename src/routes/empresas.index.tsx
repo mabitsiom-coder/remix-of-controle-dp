@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useEmpresas } from "@/lib/empresas-store";
 import { NovaEmpresaDialog } from "@/components/nova-empresa-dialog";
 import { GerenciarCadastrosDialog } from "@/components/gerenciar-cadastros-dialog";
+import { ImportarEmpresasDialog } from "@/components/importar-empresas-dialog";
 
 export const Route = createFileRoute("/empresas/")({
   head: () => ({
@@ -44,6 +45,7 @@ function Empresas() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <GerenciarCadastrosDialog />
+            <ImportarEmpresasDialog />
             <NovaEmpresaDialog />
           </div>
         }
