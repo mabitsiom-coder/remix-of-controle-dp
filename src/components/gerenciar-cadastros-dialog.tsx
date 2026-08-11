@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, UserPlus, Briefcase, Trash2, Plus, CheckCircle2, ShieldCheck } from "lucide-react";
+import { Users, UserPlus, Briefcase, Trash2, Plus, CheckCircle2, ShieldCheck, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -22,35 +22,42 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  useCadastros,
-  addAnalista,
-  removeAnalista,
-  addSupervisor,
-  removeSupervisor,
-  addCarteira,
-  removeCarteira,
-} from "@/lib/cadastros-store";
+import { useCadastros } from "@/lib/cadastros-store";
 
 export function GerenciarCadastrosDialog({ trigger }: { trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState("analistas");
-  const { analistas, supervisores, carteiras } = useCadastros();
+  const { 
+    analistas, supervisores, carteiras,
+    addAnalista, removeAnalista, updateAnalista,
+    addSupervisor, removeSupervisor, updateSupervisor,
+    addCarteira, removeCarteira, updateCarteira
+  } = useCadastros();
 
   // Form Analista
+  const [editingAnalistaId, setEditingAnalistaId] = useState<string | null>(null);
   const [nomeAnalista, setNomeAnalista] = useState("");
   const [emailAnalista, setEmailAnalista] = useState("");
   const [cargoAnalista, setCargoAnalista] = useState("Analista Pleno");
 
   // Form Supervisor
+  const [editingSupervisorId, setEditingSupervisorId] = useState<string | null>(null);
   const [nomeSupervisor, setNomeSupervisor] = useState("");
   const [emailSupervisor, setEmailSupervisor] = useState("");
   const [deptSupervisor, setDeptSupervisor] = useState("Operações DP");
 
   // Form Carteira
+  const [editingCarteiraId, setEditingCarteiraId] = useState<string | null>(null);
   const [nomeCarteira, setNomeCarteira] = useState("");
   const [catCarteira, setCatCarteira] = useState("Geral");
   const [descCarteira, setDescCarteira] = useState("");
+
+  const resetAnalista = () => {
+    setEditingAnalistaId(null);
+    setNomeAnalista("");
+    setEmailAnalista("");
+    setCargoAnalista("Analista Pleno");
+  };
 
   const handleAddAnalista = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,15 +65,31 @@ export function GerenciarCadastrosDialog({ trigger }: { trigger?: React.ReactNod
       toast.error("Informe o nome do analista.");
       return;
     }
-    addAnalista({
-      nome: nomeAnalista.trim(),
-      email: emailAnalista.trim() || `${nomeAnalista.toLowerCase().replace(/\s+/g, ".")}@dpcontrol.com.br`,
-      cargo: cargoAnalista,
-      status: "ativo",
-    });
-    toast.success(`Analista "${nomeAnalista}" cadastrado com sucesso!`);
-    setNomeAnalista("");
-    setEmailAnalista("");
+
+    if (editingAnalistaId) {
+      updateAnalista(editingAnalistaId, {
+        nome: nomeAnalista.trim(),
+        email: emailAnalista.trim(),
+        cargo: cargoAnalista,
+      });
+      toast.success(`Analista "${nomeAnalista}" atualizado com sucesso!`);
+    } else {
+      addAnalista({
+        nome: nomeAnalista.trim(),
+        email: emailAnalista.trim() || `${nomeAnalista.toLowerCase().replace(/\s+/g, ".")}@dpcontrol.com.br`,
+        cargo: cargoAnalista,
+        status: "ativo",
+      });
+      toast.success(`Analista "${nomeAnalista}" cadastrado com sucesso!`);
+    }
+    resetAnalista();
+  };
+
+  const resetSupervisor = () => {
+    setEditingSupervisorId(null);
+    setNomeSupervisor("");
+    setEmailSupervisor("");
+    setDeptSupervisor("Operações DP");
   };
 
   const handleAddSupervisor = (e: React.FormEvent) => {
@@ -75,15 +98,31 @@ export function GerenciarCadastrosDialog({ trigger }: { trigger?: React.ReactNod
       toast.error("Informe o nome do supervisor.");
       return;
     }
-    addSupervisor({
-      nome: nomeSupervisor.trim(),
-      email: emailSupervisor.trim() || `${nomeSupervisor.toLowerCase().replace(/\s+/g, ".")}@dpcontrol.com.br`,
-      departamento: deptSupervisor,
-      status: "ativo",
-    });
-    toast.success(`Supervisor "${nomeSupervisor}" cadastrado com sucesso!`);
-    setNomeSupervisor("");
-    setEmailSupervisor("");
+
+    if (editingSupervisorId) {
+      updateSupervisor(editingSupervisorId, {
+        nome: nomeSupervisor.trim(),
+        email: emailSupervisor.trim(),
+        departamento: deptSupervisor,
+      });
+      toast.success(`Supervisor "${nomeSupervisor}" atualizado com sucesso!`);
+    } else {
+      addSupervisor({
+        nome: nomeSupervisor.trim(),
+        email: emailSupervisor.trim() || `${nomeSupervisor.toLowerCase().replace(/\s+/g, ".")}@dpcontrol.com.br`,
+        departamento: deptSupervisor,
+        status: "ativo",
+      });
+      toast.success(`Supervisor "${nomeSupervisor}" cadastrado com sucesso!`);
+    }
+    resetSupervisor();
+  };
+
+  const resetCarteira = () => {
+    setEditingCarteiraId(null);
+    setNomeCarteira("");
+    setCatCarteira("Geral");
+    setDescCarteira("");
   };
 
   const handleAddCarteira = (e: React.FormEvent) => {
@@ -92,18 +131,34 @@ export function GerenciarCadastrosDialog({ trigger }: { trigger?: React.ReactNod
       toast.error("Informe o nome da carteira.");
       return;
     }
-    addCarteira({
-      nome: nomeCarteira.trim(),
-      categoria: catCarteira,
-      descricao: descCarteira.trim() || "Carteira operacional de clientes.",
-    });
-    toast.success(`Carteira "${nomeCarteira}" cadastrada com sucesso!`);
-    setNomeCarteira("");
-    setDescCarteira("");
+
+    if (editingCarteiraId) {
+      updateCarteira(editingCarteiraId, {
+        nome: nomeCarteira.trim(),
+        categoria: catCarteira,
+        descricao: descCarteira.trim(),
+      });
+      toast.success(`Carteira "${nomeCarteira}" atualizada com sucesso!`);
+    } else {
+      addCarteira({
+        nome: nomeCarteira.trim(),
+        categoria: catCarteira,
+        descricao: descCarteira.trim() || "Carteira operacional de clientes.",
+      });
+      toast.success(`Carteira "${nomeCarteira}" cadastrada com sucesso!`);
+    }
+    resetCarteira();
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(val) => {
+      setOpen(val);
+      if (!val) {
+        resetAnalista();
+        resetSupervisor();
+        resetCarteira();
+      }
+    }}>
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" className="gap-1.5 text-xs shadow-sm">
@@ -141,10 +196,21 @@ export function GerenciarCadastrosDialog({ trigger }: { trigger?: React.ReactNod
 
           {/* TAB 1: ANALISTAS */}
           <TabsContent value="analistas" className="mt-4 space-y-4">
-            <form onSubmit={handleAddAnalista} className="rounded-lg border bg-muted/20 p-4 space-y-3">
-              <h4 className="text-xs font-semibold flex items-center gap-1.5">
-                <Plus className="h-3.5 w-3.5 text-primary" /> Cadastrar Novo Analista
-              </h4>
+            <form onSubmit={handleAddAnalista} className={`rounded-lg border p-4 space-y-3 ${editingAnalistaId ? "bg-primary/5 border-primary/30" : "bg-muted/20"}`}>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-semibold flex items-center gap-1.5">
+                  {editingAnalistaId ? (
+                    <><Pencil className="h-3.5 w-3.5 text-primary" /> Editar Analista</>
+                  ) : (
+                    <><Plus className="h-3.5 w-3.5 text-primary" /> Cadastrar Novo Analista</>
+                  )}
+                </h4>
+                {editingAnalistaId && (
+                  <Button type="button" variant="ghost" size="sm" onClick={resetAnalista} className="h-6 px-2 text-[10px] text-muted-foreground">
+                    <X className="h-3 w-3 mr-1" /> Cancelar
+                  </Button>
+                )}
+              </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="space-y-1">
                   <Label htmlFor="nomeAnalista" className="text-[11px]">Nome Completo *</Label>
@@ -184,7 +250,7 @@ export function GerenciarCadastrosDialog({ trigger }: { trigger?: React.ReactNod
                 </div>
               </div>
               <Button type="submit" size="sm" className="w-full sm:w-auto h-8 text-xs gap-1">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Adicionar Analista
+                <CheckCircle2 className="h-3.5 w-3.5" /> {editingAnalistaId ? "Salvar Alterações" : "Adicionar Analista"}
               </Button>
             </form>
 
@@ -199,14 +265,29 @@ export function GerenciarCadastrosDialog({ trigger }: { trigger?: React.ReactNod
                       <p className="font-semibold text-foreground">{a.nome}</p>
                       <p className="text-muted-foreground text-[11px]">{a.email}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-[10px]">
+                    <div className="flex items-center gap-1">
+                      <Badge variant="outline" className="text-[10px] mr-2">
                         {a.cargo}
                       </Badge>
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-primary"
+                        title="Editar"
+                        onClick={() => {
+                          setEditingAnalistaId(a.id);
+                          setNomeAnalista(a.nome);
+                          setEmailAnalista(a.email);
+                          setCargoAnalista(a.cargo);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        title="Remover"
                         onClick={() => {
                           removeAnalista(a.id);
                           toast.info(`Analista "${a.nome}" removido.`);
@@ -223,10 +304,21 @@ export function GerenciarCadastrosDialog({ trigger }: { trigger?: React.ReactNod
 
           {/* TAB 2: SUPERVISORES */}
           <TabsContent value="supervisores" className="mt-4 space-y-4">
-            <form onSubmit={handleAddSupervisor} className="rounded-lg border bg-muted/20 p-4 space-y-3">
-              <h4 className="text-xs font-semibold flex items-center gap-1.5">
-                <Plus className="h-3.5 w-3.5 text-primary" /> Cadastrar Novo Supervisor
-              </h4>
+            <form onSubmit={handleAddSupervisor} className={`rounded-lg border p-4 space-y-3 ${editingSupervisorId ? "bg-primary/5 border-primary/30" : "bg-muted/20"}`}>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-semibold flex items-center gap-1.5">
+                  {editingSupervisorId ? (
+                    <><Pencil className="h-3.5 w-3.5 text-primary" /> Editar Supervisor</>
+                  ) : (
+                    <><Plus className="h-3.5 w-3.5 text-primary" /> Cadastrar Novo Supervisor</>
+                  )}
+                </h4>
+                {editingSupervisorId && (
+                  <Button type="button" variant="ghost" size="sm" onClick={resetSupervisor} className="h-6 px-2 text-[10px] text-muted-foreground">
+                    <X className="h-3 w-3 mr-1" /> Cancelar
+                  </Button>
+                )}
+              </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="space-y-1">
                   <Label htmlFor="nomeSupervisor" className="text-[11px]">Nome Completo *</Label>
@@ -262,7 +354,7 @@ export function GerenciarCadastrosDialog({ trigger }: { trigger?: React.ReactNod
                 </div>
               </div>
               <Button type="submit" size="sm" className="w-full sm:w-auto h-8 text-xs gap-1">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Adicionar Supervisor
+                <CheckCircle2 className="h-3.5 w-3.5" /> {editingSupervisorId ? "Salvar Alterações" : "Adicionar Supervisor"}
               </Button>
             </form>
 
@@ -277,14 +369,29 @@ export function GerenciarCadastrosDialog({ trigger }: { trigger?: React.ReactNod
                       <p className="font-semibold text-foreground">{s.nome}</p>
                       <p className="text-muted-foreground text-[11px]">{s.email}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-[10px]">
+                    <div className="flex items-center gap-1">
+                      <Badge variant="secondary" className="text-[10px] mr-2">
                         {s.departamento}
                       </Badge>
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-primary"
+                        title="Editar"
+                        onClick={() => {
+                          setEditingSupervisorId(s.id);
+                          setNomeSupervisor(s.nome);
+                          setEmailSupervisor(s.email);
+                          setDeptSupervisor(s.departamento);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        title="Remover"
                         onClick={() => {
                           removeSupervisor(s.id);
                           toast.info(`Supervisor "${s.nome}" removido.`);
@@ -301,10 +408,21 @@ export function GerenciarCadastrosDialog({ trigger }: { trigger?: React.ReactNod
 
           {/* TAB 3: CARTEIRAS */}
           <TabsContent value="carteiras" className="mt-4 space-y-4">
-            <form onSubmit={handleAddCarteira} className="rounded-lg border bg-muted/20 p-4 space-y-3">
-              <h4 className="text-xs font-semibold flex items-center gap-1.5">
-                <Plus className="h-3.5 w-3.5 text-primary" /> Cadastrar Nova Carteira
-              </h4>
+            <form onSubmit={handleAddCarteira} className={`rounded-lg border p-4 space-y-3 ${editingCarteiraId ? "bg-primary/5 border-primary/30" : "bg-muted/20"}`}>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-semibold flex items-center gap-1.5">
+                  {editingCarteiraId ? (
+                    <><Pencil className="h-3.5 w-3.5 text-primary" /> Editar Carteira</>
+                  ) : (
+                    <><Plus className="h-3.5 w-3.5 text-primary" /> Cadastrar Nova Carteira</>
+                  )}
+                </h4>
+                {editingCarteiraId && (
+                  <Button type="button" variant="ghost" size="sm" onClick={resetCarteira} className="h-6 px-2 text-[10px] text-muted-foreground">
+                    <X className="h-3 w-3 mr-1" /> Cancelar
+                  </Button>
+                )}
+              </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
                   <Label htmlFor="nomeCarteira" className="text-[11px]">Nome da Carteira *</Label>
@@ -346,7 +464,7 @@ export function GerenciarCadastrosDialog({ trigger }: { trigger?: React.ReactNod
                 </div>
               </div>
               <Button type="submit" size="sm" className="w-full sm:w-auto h-8 text-xs gap-1">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Adicionar Carteira
+                <CheckCircle2 className="h-3.5 w-3.5" /> {editingCarteiraId ? "Salvar Alterações" : "Adicionar Carteira"}
               </Button>
             </form>
 
@@ -366,17 +484,34 @@ export function GerenciarCadastrosDialog({ trigger }: { trigger?: React.ReactNod
                       </div>
                       <p className="text-muted-foreground text-[11px] mt-0.5">{c.descricao}</p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
-                      onClick={() => {
-                        removeCarteira(c.id);
-                        toast.info(`Carteira "${c.nome}" removida.`);
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-primary shrink-0"
+                        title="Editar"
+                        onClick={() => {
+                          setEditingCarteiraId(c.id);
+                          setNomeCarteira(c.nome);
+                          setCatCarteira(c.categoria);
+                          setDescCarteira(c.descricao);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                        title="Remover"
+                        onClick={() => {
+                          removeCarteira(c.id);
+                          toast.info(`Carteira "${c.nome}" removida.`);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

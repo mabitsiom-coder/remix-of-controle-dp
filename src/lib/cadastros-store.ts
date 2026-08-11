@@ -97,6 +97,14 @@ export function removeAnalista(id: string) {
   saveStored(STORAGE_KEYS.ANALISTAS, atuais.filter((a) => a.id !== id));
 }
 
+export function updateAnalista(id: string, dados: Partial<Omit<Analista, "id">>) {
+  const atuais = getAnalistas();
+  saveStored(
+    STORAGE_KEYS.ANALISTAS,
+    atuais.map((a) => (a.id === id ? { ...a, ...dados } : a))
+  );
+}
+
 // APIs para Supervisores
 export function getSupervisores(): Supervisor[] {
   return getStored(STORAGE_KEYS.SUPERVISORES, initialSupervisores);
@@ -115,6 +123,14 @@ export function removeSupervisor(id: string) {
   saveStored(STORAGE_KEYS.SUPERVISORES, atuais.filter((s) => s.id !== id));
 }
 
+export function updateSupervisor(id: string, dados: Partial<Omit<Supervisor, "id">>) {
+  const atuais = getSupervisores();
+  saveStored(
+    STORAGE_KEYS.SUPERVISORES,
+    atuais.map((s) => (s.id === id ? { ...s, ...dados } : s))
+  );
+}
+
 // APIs para Carteiras
 export function getCarteiras(): Carteira[] {
   return getStored(STORAGE_KEYS.CARTEIRAS, initialCarteiras);
@@ -131,6 +147,14 @@ export function addCarteira(dados: Omit<Carteira, "id">): Carteira {
 export function removeCarteira(id: string) {
   const atuais = getCarteiras();
   saveStored(STORAGE_KEYS.CARTEIRAS, atuais.filter((c) => c.id !== id));
+}
+
+export function updateCarteira(id: string, dados: Partial<Omit<Carteira, "id">>) {
+  const atuais = getCarteiras();
+  saveStored(
+    STORAGE_KEYS.CARTEIRAS,
+    atuais.map((c) => (c.id === id ? { ...c, ...dados } : c))
+  );
 }
 
 // Hook React Unificado
@@ -167,9 +191,12 @@ export function useCadastros() {
     carteiras,
     addAnalista,
     removeAnalista,
+    updateAnalista,
     addSupervisor,
     removeSupervisor,
+    updateSupervisor,
     addCarteira,
     removeCarteira,
+    updateCarteira,
   };
 }
