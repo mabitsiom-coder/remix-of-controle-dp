@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthModal } from "@/components/auth-modal";
 import { useAuth } from "@/lib/auth-store";
+import { seedPlanilha } from "@/lib/planilha-seed";
 
 function NotFoundComponent() {
   return (
@@ -128,6 +129,10 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const { currentUser } = useAuth();
+
+  useEffect(() => {
+    seedPlanilha();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
