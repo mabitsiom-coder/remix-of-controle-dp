@@ -171,6 +171,15 @@ export function ImportarEmpresasDialog({
           const duplaConferencia = row[16]?.trim().toLowerCase() === "sim";
           const fluxoAprovacao = row[17]?.trim() || "";
           const observacoes = row[18]?.trim() || "";
+          const codigoDominio = row[19]?.trim() || "";
+
+          const tipoBruto = (row[20]?.trim() || "")
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+          let tipo: "com-movimento" | "sem-movimento" | "domestico-pf" = "com-movimento";
+          if (tipoBruto.includes("sem")) tipo = "sem-movimento";
+          else if (tipoBruto.includes("domestico") || tipoBruto === "pf") tipo = "domestico-pf";
 
           const dados = {
             nome,
@@ -192,7 +201,10 @@ export function ImportarEmpresasDialog({
             duplaConferencia,
             fluxoAprovacao,
             observacoes,
+            codigoDominio,
+            tipo,
           };
+
 
           // Se o CNPJ já existe, atualiza os dados da empresa em vez de bloquear
           const existente = encontrarEmpresaDuplicada(nome, cnpj);
