@@ -227,10 +227,8 @@ export function EditarEmpresaDialog({
                       <SelectValue placeholder="Selecione o regime" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Simples Nacional">Simples Nacional</SelectItem>
-                      <SelectItem value="Lucro Presumido">Lucro Presumido</SelectItem>
-                      <SelectItem value="Lucro Real">Lucro Real</SelectItem>
-                      <SelectItem value="MEI / Individual">MEI / Individual</SelectItem>
+                      <SelectItem value="Optante pelo Simples Nacional">Optante pelo Simples Nacional</SelectItem>
+                      <SelectItem value="Não Optante pelo Simples Nacional">Não Optante pelo Simples Nacional</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

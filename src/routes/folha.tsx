@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ShieldCheck, User } from "lucide-react";
+import { ShieldCheck, User, Users, Building2 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { FolhaFechamentoTable } from "@/components/folha-fechamento-table";
 import { etapasFolha, folhas } from "@/lib/mock-data";
+import { useEmpresas } from "@/lib/empresas-store";
 
 
 export const Route = createFileRoute("/folha")({
@@ -22,12 +23,40 @@ export const Route = createFileRoute("/folha")({
 });
 
 function FolhaPage() {
+  const { empresas } = useEmpresas();
+
+  const totalEmpresas = empresas.length;
+  const totalFuncionarios = empresas.reduce((acc, e) => acc + (e.funcionarios || 0), 0);
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Folha de Pagamento"
         description="Tarefas de fechamento por empresa e competência · pipeline operacional"
       />
+
+      {/* Cards de KPI */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="surface-panel flex items-center gap-4 p-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Building2 className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Empresas Cadastradas</p>
+            <p className="text-2xl font-bold tabular-nums">{totalEmpresas}</p>
+          </div>
+        </div>
+
+        <div className="surface-panel flex items-center gap-4 p-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success">
+            <Users className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Total de Funcionários</p>
+            <p className="text-2xl font-bold tabular-nums">{totalFuncionarios}</p>
+          </div>
+        </div>
+      </div>
 
       <section className="space-y-4">
         <h2 className="text-sm font-semibold">Controle de fechamento por competência</h2>

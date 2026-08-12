@@ -32,6 +32,7 @@ import {
 } from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
 import { useGrupos } from "@/lib/grupos-store";
+import { useAuth } from "@/lib/auth-store";
 import { Link } from "@tanstack/react-router";
 
 export function NovaEmpresaDialog({
@@ -45,12 +46,13 @@ export function NovaEmpresaDialog({
   const [activeTab, setActiveTab] = useState("dados");
   const { analistas, supervisores, carteiras } = useCadastros();
   const { grupos } = useGrupos();
+  const { currentUser } = useAuth();
   const [isLoadingCnpj, setIsLoadingCnpj] = useState(false);
 
   const [formData, setFormData] = useState<NovaEmpresaForm>({
     nome: "",
     cnpj: "",
-    regime: "Simples Nacional",
+    regime: "Optante pelo Simples Nacional",
     tipo: "com-movimento",
     codigoDominio: "",
     grupoId: "none",
@@ -108,7 +110,7 @@ export function NovaEmpresaDialog({
     }
 
     try {
-      const novaEmpresa = createEmpresa(formData);
+      const novaEmpresa = createEmpresa(formData, currentUser?.nome);
       toast.success(`Empresa "${novaEmpresa.nome}" cadastrada com sucesso!`, {
         description: `CNPJ: ${novaEmpresa.cnpj} | Analista: ${novaEmpresa.analista}`,
       });
@@ -117,7 +119,7 @@ export function NovaEmpresaDialog({
       setFormData({
         nome: "",
         cnpj: "",
-        regime: "Simples Nacional",
+        regime: "Optante pelo Simples Nacional",
         responsavel: "",
         carteira: "Carteira Industrial A",
         analista: "Camila Rocha",
@@ -154,7 +156,7 @@ export function NovaEmpresaDialog({
     setFormData({
       nome: "Empresa de Teste Automático LTDA",
       cnpj: "12.345.678/0001-99",
-      regime: "Simples Nacional",
+      regime: "Optante pelo Simples Nacional",
       grupoId: "none",
       responsavel: "João Teste (Diretor)",
       carteira: carteiras[0]?.nome || "Carteira Industrial A",
@@ -303,10 +305,8 @@ export function NovaEmpresaDialog({
                       <SelectValue placeholder="Selecione o regime" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Simples Nacional">Simples Nacional</SelectItem>
-                      <SelectItem value="Lucro Presumido">Lucro Presumido</SelectItem>
-                      <SelectItem value="Lucro Real">Lucro Real</SelectItem>
-                      <SelectItem value="MEI / Individual">MEI / Individual</SelectItem>
+                      <SelectItem value="Optante pelo Simples Nacional">Optante pelo Simples Nacional</SelectItem>
+                      <SelectItem value="Não Optante pelo Simples Nacional">Não Optante pelo Simples Nacional</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

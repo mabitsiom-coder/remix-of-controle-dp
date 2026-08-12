@@ -108,7 +108,7 @@ export function encontrarEmpresaDuplicada(
   return undefined;
 }
 
-export function createEmpresa(dados: NovaEmpresaForm): Empresa {
+export function createEmpresa(dados: NovaEmpresaForm, criadoPor?: string): Empresa {
   const duplicada = encontrarEmpresaDuplicada(dados.nome, dados.cnpj);
   if (duplicada) throw new EmpresaDuplicadaError(duplicada.empresa, duplicada.motivo);
 
@@ -125,11 +125,13 @@ export function createEmpresa(dados: NovaEmpresaForm): Empresa {
     hoje.getMonth() + 1,
   ).padStart(2, "0")}/${hoje.getFullYear()}`;
 
+  const usuarioCriador = criadoPor || dados.analista || "Sistema";
+
   const nova: Empresa = {
     id,
     nome: dados.nome,
     cnpj: dados.cnpj,
-    regime: dados.regime || "Simples Nacional",
+    regime: dados.regime || "Optante pelo Simples Nacional",
     tipo: dados.tipo || "com-movimento",
     codigoDominio: dados.codigoDominio || "",
     responsavel: dados.responsavel || "Não informado",
@@ -156,8 +158,8 @@ export function createEmpresa(dados: NovaEmpresaForm): Empresa {
     historico: [
       {
         data: dataFormatada,
-        usuario: dados.analista || "Sistema",
-        descricao: "Empresa cadastrada no sistema.",
+        usuario: usuarioCriador,
+        descricao: `Empresa cadastrada por ${usuarioCriador}.`,
       },
     ],
   };
