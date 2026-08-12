@@ -15,6 +15,72 @@ import { Button } from "@/components/ui/button";
 import { createEmpresa } from "@/lib/empresas-store";
 import { getStoredGrupos, addGrupo } from "@/lib/grupos-store";
 
+async function lerLinhasCSV(file: File): Promise<string[][]> {
+  const text = await file.text();
+  return text
+    .split(/\r?\n/)
+    .filter((l) => l.trim() !== "")
+    .map((l) => l.split(l.includes(";") ? ";" : ","));
+}
+
+async function lerLinhasXLSX(file: File): Promise<string[][]> {
+  const XLSX = await import("xlsx");
+  const buffer = await file.arrayBuffer();
+  const wb = XLSX.read(buffer, { type: "array" });
+  const primeira = wb.SheetNames[0];
+  if (!primeira) return [];
+  const sheet = wb.Sheets[primeira];
+  if (!sheet) return [];
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: false, defval: "" });
+  return rows
+    .map((r) => (r as unknown[]).map((c) => (c == null ? "" : String(c))))
+    .filter((r) => r.some((c) => c.trim() !== ""));
+}
+
+async function lerLinhasPDF(file: File): Promise<string[][]> {
+  const pdfjs = await import("pdfjs-dist");
+  const workerSrc = (await import("pdfjs-dist/build/pdf.worker.mjs?url")).default;
+  pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
+
+  const buffer = await file.arrayBuffer();
+  const doc = await pdfjs.getDocument({ data: buffer }).promise;
+  const linhas: string[][] = [];
+
+  for (let p = 1; p <= doc.numPages; p++) {
+    const page = await doc.getPage(p);
+    const content = await page.getTextContent();
+    const porLinha = new Map<number, { x: number; str: string }[]>();
+
+    for (const item of content.items as Array<{ str: string; transform: number[] }>) {
+      if (!item.str || !item.str.trim()) continue;
+      const y = Math.round((item.transform[5] ?? 0) / 3) * 3;
+      const arr = porLinha.get(y) ?? [];
+      arr.push({ x: item.transform[4] ?? 0, str: item.str });
+      porLinha.set(y, arr);
+    }
+
+    const ys = [...porLinha.keys()].sort((a, b) => b - a);
+    for (const y of ys) {
+      const pecas = (porLinha.get(y) ?? []).sort((a, b) => a.x - b.x);
+      const texto = pecas.map((c) => c.str.trim()).join(" ").trim();
+      if (!texto) continue;
+      const colunas = texto.includes(";")
+        ? texto.split(";")
+        : pecas.map((c) => c.str.trim()).filter((c) => c !== "");
+      linhas.push(colunas);
+    }
+  }
+
+  return linhas;
+}
+
+async function lerLinhas(file: File): Promise<string[][]> {
+  const nome = file.name.toLowerCase();
+  if (nome.endsWith(".xlsx") || nome.endsWith(".xls")) return lerLinhasXLSX(file);
+  if (nome.endsWith(".pdf")) return lerLinhasPDF(file);
+  return lerLinhasCSV(file);
+}
+
 function normalizar(valor: string) {
   return valor
     .trim()
@@ -50,9 +116,8 @@ export function ImportarEmpresasDialog({
     setIsImporting(true);
 
     try {
-      const text = await file.text();
-      const lines = text.split("\n").filter((line) => line.trim() !== "");
-      
+      const lines = await lerLinhas(file);
+
       if (lines.length < 2) {
         toast.error("O arquivo parece estar vazio ou sem dados.");
         return;
@@ -63,7 +128,7 @@ export function ImportarEmpresasDialog({
 
       // Start from line 1 to skip the header
       for (let i = 1; i < lines.length; i++) {
-        const row = (lines[i] ?? "").split(";");
+        const row = (lines[i] ?? []).map((c) => String(c ?? ""));
         
         // Basic validation: razão social é obrigatória (CNPJ pode estar vazio em PF)
         if (!row[0]?.trim()) {
@@ -135,7 +200,7 @@ export function ImportarEmpresasDialog({
       
     } catch (error) {
       console.error(error);
-      toast.error("Erro ao ler o arquivo CSV.");
+      toast.error("Erro ao ler o arquivo. Verifique o formato (.xlsx, .csv ou .pdf).");
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) {
@@ -149,7 +214,7 @@ export function ImportarEmpresasDialog({
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" className="gap-1.5 shadow-sm">
-            <Upload className="h-4 w-4" /> Importar CSV
+            <Upload className="h-4 w-4" /> Importar planilha
           </Button>
         )}
       </DialogTrigger>
@@ -162,7 +227,7 @@ export function ImportarEmpresasDialog({
             <div>
               <DialogTitle className="text-lg font-semibold">Importar Empresas</DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Faça o upload da planilha modelo (.csv) preenchida com seus clientes.
+                Faça o upload da planilha modelo (.xlsx, .csv ou .pdf) preenchida com seus clientes.
               </DialogDescription>
             </div>
           </div>
@@ -172,11 +237,11 @@ export function ImportarEmpresasDialog({
           <div className="rounded-lg border bg-muted/40 p-4 text-sm text-center border-dashed">
             <AlertCircle className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
             <p className="text-muted-foreground mb-4">
-              Selecione o arquivo CSV formatado corretamente com ponto e vírgula (;).
+              Aceitamos planilhas .xlsx/.xls, arquivos .csv (separados por ponto e vírgula) e tabelas em .pdf.
             </p>
             <input
               type="file"
-              accept=".csv"
+              accept=".csv,.xlsx,.xls,.pdf"
               className="hidden"
               ref={fileInputRef}
               onChange={handleFileUpload}
@@ -189,7 +254,7 @@ export function ImportarEmpresasDialog({
               {isImporting ? (
                 <>Processando arquivo...</>
               ) : (
-                <>Selecionar Arquivo CSV</>
+                <>Selecionar Arquivo</>
               )}
             </Button>
           </div>
