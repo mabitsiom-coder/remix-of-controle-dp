@@ -45,7 +45,7 @@ export function ImportarEmpresasDialog({
 
       // Start from line 1 to skip the header
       for (let i = 1; i < lines.length; i++) {
-        const row = lines[i].split(";");
+        const row = (lines[i] ?? "").split(";");
         
         // Basic validation: ensure we have at least the required fields (nome and cnpj)
         if (row.length < 2 || !row[0]?.trim() || !row[1]?.trim()) {

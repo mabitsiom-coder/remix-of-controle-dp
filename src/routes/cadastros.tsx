@@ -101,13 +101,13 @@ function TabCargo({ config, membros, addMembro, removeMembro, updateMembro }: {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
-  const [nivel, setNivel] = useState(config.niveis[0]);
+  const [nivel, setNivel] = useState<string>(config.niveis[0] ?? "");
 
   const reset = () => {
     setEditingId(null);
     setNome("");
     setEmail("");
-    setNivel(config.niveis[0]);
+    setNivel(config.niveis[0] ?? "");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
