@@ -15,6 +15,7 @@ export type Supervisor = {
   nome: string;
   email: string;
   departamento: string;
+  carteiraIds?: string[] | undefined;
   status: "ativo" | "inativo";
 };
 
