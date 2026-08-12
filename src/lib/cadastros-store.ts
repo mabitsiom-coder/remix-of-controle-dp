@@ -6,8 +6,8 @@ export type Analista = {
   email: string;
   cargo: string;
   status: "ativo" | "inativo";
-  carteiraId?: string;
-  assistenteId?: string;
+  carteiraId?: string | undefined;
+  assistenteId?: string | undefined;
 };
 
 export type Supervisor = {
@@ -31,7 +31,7 @@ export type Membro = {
   nome: string;
   email: string;
   cargo: string; // categoria do cargo (Gerente, Auditoria, etc.)
-  nivel?: string; // nivel dentro do cargo (opcional)
+  nivel?: string | undefined; // nivel dentro do cargo (opcional)
   status: "ativo" | "inativo";
 };
 
