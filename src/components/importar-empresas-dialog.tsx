@@ -12,7 +12,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { createEmpresa, EmpresaDuplicadaError } from "@/lib/empresas-store";
+import {
+  createEmpresa,
+  updateEmpresa,
+  empresaToForm,
+  encontrarEmpresaDuplicada,
+  EmpresaDuplicadaError,
+} from "@/lib/empresas-store";
 import { getStoredGrupos, addGrupo } from "@/lib/grupos-store";
 
 async function lerLinhasCSV(file: File): Promise<string[][]> {
@@ -125,8 +131,10 @@ export function ImportarEmpresasDialog({
 
       let importedCount = 0;
       let errorCount = 0;
+      let updatedCount = 0;
       let duplicateCount = 0;
       const duplicadas: string[] = [];
+      const atualizadas: string[] = [];
 
       // Start from line 1 to skip the header
       for (let i = 1; i < lines.length; i++) {
@@ -164,7 +172,7 @@ export function ImportarEmpresasDialog({
           const fluxoAprovacao = row[17]?.trim() || "";
           const observacoes = row[18]?.trim() || "";
 
-          createEmpresa({
+          const dados = {
             nome,
             cnpj,
             regime,
@@ -184,7 +192,19 @@ export function ImportarEmpresasDialog({
             duplaConferencia,
             fluxoAprovacao,
             observacoes,
-          });
+          };
+
+          // Se o CNPJ já existe, atualiza os dados da empresa em vez de bloquear
+          const existente = encontrarEmpresaDuplicada(nome, cnpj);
+          if (existente && existente.motivo === "cnpj") {
+            const atual = existente.empresa;
+            updateEmpresa(atual.id, { ...empresaToForm(atual), ...dados });
+            updatedCount++;
+            if (atualizadas.length < 5) atualizadas.push(nome ?? atual.nome);
+            continue;
+          }
+
+          createEmpresa(dados);
 
           importedCount++;
         } catch (err) {
@@ -199,6 +219,9 @@ export function ImportarEmpresasDialog({
       }
 
       const detalhes = [
+        updatedCount > 0
+          ? `${updatedCount} empresa(s) atualizada(s) pelo CNPJ${atualizadas.length ? `: ${atualizadas.join(", ")}${updatedCount > atualizadas.length ? "…" : ""}` : ""}`
+          : "",
         duplicateCount > 0
           ? `${duplicateCount} empresa(s) duplicada(s) bloqueada(s)${duplicadas.length ? `: ${duplicadas.join(", ")}${duplicateCount > duplicadas.length ? "…" : ""}` : ""}`
           : "",
@@ -207,14 +230,15 @@ export function ImportarEmpresasDialog({
         .filter(Boolean)
         .join(" · ");
 
-      if (importedCount === 0 && duplicateCount > 0) {
+      if (importedCount === 0 && updatedCount === 0 && duplicateCount > 0) {
         toast.error("Nenhuma empresa importada — todas já estão cadastradas", {
           description: detalhes,
         });
       } else {
-        toast.success(`${importedCount} empresas importadas com sucesso!`, {
-          description: detalhes,
-        });
+        toast.success(
+          `${importedCount} empresa(s) importada(s)${updatedCount > 0 ? ` e ${updatedCount} atualizada(s)` : ""}!`,
+          { description: detalhes },
+        );
       }
       
       setOpen(false);
