@@ -76,12 +76,25 @@ const grupos = [
   {
     label: "Administração",
     items: [
-      { title: "Cadastros do Sistema", url: "/cadastros", icon: ShieldCheck },
+      {
+        title: "Cadastros do Sistema",
+        url: "/cadastros",
+        icon: ShieldCheck,
+        perfis: ["Administrador", "Coordenador"],
+      },
       { title: "Usuários & Acesso", url: "/usuarios", icon: UserCog },
-      { title: "API & Integrações", url: "/integracoes", icon: Plug },
+      {
+        title: "API & Integrações",
+        url: "/integracoes",
+        icon: Plug,
+        perfis: ["Administrador"],
+      },
     ],
   },
-];
+] satisfies {
+  label: string;
+  items: { title: string; url: string; icon: typeof LayoutDashboard; perfis?: string[] }[];
+}[];
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -117,12 +130,17 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {grupos.map((grupo) => (
+        {grupos.map((grupo) => {
+          const items = grupo.items.filter(
+            (item) => !("perfis" in item) || !item.perfis || item.perfis.includes(currentUser.perfil),
+          );
+          if (items.length === 0) return null;
+          return (
           <SidebarGroup key={grupo.label}>
             <SidebarGroupLabel>{grupo.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {grupo.items.map((item) => (
+                {items.map((item) => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                       <Link to={item.url} className="flex items-center gap-2">
@@ -135,7 +153,8 @@ export function AppSidebar() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        ))}
+          );
+        })}
       </SidebarContent>
 
       <SidebarFooter>
