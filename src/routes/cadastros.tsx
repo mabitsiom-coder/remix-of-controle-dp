@@ -623,18 +623,7 @@ function CadastrosPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="catCarteira" className="text-xs font-medium">Categoria</Label>
-                  <Select value={catCarteira} onValueChange={setCatCarteira}>
-                    <SelectTrigger id="catCarteira" className="h-9"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Industrial">Industrial</SelectItem>
-                      <SelectItem value="Varejo">Varejo</SelectItem>
-                      <SelectItem value="Logística">Logística</SelectItem>
-                      <SelectItem value="Saúde">Saúde</SelectItem>
-                      <SelectItem value="Construção">Construção</SelectItem>
-                      <SelectItem value="Serviços">Serviços</SelectItem>
-                      <SelectItem value="Geral">Geral</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input id="catCarteira" placeholder="Ex: Varejo, Saúde, Industrial..." value={catCarteira} onChange={(e) => setCatCarteira(e.target.value)} className="h-9" />
                 </div>
                 <div className="space-y-1.5 md:col-span-2">
                   <Label htmlFor="descCarteira" className="text-xs font-medium">Descrição / Perfil dos Clientes</Label>

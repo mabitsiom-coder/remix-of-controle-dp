@@ -46,6 +46,8 @@ export function NovaEmpresaDialog({
     nome: "",
     cnpj: "",
     regime: "Simples Nacional",
+    tipo: "com-movimento",
+    codigoDominio: "",
     grupoId: "none",
     responsavel: "",
     carteira: carteiras[0]?.nome || "Carteira Industrial A",
@@ -336,8 +338,6 @@ export function NovaEmpresaDialog({
                   />
                 </div>
 
-
-
                 <div className="space-y-1.5">
                   <Label htmlFor="convenio" className="text-xs font-medium">
                     Sindicato / Convenção Coletiva
@@ -347,6 +347,40 @@ export function NovaEmpresaDialog({
                     placeholder="Ex: Sindicato dos Comerciários de SP"
                     value={formData.convenio}
                     onChange={(e) => setFormData({ ...formData, convenio: e.target.value })}
+                  />
+                </div>
+
+                {/* NOVOS CAMPOS */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="tipo" className="text-xs font-medium">
+                    Tipo
+                  </Label>
+                  <Select
+                    value={formData.tipo || "com-movimento"}
+                    onValueChange={(val: "com-movimento" | "sem-movimento" | "domestico-pf") =>
+                      setFormData({ ...formData, tipo: val })
+                    }
+                  >
+                    <SelectTrigger id="tipo">
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="com-movimento">Com Movimento</SelectItem>
+                      <SelectItem value="sem-movimento">Sem Movimento</SelectItem>
+                      <SelectItem value="domestico-pf">Doméstico (PF)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="codigoDominio" className="text-xs font-medium">
+                    Código no Domínio
+                  </Label>
+                  <Input
+                    id="codigoDominio"
+                    placeholder="Ex: 1234"
+                    value={formData.codigoDominio || ""}
+                    onChange={(e) => setFormData({ ...formData, codigoDominio: e.target.value })}
                   />
                 </div>
               </div>

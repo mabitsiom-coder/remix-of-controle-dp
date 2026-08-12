@@ -39,6 +39,8 @@ export type NovaEmpresaForm = {
   nome: string;
   cnpj: string;
   regime: string;
+  tipo?: "com-movimento" | "sem-movimento" | "domestico-pf";
+  codigoDominio?: string;
   grupoId?: string;
   responsavel: string;
   carteira: string;
@@ -76,6 +78,8 @@ export function createEmpresa(dados: NovaEmpresaForm): Empresa {
     nome: dados.nome,
     cnpj: dados.cnpj,
     regime: dados.regime || "Simples Nacional",
+    tipo: dados.tipo || "com-movimento",
+    codigoDominio: dados.codigoDominio || "",
     responsavel: dados.responsavel || "Não informado",
     carteira: dados.carteira || "Carteira Geral",
     analista: dados.analista || "Camila Rocha",

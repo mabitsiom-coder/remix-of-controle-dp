@@ -70,6 +70,8 @@ export type Empresa = {
   nome: string;
   cnpj: string;
   regime: string;
+  tipo?: "com-movimento" | "sem-movimento" | "domestico-pf";
+  codigoDominio?: string;
   responsavel: string;
   carteira: string;
   analista: string;
