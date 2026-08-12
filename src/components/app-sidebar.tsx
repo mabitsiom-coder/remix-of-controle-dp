@@ -59,7 +59,7 @@ const grupos = [
       { title: "Obrigações", url: "/obrigacoes", icon: FileCheck2 },
       { title: "SST", url: "/sst", icon: HeartPulse },
       { title: "Folha de Pagamento", url: "/folha", icon: Receipt },
-      { title: "Tarefas", url: "/tarefas", icon: KanbanSquare },
+      { title: "Rotinas", url: "/tarefas", icon: KanbanSquare },
       { title: "Painel Gantt", url: "/gantt", icon: GanttChartSquare },
       { title: "Checklists", url: "/checklists", icon: ListChecks },
     ],
