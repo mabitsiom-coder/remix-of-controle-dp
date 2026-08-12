@@ -76,12 +76,25 @@ const grupos = [
   {
     label: "Administração",
     items: [
-      { title: "Cadastros do Sistema", url: "/cadastros", icon: ShieldCheck },
+      {
+        title: "Cadastros do Sistema",
+        url: "/cadastros",
+        icon: ShieldCheck,
+        perfis: ["Administrador", "Coordenador"],
+      },
       { title: "Usuários & Acesso", url: "/usuarios", icon: UserCog },
-      { title: "API & Integrações", url: "/integracoes", icon: Plug },
+      {
+        title: "API & Integrações",
+        url: "/integracoes",
+        icon: Plug,
+        perfis: ["Administrador"],
+      },
     ],
   },
-];
+] satisfies {
+  label: string;
+  items: { title: string; url: string; icon: typeof LayoutDashboard; perfis?: string[] }[];
+}[];
 
 export function AppSidebar() {
   const { state } = useSidebar();
