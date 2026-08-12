@@ -121,7 +121,90 @@ export function createEmpresa(dados: NovaEmpresaForm): Empresa {
   return nova;
 }
 
+export function updateEmpresa(id: string, dados: NovaEmpresaForm): Empresa | undefined {
+  const atuais = getStoredEmpresas();
+  const atual = atuais.find((e) => e.id === id);
+  if (!atual) return undefined;
+
+  const hoje = new Date();
+  const dataFormatada = `${String(hoje.getDate()).padStart(2, "0")}/${String(
+    hoje.getMonth() + 1,
+  ).padStart(2, "0")}/${hoje.getFullYear()}`;
+
+  const atualizada: Empresa = {
+    ...atual,
+    nome: dados.nome.trim() || atual.nome,
+    cnpj: dados.cnpj || atual.cnpj,
+    regime: dados.regime || atual.regime,
+    tipo: dados.tipo || atual.tipo,
+    codigoDominio: dados.codigoDominio ?? atual.codigoDominio,
+    responsavel: dados.responsavel || atual.responsavel,
+    carteira: dados.carteira || atual.carteira,
+    analista: dados.analista || atual.analista,
+    supervisor: dados.supervisor || atual.supervisor,
+    funcionarios: Number(dados.funcionarios) || atual.funcionarios,
+    convenio: dados.convenio || atual.convenio,
+    certificadoDigital: dados.certificadoDigital || atual.certificadoDigital,
+    procuracao: dados.procuracao || atual.procuracao,
+    risco: dados.risco || atual.risco,
+    status: dados.status || atual.status,
+    ultimaRevisao: dataFormatada,
+    diasSemRevisao: 0,
+    particularidades: {
+      ...atual.particularidades,
+      fechamento: dados.fechamento || atual.particularidades.fechamento,
+      envio: dados.envio || atual.particularidades.envio,
+      duplaConferencia: Boolean(dados.duplaConferencia),
+      fluxoAprovacao: dados.fluxoAprovacao || atual.particularidades.fluxoAprovacao,
+      observacoes: dados.observacoes ?? atual.particularidades.observacoes,
+    },
+    historico: [
+      {
+        data: dataFormatada,
+        usuario: dados.analista || "Sistema",
+        descricao: "Cadastro da empresa atualizado.",
+      },
+      ...atual.historico,
+    ],
+  };
+
+  saveEmpresas(atuais.map((e) => (e.id === id ? atualizada : e)));
+
+  if (dados.grupoId && dados.grupoId !== "none") {
+    vincularEmpresaAoGrupo(dados.grupoId, id);
+  }
+
+  return atualizada;
+}
+
+export function empresaToForm(empresa: Empresa): NovaEmpresaForm {
+  return {
+    nome: empresa.nome,
+    cnpj: empresa.cnpj,
+    regime: empresa.regime,
+    tipo: empresa.tipo ?? "com-movimento",
+    codigoDominio: empresa.codigoDominio ?? "",
+    grupoId: "none",
+    responsavel: empresa.responsavel,
+    carteira: empresa.carteira,
+    analista: empresa.analista,
+    supervisor: empresa.supervisor,
+    funcionarios: empresa.funcionarios,
+    convenio: empresa.convenio,
+    certificadoDigital: empresa.certificadoDigital,
+    procuracao: empresa.procuracao,
+    risco: empresa.risco,
+    status: empresa.status,
+    fechamento: empresa.particularidades.fechamento,
+    envio: empresa.particularidades.envio,
+    duplaConferencia: empresa.particularidades.duplaConferencia,
+    fluxoAprovacao: empresa.particularidades.fluxoAprovacao,
+    observacoes: empresa.particularidades.observacoes,
+  };
+}
+
 export function useEmpresas() {
+
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
 
   useEffect(() => {
