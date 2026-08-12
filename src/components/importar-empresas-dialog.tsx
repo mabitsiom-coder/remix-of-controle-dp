@@ -65,15 +65,15 @@ export function ImportarEmpresasDialog({
       for (let i = 1; i < lines.length; i++) {
         const row = (lines[i] ?? "").split(";");
         
-        // Basic validation: ensure we have at least the required fields (nome and cnpj)
-        if (row.length < 2 || !row[0]?.trim() || !row[1]?.trim()) {
+        // Basic validation: razão social é obrigatória (CNPJ pode estar vazio em PF)
+        if (!row[0]?.trim()) {
           errorCount++;
           continue;
         }
 
         try {
           const nome = row[0]?.trim();
-          const cnpj = row[1]?.trim();
+          const cnpj = row[1]?.trim() || "";
           const regime = row[2]?.trim() || "Simples Nacional";
           const grupoId = resolverGrupoId(row[3]?.trim() || "");
           const responsavel = row[4]?.trim() || "";
