@@ -282,7 +282,7 @@ function TabCargo({ config, membros, addMembro, removeMembro, updateMembro }: {
 
 // --- PÁGINA PRINCIPAL ---
 function CadastrosPage() {
-  const nomesCarteirasRef = { current: [] as { id: string; nome: string }[] };
+  
 
   const [tab, setTab] = useState("analistas");
   const {
