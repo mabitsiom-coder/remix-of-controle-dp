@@ -13,6 +13,24 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { createEmpresa } from "@/lib/empresas-store";
+import { getStoredGrupos, addGrupo } from "@/lib/grupos-store";
+
+function normalizar(valor: string) {
+  return valor
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function resolverGrupoId(nomeGrupo: string): string {
+  if (!nomeGrupo) return "none";
+  const existente = getStoredGrupos().find(
+    (g) => normalizar(g.nome) === normalizar(nomeGrupo),
+  );
+  if (existente) return existente.id;
+  return addGrupo({ nome: nomeGrupo.trim() }).id;
+}
 
 export function ImportarEmpresasDialog({
   trigger,
