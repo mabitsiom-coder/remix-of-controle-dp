@@ -59,7 +59,57 @@ export type NovaEmpresaForm = {
   observacoes?: string;
 };
 
+function normalizarNome(valor: string) {
+  return valor
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+export class EmpresaDuplicadaError extends Error {
+  empresa: Empresa;
+  motivo: "cnpj" | "nome";
+  constructor(empresa: Empresa, motivo: "cnpj" | "nome") {
+    super(
+      motivo === "cnpj"
+        ? `O CNPJ ${empresa.cnpj} já está cadastrado para "${empresa.nome}".`
+        : `Já existe uma empresa cadastrada com o nome "${empresa.nome}".`,
+    );
+    this.name = "EmpresaDuplicadaError";
+    this.empresa = empresa;
+    this.motivo = motivo;
+  }
+}
+
+/** Retorna a empresa já cadastrada que conflita com os dados informados. */
+export function encontrarEmpresaDuplicada(
+  nome: string,
+  cnpj: string,
+  ignorarId?: string,
+): { empresa: Empresa; motivo: "cnpj" | "nome" } | undefined {
+  const digitos = (cnpj || "").replace(/\D/g, "");
+  const nomeNorm = normalizarNome(nome || "");
+  const lista = getStoredEmpresas().filter((e) => e.id !== ignorarId);
+
+  if (digitos.length >= 11) {
+    const porCnpj = lista.find((e) => e.cnpj.replace(/\D/g, "") === digitos);
+    if (porCnpj) return { empresa: porCnpj, motivo: "cnpj" };
+  }
+
+  if (nomeNorm) {
+    const porNome = lista.find((e) => normalizarNome(e.nome) === nomeNorm);
+    if (porNome) return { empresa: porNome, motivo: "nome" };
+  }
+
+  return undefined;
+}
+
 export function createEmpresa(dados: NovaEmpresaForm): Empresa {
+  const duplicada = encontrarEmpresaDuplicada(dados.nome, dados.cnpj);
+  if (duplicada) throw new EmpresaDuplicadaError(duplicada.empresa, duplicada.motivo);
+
   const slug = dados.nome
     .toLowerCase()
     .normalize("NFD")

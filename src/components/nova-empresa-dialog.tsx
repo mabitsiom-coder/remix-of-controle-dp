@@ -24,7 +24,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createEmpresa, type NovaEmpresaForm } from "@/lib/empresas-store";
+import {
+  createEmpresa,
+  EmpresaDuplicadaError,
+  encontrarEmpresaDuplicada,
+  type NovaEmpresaForm,
+} from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
 import { useGrupos } from "@/lib/grupos-store";
 import { Link } from "@tanstack/react-router";
@@ -90,6 +95,18 @@ export function NovaEmpresaDialog({
       return;
     }
 
+    const duplicada = encontrarEmpresaDuplicada(formData.nome, formData.cnpj);
+    if (duplicada) {
+      toast.error("Empresa duplicada — cadastro bloqueado", {
+        description:
+          duplicada.motivo === "cnpj"
+            ? `O CNPJ ${duplicada.empresa.cnpj} já pertence a "${duplicada.empresa.nome}".`
+            : `Já existe uma empresa cadastrada como "${duplicada.empresa.nome}".`,
+      });
+      setActiveTab("dados");
+      return;
+    }
+
     try {
       const novaEmpresa = createEmpresa(formData);
       toast.success(`Empresa "${novaEmpresa.nome}" cadastrada com sucesso!`, {
@@ -124,6 +141,11 @@ export function NovaEmpresaDialog({
       }
     } catch (err) {
       console.error(err);
+      if (err instanceof EmpresaDuplicadaError) {
+        toast.error("Empresa duplicada — cadastro bloqueado", { description: err.message });
+        setActiveTab("dados");
+        return;
+      }
       toast.error("Erro ao cadastrar empresa.");
     }
   };

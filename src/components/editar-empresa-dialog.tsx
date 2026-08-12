@@ -25,7 +25,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { empresaToForm, updateEmpresa, type NovaEmpresaForm } from "@/lib/empresas-store";
+import {
+  empresaToForm,
+  encontrarEmpresaDuplicada,
+  updateEmpresa,
+  type NovaEmpresaForm,
+} from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
 import { useGrupos } from "@/lib/grupos-store";
 import type { Empresa } from "@/lib/mock-data";
@@ -97,6 +102,18 @@ export function EditarEmpresaDialog({
     }
     if (!formData.cnpj.trim() || formData.cnpj.replace(/\D/g, "").length < 14) {
       toast.error("Por favor, informe um CNPJ válido com 14 dígitos.");
+      setActiveTab("dados");
+      return;
+    }
+
+    const duplicada = encontrarEmpresaDuplicada(formData.nome, formData.cnpj, empresa.id);
+    if (duplicada) {
+      toast.error("Empresa duplicada — alteração bloqueada", {
+        description:
+          duplicada.motivo === "cnpj"
+            ? `O CNPJ ${duplicada.empresa.cnpj} já pertence a "${duplicada.empresa.nome}".`
+            : `Já existe outra empresa cadastrada como "${duplicada.empresa.nome}".`,
+      });
       setActiveTab("dados");
       return;
     }
