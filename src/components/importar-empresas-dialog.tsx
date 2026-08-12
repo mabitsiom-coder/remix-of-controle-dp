@@ -219,6 +219,9 @@ export function ImportarEmpresasDialog({
       }
 
       const detalhes = [
+        updatedCount > 0
+          ? `${updatedCount} empresa(s) atualizada(s) pelo CNPJ${atualizadas.length ? `: ${atualizadas.join(", ")}${updatedCount > atualizadas.length ? "…" : ""}` : ""}`
+          : "",
         duplicateCount > 0
           ? `${duplicateCount} empresa(s) duplicada(s) bloqueada(s)${duplicadas.length ? `: ${duplicadas.join(", ")}${duplicateCount > duplicadas.length ? "…" : ""}` : ""}`
           : "",
@@ -227,14 +230,15 @@ export function ImportarEmpresasDialog({
         .filter(Boolean)
         .join(" · ");
 
-      if (importedCount === 0 && duplicateCount > 0) {
+      if (importedCount === 0 && updatedCount === 0 && duplicateCount > 0) {
         toast.error("Nenhuma empresa importada — todas já estão cadastradas", {
           description: detalhes,
         });
       } else {
-        toast.success(`${importedCount} empresas importadas com sucesso!`, {
-          description: detalhes,
-        });
+        toast.success(
+          `${importedCount} empresa(s) importada(s)${updatedCount > 0 ? ` e ${updatedCount} atualizada(s)` : ""}!`,
+          { description: detalhes },
+        );
       }
       
       setOpen(false);
