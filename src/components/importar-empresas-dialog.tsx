@@ -12,7 +12,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { createEmpresa, EmpresaDuplicadaError } from "@/lib/empresas-store";
+import {
+  createEmpresa,
+  updateEmpresa,
+  empresaToForm,
+  encontrarEmpresaDuplicada,
+  EmpresaDuplicadaError,
+} from "@/lib/empresas-store";
 import { getStoredGrupos, addGrupo } from "@/lib/grupos-store";
 
 async function lerLinhasCSV(file: File): Promise<string[][]> {
