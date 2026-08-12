@@ -131,7 +131,7 @@ function RootComponent() {
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    seedPlanilha();
+    resetDados();
   }, []);
 
   return (
