@@ -452,16 +452,8 @@ function CadastrosPage() {
                   <Input id="emailAnalista" type="email" placeholder="mariana@dpcontrol.com" value={emailAnalista} onChange={(e) => setEmailAnalista(e.target.value)} className="h-9" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="cargoAnalista" className="text-xs font-medium">Nível / Cargo</Label>
-                  <Select value={cargoAnalista} onValueChange={setCargoAnalista}>
-                    <SelectTrigger id="cargoAnalista" className="h-9"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Analista Jr.">Analista Jr.</SelectItem>
-                      <SelectItem value="Analista">Analista Pleno</SelectItem>
-                      <SelectItem value="Analista Sênior">Analista Sênior</SelectItem>
-                      <SelectItem value="Especialista DP">Especialista DP</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="cargoAnalista" className="text-xs font-medium">Cargo</Label>
+                  <Input id="cargoAnalista" value={cargoAnalista} readOnly disabled className="h-9 bg-muted/50" />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="carteiraVinculada" className="text-xs font-medium flex items-center gap-1">
