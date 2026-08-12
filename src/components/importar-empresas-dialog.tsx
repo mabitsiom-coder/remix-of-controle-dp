@@ -172,7 +172,7 @@ export function ImportarEmpresasDialog({
           const fluxoAprovacao = row[17]?.trim() || "";
           const observacoes = row[18]?.trim() || "";
 
-          createEmpresa({
+          const dados = {
             nome,
             cnpj,
             regime,
@@ -192,7 +192,19 @@ export function ImportarEmpresasDialog({
             duplaConferencia,
             fluxoAprovacao,
             observacoes,
-          });
+          };
+
+          // Se o CNPJ já existe, atualiza os dados da empresa em vez de bloquear
+          const existente = encontrarEmpresaDuplicada(nome, cnpj);
+          if (existente && existente.motivo === "cnpj") {
+            const atual = existente.empresa;
+            updateEmpresa(atual.id, { ...empresaToForm(atual), ...dados });
+            updatedCount++;
+            if (atualizadas.length < 5) atualizadas.push(nome ?? atual.nome);
+            continue;
+          }
+
+          createEmpresa(dados);
 
           importedCount++;
         } catch (err) {
