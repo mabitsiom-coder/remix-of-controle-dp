@@ -282,6 +282,8 @@ function TabCargo({ config, membros, addMembro, removeMembro, updateMembro }: {
 
 // --- PÁGINA PRINCIPAL ---
 function CadastrosPage() {
+  const nomesCarteirasRef = { current: [] as { id: string; nome: string }[] };
+
   const [tab, setTab] = useState("analistas");
   const {
     analistas, supervisores, carteiras, membros,
@@ -299,7 +301,7 @@ function CadastrosPage() {
   const [editingAnalistaId, setEditingAnalistaId] = useState<string | null>(null);
   const [nomeAnalista, setNomeAnalista] = useState("");
   const [emailAnalista, setEmailAnalista] = useState("");
-  const [cargoAnalista, setCargoAnalista] = useState("Analista Pleno");
+  const [cargoAnalista, setCargoAnalista] = useState("Analista");
   const [carteiraIdAnalista, setCarteiraIdAnalista] = useState<string>("none");
   const [assistenteIdAnalista, setAssistenteIdAnalista] = useState<string>("none");
 
@@ -307,7 +309,7 @@ function CadastrosPage() {
   const [editingSupervisorId, setEditingSupervisorId] = useState<string | null>(null);
   const [nomeSupervisor, setNomeSupervisor] = useState("");
   const [emailSupervisor, setEmailSupervisor] = useState("");
-  const [deptSupervisor, setDeptSupervisor] = useState("Operações DP");
+  const [carteirasSupervisor, setCarteirasSupervisor] = useState<string[]>([]);
 
   // Form Carteira
   const [editingCarteiraId, setEditingCarteiraId] = useState<string | null>(null);
@@ -319,7 +321,7 @@ function CadastrosPage() {
     setEditingAnalistaId(null);
     setNomeAnalista("");
     setEmailAnalista("");
-    setCargoAnalista("Analista Pleno");
+    setCargoAnalista("Analista");
     setCarteiraIdAnalista("none");
     setAssistenteIdAnalista("none");
   };
@@ -348,17 +350,17 @@ function CadastrosPage() {
     setEditingSupervisorId(null);
     setNomeSupervisor("");
     setEmailSupervisor("");
-    setDeptSupervisor("Operações DP");
+    setCarteirasSupervisor([]);
   };
 
   const handleAddSupervisor = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nomeSupervisor.trim()) { toast.error("Informe o nome do supervisor."); return; }
     if (editingSupervisorId) {
-      updateSupervisor(editingSupervisorId, { nome: nomeSupervisor.trim(), email: emailSupervisor.trim(), departamento: deptSupervisor });
+      updateSupervisor(editingSupervisorId, { nome: nomeSupervisor.trim(), email: emailSupervisor.trim(), carteiraIds: carteirasSupervisor, departamento: nomesCarteiras(carteirasSupervisor) });
       toast.success(`Supervisor "${nomeSupervisor}" atualizado!`);
     } else {
-      addSupervisor({ nome: nomeSupervisor.trim(), email: emailSupervisor.trim() || `${nomeSupervisor.toLowerCase().replace(/\s+/g, ".")}@dpcontrol.com.br`, departamento: deptSupervisor, status: "ativo" });
+      addSupervisor({ nome: nomeSupervisor.trim(), email: emailSupervisor.trim() || `${nomeSupervisor.toLowerCase().replace(/\s+/g, ".")}@dpcontrol.com.br`, carteiraIds: carteirasSupervisor, departamento: nomesCarteiras(carteirasSupervisor), status: "ativo" });
       toast.success(`Supervisor "${nomeSupervisor}" cadastrado!`);
     }
     resetSupervisor();
@@ -455,7 +457,7 @@ function CadastrosPage() {
                     <SelectTrigger id="cargoAnalista" className="h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Analista Jr.">Analista Jr.</SelectItem>
-                      <SelectItem value="Analista Pleno">Analista Pleno</SelectItem>
+                      <SelectItem value="Analista">Analista Pleno</SelectItem>
                       <SelectItem value="Analista Sênior">Analista Sênior</SelectItem>
                       <SelectItem value="Especialista DP">Especialista DP</SelectItem>
                     </SelectContent>
@@ -566,8 +568,28 @@ function CadastrosPage() {
                   <Input id="emailSupervisor" type="email" placeholder="carlos@dpcontrol.com" value={emailSupervisor} onChange={(e) => setEmailSupervisor(e.target.value)} className="h-9" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="deptSupervisor" className="text-xs font-medium">Departamento</Label>
-                  <Input id="deptSupervisor" placeholder="Ex: Operações DP" value={deptSupervisor} onChange={(e) => setDeptSupervisor(e.target.value)} className="h-9" />
+                  <Label className="text-xs font-medium">Carteiras de responsabilidade</Label>
+                  {carteiras.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">Cadastre carteiras na aba "Carteiras" para vincular.</p>
+                  ) : (
+                    <div className="max-h-32 space-y-1.5 overflow-y-auto rounded-md border p-2">
+                      {carteiras.map((c) => (
+                        <label key={c.id} className="flex cursor-pointer items-center gap-2 text-xs">
+                          <input
+                            type="checkbox"
+                            className="h-3.5 w-3.5 accent-primary"
+                            checked={carteirasSupervisor.includes(c.id)}
+                            onChange={(e) =>
+                              setCarteirasSupervisor((prev) =>
+                                e.target.checked ? [...prev, c.id] : prev.filter((id) => id !== c.id),
+                              )
+                            }
+                          />
+                          <span>{c.nome}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="pt-2">
@@ -585,11 +607,21 @@ function CadastrosPage() {
                     <div>
                       <p className="font-bold text-foreground">{s.nome}</p>
                       <p className="text-muted-foreground text-xs mb-1.5">{s.email}</p>
-                      <Badge variant="secondary" className="text-[10px]">{s.departamento}</Badge>
+                      <div className="flex flex-wrap gap-1">
+                        {(s.carteiraIds ?? []).length === 0 ? (
+                          <Badge variant="outline" className="text-[10px]">Sem carteira vinculada</Badge>
+                        ) : (
+                          (s.carteiraIds ?? []).map((cid) => (
+                            <Badge key={cid} variant="secondary" className="text-[10px]">
+                              {carteiras.find((c) => c.id === cid)?.nome ?? cid}
+                            </Badge>
+                          ))
+                        )}
+                      </div>
                     </div>
                     <div className="flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary bg-muted/30" title="Editar"
-                        onClick={() => { setEditingSupervisorId(s.id); setNomeSupervisor(s.nome); setEmailSupervisor(s.email); setDeptSupervisor(s.departamento); }}>
+                        onClick={() => { setEditingSupervisorId(s.id); setNomeSupervisor(s.nome); setEmailSupervisor(s.email); setCarteirasSupervisor(s.carteiraIds ?? []); }}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive bg-muted/30" title="Remover"
