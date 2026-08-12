@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { createEmpresa } from "@/lib/empresas-store";
+import { createEmpresa, EmpresaDuplicadaError } from "@/lib/empresas-store";
 import { getStoredGrupos, addGrupo } from "@/lib/grupos-store";
 
 async function lerLinhasCSV(file: File): Promise<string[][]> {
@@ -125,6 +125,8 @@ export function ImportarEmpresasDialog({
 
       let importedCount = 0;
       let errorCount = 0;
+      let duplicateCount = 0;
+      const duplicadas: string[] = [];
 
       // Start from line 1 to skip the header
       for (let i = 1; i < lines.length; i++) {
@@ -186,14 +188,34 @@ export function ImportarEmpresasDialog({
 
           importedCount++;
         } catch (err) {
+          if (err instanceof EmpresaDuplicadaError) {
+            duplicateCount++;
+            if (duplicadas.length < 5) duplicadas.push(err.empresa.nome);
+            continue;
+          }
           console.error("Erro na linha " + i, err);
           errorCount++;
         }
       }
 
-      toast.success(`${importedCount} empresas importadas com sucesso!`, {
-        description: errorCount > 0 ? `${errorCount} linhas falharam ou foram ignoradas.` : "",
-      });
+      const detalhes = [
+        duplicateCount > 0
+          ? `${duplicateCount} empresa(s) duplicada(s) bloqueada(s)${duplicadas.length ? `: ${duplicadas.join(", ")}${duplicateCount > duplicadas.length ? "…" : ""}` : ""}`
+          : "",
+        errorCount > 0 ? `${errorCount} linha(s) inválida(s) ignorada(s).` : "",
+      ]
+        .filter(Boolean)
+        .join(" · ");
+
+      if (importedCount === 0 && duplicateCount > 0) {
+        toast.error("Nenhuma empresa importada — todas já estão cadastradas", {
+          description: detalhes,
+        });
+      } else {
+        toast.success(`${importedCount} empresas importadas com sucesso!`, {
+          description: detalhes,
+        });
+      }
       
       setOpen(false);
       if (onSuccess) onSuccess();
