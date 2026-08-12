@@ -75,7 +75,7 @@ export function ImportarEmpresasDialog({
           const nome = row[0]?.trim();
           const cnpj = row[1]?.trim();
           const regime = row[2]?.trim() || "Simples Nacional";
-          const grupoId = "none"; // Hardcoded default, can be extended if we match names
+          const grupoId = resolverGrupoId(row[3]?.trim() || "");
           const responsavel = row[4]?.trim() || "";
           const carteira = row[5]?.trim() || "Carteira Geral";
           const analista = row[6]?.trim() || "Sistema";
