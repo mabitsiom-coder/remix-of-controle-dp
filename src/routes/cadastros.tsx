@@ -346,6 +346,9 @@ function CadastrosPage() {
     resetAnalista();
   };
 
+  const nomesCarteiras = (ids: string[]) =>
+    ids.map((id) => carteiras.find((c) => c.id === id)?.nome ?? "").filter(Boolean).join(", ");
+
   const resetSupervisor = () => {
     setEditingSupervisorId(null);
     setNomeSupervisor("");
