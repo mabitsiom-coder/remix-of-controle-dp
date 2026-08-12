@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
 import { AlertTriangle, ArrowLeft, CheckCircle2 } from "lucide-react";
 
 import { StatusBadge } from "@/components/status-badge";
@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { type Empresa } from "@/lib/mock-data";
 import { getEmpresaById } from "@/lib/empresas-store";
+import { EditarEmpresaDialog } from "@/components/editar-empresa-dialog";
 
 export const Route = createFileRoute("/empresas/$empresaId")({
   loader: ({ params }): { empresa: Empresa } => {
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/empresas/$empresaId")({
 
 function EmpresaDetalhe() {
   const { empresa } = Route.useLoaderData() as { empresa: Empresa };
+  const router = useRouter();
   const p = empresa.particularidades;
   const desatualizada = empresa.diasSemRevisao > 30;
 
@@ -54,7 +56,10 @@ function EmpresaDetalhe() {
             {empresa.cnpj} · {empresa.regime} · {empresa.funcionarios} funcionários
           </p>
         </div>
-        <Button variant="outline">Registrar revisão</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <EditarEmpresaDialog empresa={empresa} onSuccess={() => router.invalidate()} />
+          <Button variant="outline">Registrar revisão</Button>
+        </div>
       </div>
 
       {desatualizada && (
