@@ -1,6 +1,6 @@
 import { linhasPlanilha } from "./planilha-seed-data";
-import { createEmpresa, getStoredEmpresas } from "./empresas-store";
-import { getStoredGrupos, addGrupo } from "./grupos-store";
+import { createEmpresa, getStoredEmpresas, saveEmpresas } from "./empresas-store";
+import { getStoredGrupos, addGrupo, vincularEmpresaAoGrupo } from "./grupos-store";
 import {
   getCarteiras,
   addCarteira,
@@ -10,7 +10,7 @@ import {
   addSupervisor,
 } from "./cadastros-store";
 
-const SEED_FLAG = "dp_control_seed_planilha_v1";
+const SEED_FLAG = "dp_control_seed_planilha_v2";
 
 function norm(valor: string) {
   return valor
@@ -83,23 +83,41 @@ export function seedPlanilha() {
 
   // Empresas
   const existentes = getStoredEmpresas();
-  const chavesExistentes = new Set(
-    existentes.map((e) => `${norm(e.nome)}|${e.cnpj.replace(/\D/g, "")}`),
+  const porChave = new Map(
+    existentes.map((e) => [`${norm(e.nome)}|${e.cnpj.replace(/\D/g, "")}`, e]),
   );
+  const atualizadas = [...existentes];
+  const vinculos: Array<{ grupoId: string; empresaId: string }> = [];
 
   for (const linha of linhasPlanilha) {
+    if (!linha.nome) continue;
     const chave = `${norm(linha.nome)}|${linha.cnpj.replace(/\D/g, "")}`;
-    if (!linha.nome || chavesExistentes.has(chave)) continue;
-    chavesExistentes.add(chave);
+    const grupoId = linha.grupo ? (gruposPorNome.get(norm(linha.grupo)) ?? "none") : "none";
+    const existente = porChave.get(chave);
+
+    if (existente) {
+      // Atualiza vínculos operacionais da empresa já cadastrada
+      const idx = atualizadas.findIndex((e) => e.id === existente.id);
+      if (idx >= 0) {
+        atualizadas[idx] = {
+          ...existente,
+          carteira: linha.carteira,
+          analista: linha.analista,
+          supervisor: linha.supervisor,
+        };
+      }
+      if (grupoId !== "none") vinculos.push({ grupoId, empresaId: existente.id });
+      continue;
+    }
 
     const isPF = /\(pf\)/i.test(linha.nome) || !linha.cnpj;
 
-    createEmpresa({
+    const nova = createEmpresa({
       nome: linha.nome,
       cnpj: linha.cnpj,
       regime: isPF ? "Pessoa Física" : "Simples Nacional",
       tipo: isPF ? "domestico-pf" : "com-movimento",
-      grupoId: linha.grupo ? (gruposPorNome.get(norm(linha.grupo)) ?? "none") : "none",
+      grupoId,
       responsavel: "",
       carteira: linha.carteira,
       analista: linha.analista,
@@ -112,7 +130,16 @@ export function seedPlanilha() {
       status: "ativa",
       observacoes: "Cadastro importado da planilha de clientes.",
     });
+    porChave.set(chave, nova);
+    atualizadas.push(nova);
   }
+
+  // Persiste atualizações mantendo as empresas criadas acima
+  const criadas = getStoredEmpresas();
+  const mapaAtualizacoes = new Map(atualizadas.map((e) => [e.id, e]));
+  saveEmpresas(criadas.map((e) => mapaAtualizacoes.get(e.id) ?? e));
+
+  for (const v of vinculos) vincularEmpresaAoGrupo(v.grupoId, v.empresaId);
 
   localStorage.setItem(SEED_FLAG, "done");
 }
