@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthModal } from "@/components/auth-modal";
 import { useAuth } from "@/lib/auth-store";
-import { seedPlanilha } from "@/lib/planilha-seed";
+import { resetDados } from "@/lib/reset-dados";
 
 function NotFoundComponent() {
   return (
@@ -131,7 +131,7 @@ function RootComponent() {
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    seedPlanilha();
+    resetDados();
   }, []);
 
   return (

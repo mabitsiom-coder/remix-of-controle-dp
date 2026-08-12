@@ -22,8 +22,8 @@ export const Route = createFileRoute("/checklists")({
 });
 
 function Checklists() {
-  const tarefa = tarefas[0]!;
-  const [itens, setItens] = useState(tarefa.checklist);
+  const tarefa = tarefas[0];
+  const [itens, setItens] = useState(tarefa?.checklist ?? []);
   const bloqueado = itens.some((i) => i.obrigatorio && !i.feito);
 
   return (
@@ -52,7 +52,7 @@ function Checklists() {
         <div className="surface-panel p-4">
           <h2 className="text-sm font-semibold">Checklist em execução</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {tarefa.titulo} — {tarefa.empresa}
+            {tarefa ? `${tarefa.titulo} — ${tarefa.empresa}` : "Nenhuma tarefa em execução"}
           </p>
           <div className="mt-4 space-y-3">
             {itens.map((item, idx) => (

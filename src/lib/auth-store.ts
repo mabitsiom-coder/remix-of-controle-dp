@@ -28,36 +28,6 @@ const initialUsers: Usuario[] = [
     status: "ativo",
     criadoEm: "01/01/2026",
   },
-  {
-    id: "usr-supervisor-1",
-    nome: "Paulo Serra",
-    email: "paulo.serra@dpcontrol.com.br",
-    senha: "123456",
-    perfil: "Supervisor",
-    departamento: "Supervisão DP",
-    status: "ativo",
-    criadoEm: "15/01/2026",
-  },
-  {
-    id: "usr-coordenador-1",
-    nome: "Ana Beatriz",
-    email: "ana.beatriz@dpcontrol.com.br",
-    senha: "123456",
-    perfil: "Coordenador",
-    departamento: "Coordenação Operacional",
-    status: "ativo",
-    criadoEm: "20/01/2026",
-  },
-  {
-    id: "usr-analista-1",
-    nome: "Camila Rocha",
-    email: "camila.rocha@dpcontrol.com.br",
-    senha: "123456",
-    perfil: "Analista",
-    departamento: "Operações DP",
-    status: "ativo",
-    criadoEm: "01/02/2026",
-  },
 ];
 
 export function getStoredUsers(): Usuario[] {
