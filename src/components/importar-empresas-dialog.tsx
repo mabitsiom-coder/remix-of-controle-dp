@@ -131,8 +131,10 @@ export function ImportarEmpresasDialog({
 
       let importedCount = 0;
       let errorCount = 0;
+      let updatedCount = 0;
       let duplicateCount = 0;
       const duplicadas: string[] = [];
+      const atualizadas: string[] = [];
 
       // Start from line 1 to skip the header
       for (let i = 1; i < lines.length; i++) {
