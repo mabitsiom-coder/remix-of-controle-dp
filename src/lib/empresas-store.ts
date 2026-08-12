@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { empresas as mockEmpresas, type Empresa } from "./mock-data";
+import { type Empresa } from "./mock-data";
+
+const mockEmpresas: Empresa[] = [];
 import { vincularEmpresaAoGrupo } from "./grupos-store";
 
 const STORAGE_KEY = "dp_control_empresas_v1";
