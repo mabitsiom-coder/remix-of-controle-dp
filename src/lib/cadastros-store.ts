@@ -44,27 +44,11 @@ const STORAGE_KEYS = {
 
 const EVENT_NAME = "cadastros-updated";
 
-const initialAnalistas: Analista[] = [
-  { id: "analista-1", nome: "Camila Rocha", email: "camila.rocha@dpcontrol.com.br", cargo: "Analista Sênior", status: "ativo" },
-  { id: "analista-2", nome: "Diego Menezes", email: "diego.menezes@dpcontrol.com.br", cargo: "Analista Pleno", status: "ativo" },
-  { id: "analista-3", nome: "Tatiane Lopes", email: "tatiane.lopes@dpcontrol.com.br", cargo: "Analista Pleno", status: "ativo" },
-  { id: "analista-4", nome: "Rafael Prado", email: "rafael.prado@dpcontrol.com.br", cargo: "Analista Jr.", status: "ativo" },
-  { id: "analista-5", nome: "Juliana Reis", email: "juliana.reis@dpcontrol.com.br", cargo: "Analista Sênior", status: "ativo" },
-];
+const initialAnalistas: Analista[] = [];
 
-const initialSupervisores: Supervisor[] = [
-  { id: "supervisor-1", nome: "Paulo Serra", email: "paulo.serra@dpcontrol.com.br", departamento: "Operações DP", status: "ativo" },
-  { id: "supervisor-2", nome: "Ana Beatriz", email: "ana.beatriz@dpcontrol.com.br", departamento: "Gestão & Qualidade", status: "ativo" },
-];
+const initialSupervisores: Supervisor[] = [];
 
-const initialCarteiras: Carteira[] = [
-  { id: "carteira-1", nome: "Carteira Industrial A", descricao: "Empresas do setor de manufatura, metalurgia e grandes indústrias", categoria: "Industrial" },
-  { id: "carteira-2", nome: "Carteira Varejo", descricao: "Supermercados, lojas e redes varejistas", categoria: "Varejo" },
-  { id: "carteira-3", nome: "Carteira Logística", descricao: "Transportadoras, armazéns e empresas de distribuição", categoria: "Logística" },
-  { id: "carteira-4", nome: "Carteira Saúde", descricao: "Clínicas, laboratórios e prestadores de saúde", categoria: "Saúde" },
-  { id: "carteira-5", nome: "Carteira Construção", descricao: "Construtoras e empreiteiras", categoria: "Construção" },
-  { id: "carteira-6", nome: "Carteira Serviços", descricao: "Empresas de tecnologia, consultoria e serviços gerais", categoria: "Serviços" },
-];
+const initialCarteiras: Carteira[] = [];
 
 const initialMembros: Membro[] = [];
 
