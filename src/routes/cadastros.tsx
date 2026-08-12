@@ -6,6 +6,8 @@ import {
   Star, BookOpen, HeartHandshake, UserCog,
 } from "lucide-react";
 import { toast } from "sonner";
+import { AcessoRestrito } from "@/components/acesso-restrito";
+import { useAuth } from "@/lib/auth-store";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -345,6 +347,9 @@ function CadastrosPage() {
     }
     resetAnalista();
   };
+
+  const { currentUser } = useAuth();
+  const podeAcessar = currentUser.perfil === "Administrador" || currentUser.perfil === "Coordenador";
 
   const nomesCarteiras = (ids: string[]) =>
     ids.map((id) => carteiras.find((c) => c.id === id)?.nome ?? "").filter(Boolean).join(", ");
