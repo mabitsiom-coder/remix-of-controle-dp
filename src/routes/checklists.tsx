@@ -22,8 +22,8 @@ export const Route = createFileRoute("/checklists")({
 });
 
 function Checklists() {
-  const tarefa = tarefas[0]!;
-  const [itens, setItens] = useState(tarefa.checklist);
+  const tarefa = tarefas[0];
+  const [itens, setItens] = useState(tarefa?.checklist ?? []);
   const bloqueado = itens.some((i) => i.obrigatorio && !i.feito);
 
   return (
