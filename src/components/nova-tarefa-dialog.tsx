@@ -63,19 +63,19 @@ export function NovaTarefaDialog({
     e.preventDefault();
 
     if (!form.titulo.trim()) {
-      toast.error("Informe o título da tarefa.");
+      toast.error("Informe o título da rotina.");
       return;
     }
 
     try {
       const t = createTarefa(form);
-      toast.success(`Tarefa "${t.titulo}" criada com sucesso!`);
+      toast.success(`Rotina "${t.titulo}" criada com sucesso!`);
       setOpen(false);
       setForm({ ...EMPTY_FORM, status: defaultStatus ?? "backlog" });
       onSuccess?.();
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao criar tarefa.");
+      toast.error("Erro ao criar rotina.");
     }
   };
 
@@ -84,7 +84,7 @@ export function NovaTarefaDialog({
       <DialogTrigger asChild>
         {trigger ?? (
           <Button className="gap-1.5 shadow-sm">
-            <Plus className="h-4 w-4" /> Nova Tarefa
+            <Plus className="h-4 w-4" /> Nova Rotina
           </Button>
         )}
       </DialogTrigger>
@@ -96,9 +96,9 @@ export function NovaTarefaDialog({
               <ClipboardList className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-semibold">Nova Tarefa</DialogTitle>
+              <DialogTitle className="text-lg font-semibold">Nova Rotina</DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Preencha os dados da tarefa. O checklist é opcional.
+                Preencha os dados da rotina. O checklist é opcional.
               </DialogDescription>
             </div>
           </div>
@@ -255,7 +255,7 @@ export function NovaTarefaDialog({
               Cancelar
             </Button>
             <Button type="submit" className="gap-1.5 text-xs">
-              <CheckCircle2 className="h-4 w-4" /> Criar Tarefa
+              <CheckCircle2 className="h-4 w-4" /> Criar Rotina
             </Button>
           </DialogFooter>
         </form>

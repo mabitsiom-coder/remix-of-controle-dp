@@ -25,13 +25,13 @@ import type { Tarefa } from "@/lib/mock-data";
 export const Route = createFileRoute("/tarefas")({
   head: () => ({
     meta: [
-      { title: "Gestão de Tarefas — DP Control" },
+      { title: "Gestão de Rotinas — DP Control" },
       {
         name: "description",
         content:
-          "Kanban, lista e cronograma das tarefas do DP com checklist obrigatório, prazos e horas.",
+          "Kanban, lista e cronograma das rotinas do DP com checklist obrigatório, prazos e horas.",
       },
-      { property: "og:title", content: "Gestão de Tarefas — DP Control" },
+      { property: "og:title", content: "Gestão de Rotinas — DP Control" },
       {
         property: "og:description",
         content: "Kanban operacional do Departamento Pessoal.",
@@ -198,7 +198,7 @@ function Tarefas() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Gestão de Tarefas"
+        title="Gestão de Rotinas"
         description="Checklists obrigatórios, prazos, horas previstas x gastas e recorrências"
         actions={
           <div className="flex items-center gap-2">

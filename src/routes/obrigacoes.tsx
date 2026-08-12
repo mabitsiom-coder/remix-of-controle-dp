@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { FileDown } from "lucide-react";
+import { FileDown, Trash2 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
-import { obrigacoes } from "@/lib/mock-data";
+import { NovaObrigacaoDialog } from "@/components/nova-obrigacao-dialog";
+import { useObrigacoes, deleteObrigacao } from "@/lib/obrigacoes-store";
 
 export const Route = createFileRoute("/obrigacoes")({
   head: () => ({
@@ -26,6 +27,7 @@ const tipos = ["Todos", "eSocial", "DCTFWeb", "FGTS Digital", "EFD-Reinf", "MIT"
 
 function Obrigacoes() {
   const [filtro, setFiltro] = useState("Todos");
+  const { obrigacoes } = useObrigacoes();
   const lista = filtro === "Todos" ? obrigacoes : obrigacoes.filter((o) => o.tipo === filtro);
 
   const resumo = [
@@ -39,11 +41,14 @@ function Obrigacoes() {
     <div className="space-y-6">
       <PageHeader
         title="Gestão de Obrigações"
-        description="Competência 07/2026 · eSocial, FGTS Digital, DCTFWeb, MIT, EFD-Reinf e SST"
+        description="eSocial, FGTS Digital, DCTFWeb, MIT, EFD-Reinf e SST"
         actions={
-          <Button variant="outline">
-            <FileDown className="mr-1.5 h-4 w-4" /> Exportar
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline">
+              <FileDown className="mr-1.5 h-4 w-4" /> Exportar
+            </Button>
+            <NovaObrigacaoDialog />
+          </div>
         }
       />
 
@@ -83,6 +88,7 @@ function Obrigacoes() {
               <th className="p-3 font-medium">Responsável</th>
               <th className="p-3 font-medium">Protocolo</th>
               <th className="p-3 font-medium">Status</th>
+              <th className="p-3 font-medium text-right">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -91,14 +97,32 @@ function Obrigacoes() {
                 <td className="p-3 font-medium">{o.empresa}</td>
                 <td className="p-3">{o.tipo}</td>
                 <td className="p-3 tabular-nums">{o.competencia}</td>
-                <td className="p-3 tabular-nums">{o.prazo}</td>
-                <td className="p-3 text-muted-foreground">{o.responsavel}</td>
+                <td className="p-3 tabular-nums">{o.prazo || "—"}</td>
+                <td className="p-3 text-muted-foreground">{o.responsavel || "—"}</td>
                 <td className="p-3 text-xs text-muted-foreground">{o.protocolo ?? "—"}</td>
                 <td className="p-3">
                   <StatusBadge status={o.status} />
                 </td>
+                <td className="p-3 text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    onClick={() => deleteObrigacao(o.id)}
+                    aria-label="Excluir obrigação"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </td>
               </tr>
             ))}
+            {lista.length === 0 && (
+              <tr>
+                <td colSpan={8} className="p-8 text-center text-sm text-muted-foreground">
+                  Nenhuma obrigação cadastrada. Use o botão <strong>Nova Obrigação</strong> para inserir.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
