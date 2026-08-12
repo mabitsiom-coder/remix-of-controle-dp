@@ -12,32 +12,7 @@ export type GrupoEmpresarial = {
 const STORAGE_KEY = "dp_control_grupos_v1";
 const EVENT_NAME = "grupos-updated";
 
-const initialGrupos: GrupoEmpresarial[] = [
-  {
-    id: "grupo-andrade",
-    nome: "Grupo Andrade Industrial",
-    codigo: "GRP-001",
-    responsavel: "Sr. Antônio Andrade",
-    descricao: "Grupo econômico do setor metalúrgico e de manufatura pesada.",
-    empresaIds: ["metalurgica-andrade"],
-  },
-  {
-    id: "grupo-bom-preco",
-    nome: "Grupo Bom Preço Varejo",
-    codigo: "GRP-002",
-    responsavel: "Sra. Helena Duarte",
-    descricao: "Rede de supermercados e centros de distribuição regionais.",
-    empresaIds: ["rede-bom-preco"],
-  },
-  {
-    id: "grupo-saude-unida",
-    nome: "Grupo Saúde e Vida",
-    codigo: "GRP-003",
-    responsavel: "Dr. Rafael Prado",
-    descricao: "Grupo gestor de clínicas, laboratórios e unidades de atendimento médico.",
-    empresaIds: ["clinica-vida-plena"],
-  },
-];
+const initialGrupos: GrupoEmpresarial[] = [];
 
 export function getStoredGrupos(): GrupoEmpresarial[] {
   if (typeof window === "undefined") return initialGrupos;
