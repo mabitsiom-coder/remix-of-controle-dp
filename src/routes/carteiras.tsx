@@ -126,8 +126,10 @@ function CarteirasPage() {
             <Briefcase className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Total de Carteiras</p>
-            <p className="text-xl font-bold">{todasCarteirasNomes.length}</p>
+            <p className="text-xs text-muted-foreground">
+              {carteiraSelecionada ? "Carteira Selecionada" : "Total de Carteiras"}
+            </p>
+            <p className="text-xl font-bold">{carteiraSelecionada ?? kpiCarteiras}</p>
           </div>
         </div>
 
@@ -137,7 +139,7 @@ function CarteirasPage() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Empresas Atendidas</p>
-            <p className="text-xl font-bold">{empresas.length}</p>
+            <p className="text-xl font-bold">{empresasEscopo.length}</p>
           </div>
         </div>
 
@@ -147,9 +149,7 @@ function CarteirasPage() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Total de Vidas / Func.</p>
-            <p className="text-xl font-bold">
-              {empresas.reduce((sum, e) => sum + (e.funcionarios || 0), 0).toLocaleString("pt-BR")}
-            </p>
+            <p className="text-xl font-bold">{kpiVidas.toLocaleString("pt-BR")}</p>
           </div>
         </div>
 
@@ -159,18 +159,11 @@ function CarteirasPage() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Analistas Ativos</p>
-            <p className="text-xl font-bold">{Array.from(new Set(empresas.map((e) => e.analista))).length}</p>
+            <p className="text-xl font-bold">{kpiAnalistas}</p>
           </div>
         </div>
       </div>
 
-      {/* FILTROS E BUSCA */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar empresa, CNPJ, analista ou supervisor na carteira..."
-            value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className="pl-8 text-xs"
           />
