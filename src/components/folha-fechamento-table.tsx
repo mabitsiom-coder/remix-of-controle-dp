@@ -149,10 +149,9 @@ export function FolhaFechamentoTable() {
       });
     }
 
-    // Fallback para empresas seed caso não haja empresas no localStorage
-    const list = Object.values(tarefasSalvas);
-    const listaOuSeed = list.length > 0 ? list : folhaTarefasSeed;
-    return listaOuSeed.filter((t) => t.competencia === competencia);
+    // Fallback: usa apenas as tarefas salvas
+    const list: FolhaTarefa[] = Object.values(tarefasSalvas);
+    return list.filter((t) => t.competencia === competencia);
   }, [empresas, competencia, tarefasSalvas]);
   
   const carteirasDisponiveis = useMemo(() => {
