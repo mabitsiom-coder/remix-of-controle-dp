@@ -1,14 +1,30 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { AlertTriangle, Users, Building2, Copy, Check } from "lucide-react";
+import { AlertTriangle, Users, Building2, Copy, Check, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Input } from "@/components/ui/input";
-import { useEmpresas } from "@/lib/empresas-store";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useEmpresas, excluirEmpresa } from "@/lib/empresas-store";
+import { useAuth } from "@/lib/auth-store";
+import { carteiraDaEmpresa } from "@/lib/carteiras-core";
+import type { Empresa } from "@/lib/mock-data";
+import { EmpresasExcluidas } from "@/components/empresas-excluidas";
 import { NovaEmpresaDialog } from "@/components/nova-empresa-dialog";
 import { ImportarEmpresasDialog } from "@/components/importar-empresas-dialog";
+
 
 export const Route = createFileRoute("/empresas/")({
   head: () => ({
