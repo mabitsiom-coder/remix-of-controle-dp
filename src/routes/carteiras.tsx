@@ -98,7 +98,7 @@ function CarteirasPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Painel por Carteiras"
+        title="Carteiras"
         description="Distribuição operacional de empresas, equipe e capacidade por carteira"
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -151,9 +151,7 @@ function CarteirasPage() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Analistas Ativos</p>
-            <p className="text-xl font-bold">
-              {Array.from(new Set(empresas.map((e) => e.analista))).length}
-            </p>
+            <p className="text-xl font-bold">{Array.from(new Set(empresas.map((e) => e.analista))).length}</p>
           </div>
         </div>
       </div>
@@ -233,8 +231,8 @@ function CarteiraCard({
               {carteira.categoria}
             </Badge>
             <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Building2 className="h-3.5 w-3.5" />{" "}
-              <strong>{carteira.totalEmpresasGeral}</strong> {carteira.totalEmpresasGeral === 1 ? "empresa" : "empresas"}
+              <Building2 className="h-3.5 w-3.5" /> <strong>{carteira.totalEmpresasGeral}</strong>{" "}
+              {carteira.totalEmpresasGeral === 1 ? "empresa" : "empresas"}
             </span>
             <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Users className="h-3.5 w-3.5" /> <strong>{carteira.totalFuncionarios}</strong> funcionários
@@ -243,12 +241,7 @@ function CarteiraCard({
           <p className="text-xs text-muted-foreground">{carteira.descricao}</p>
         </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setExpandido(!expandido)}
-          className="gap-1.5 text-xs"
-        >
+        <Button variant="ghost" size="sm" onClick={() => setExpandido(!expandido)} className="gap-1.5 text-xs">
           {expandido ? (
             <>
               Recolher <ChevronUp className="h-4 w-4" />
@@ -265,9 +258,7 @@ function CarteiraCard({
       <div className="grid gap-4 p-5 sm:grid-cols-3 border-b bg-background/50 text-xs">
         {/* EQUIPE RESPONSÁVEL */}
         <div className="space-y-2">
-          <p className="font-semibold text-muted-foreground uppercase tracking-wider text-[10px]">
-            Equipe Responsável
-          </p>
+          <p className="font-semibold text-muted-foreground uppercase tracking-wider text-[10px]">Equipe Responsável</p>
           <div className="space-y-1.5">
             <div>
               <span className="text-muted-foreground">Supervisor(es): </span>
@@ -306,16 +297,12 @@ function CarteiraCard({
 
         {/* DISTRIBUIÇÃO E INDICADOR */}
         <div className="space-y-2">
-          <p className="font-semibold text-muted-foreground uppercase tracking-wider text-[10px]">
-            Carga de Trabalho
-          </p>
+          <p className="font-semibold text-muted-foreground uppercase tracking-wider text-[10px]">Carga de Trabalho</p>
           <div className="space-y-1">
             <div className="flex justify-between text-[11px]">
               <span>Média de func. / empresa:</span>
               <strong className="text-foreground">
-                {carteira.empresas.length > 0
-                  ? Math.round(carteira.totalFuncionarios / carteira.empresas.length)
-                  : 0}
+                {carteira.empresas.length > 0 ? Math.round(carteira.totalFuncionarios / carteira.empresas.length) : 0}
               </strong>
             </div>
             <div className="flex justify-between text-[11px]">
@@ -364,9 +351,7 @@ function CarteiraCard({
                       <td className="py-3 px-3 text-muted-foreground">{emp.regime}</td>
                       <td className="py-3 px-3 font-medium text-foreground">{emp.analista}</td>
                       <td className="py-3 px-3 text-muted-foreground">{emp.supervisor}</td>
-                      <td className="py-3 px-3 text-center font-medium">
-                        {emp.funcionarios}
-                      </td>
+                      <td className="py-3 px-3 text-center font-medium">{emp.funcionarios}</td>
                       <td className="py-3 px-3 text-center">
                         <StatusBadge status={emp.risco} />
                       </td>
