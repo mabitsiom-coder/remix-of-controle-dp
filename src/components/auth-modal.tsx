@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LogIn, KeyRound, UserCheck, Shield, Lock, CheckCircle2 } from "lucide-react";
+import { LogIn, LogOut, Shield, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -18,21 +18,26 @@ import { useAuth } from "@/lib/auth-store";
 
 export function AuthModal({ trigger }: { trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
-  const { currentUser, usuarios, login, switchUser } = useAuth();
+  const { currentUser, autenticado, login, logout } = useAuth();
 
-  const [email, setEmail] = useState("auditoria@mabitcontabilidade.com.br");
-  const [senha, setSenha] = useState("123456");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [enviando, setEnviando] = useState(false);
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setEnviando(true);
     try {
-      const user = login(email, senha);
+      const user = await login(email, senha);
       toast.success(`Bem-vindo, ${user.nome}!`, {
         description: `Sessão ativa como ${user.perfil}`,
       });
+      setSenha("");
       setOpen(false);
     } catch (err: any) {
-      toast.error(err.message || "Credenciais inválidas.");
+      toast.error(err?.message || "Credenciais inválidas.");
+    } finally {
+      setEnviando(false);
     }
   };
 
@@ -41,7 +46,7 @@ export function AuthModal({ trigger }: { trigger?: React.ReactNode }) {
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-            <LogIn className="h-3.5 w-3.5" /> Entrar / Trocar Conta
+            <LogIn className="h-3.5 w-3.5" /> {autenticado ? "Minha sessão" : "Entrar"}
           </Button>
         )}
       </DialogTrigger>
@@ -54,89 +59,78 @@ export function AuthModal({ trigger }: { trigger?: React.ReactNode }) {
             <div>
               <DialogTitle className="text-base font-semibold">Autenticação & Sessão</DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Entre com suas credenciais ou alterne o perfil ativo.
+                Acesso real e individual, com os dados salvos no banco de dados.
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        {/* LOGIN POR CREDENCIAIS */}
-        <form onSubmit={handleLoginSubmit} className="mt-2 space-y-3 rounded-lg border p-4 bg-muted/20">
-          <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-            <Lock className="h-3.5 w-3.5 text-primary" /> Login por E-mail e Senha
-          </p>
-
-          <div className="space-y-1">
-            <Label htmlFor="loginEmail" className="text-[11px]">E-mail</Label>
-            <Input
-              id="loginEmail"
-              type="email"
-              placeholder="auditoria@mabitcontabilidade.com.br"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="h-8 text-xs"
-              required
-            />
+        {autenticado ? (
+          <div className="mt-2 space-y-3 rounded-lg border bg-muted/20 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-semibold text-foreground">{currentUser.nome}</p>
+                <p className="text-[11px] text-muted-foreground">{currentUser.email}</p>
+              </div>
+              <Badge variant="default" className="text-[10px]">
+                {currentUser.perfil}
+              </Badge>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-full gap-1.5 text-xs"
+              onClick={async () => {
+                await logout();
+                setOpen(false);
+                toast.info("Sessão encerrada.");
+              }}
+            >
+              <LogOut className="h-3.5 w-3.5" /> Sair da conta
+            </Button>
           </div>
+        ) : (
+          <form
+            onSubmit={handleLoginSubmit}
+            className="mt-2 space-y-3 rounded-lg border bg-muted/20 p-4"
+          >
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+              <Lock className="h-3.5 w-3.5 text-primary" /> Login por E-mail e Senha
+            </p>
 
-          <div className="space-y-1">
-            <Label htmlFor="loginSenha" className="text-[11px]">Senha</Label>
-            <Input
-              id="loginSenha"
-              type="password"
-              placeholder="123456"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              className="h-8 text-xs"
-              required
-            />
-          </div>
+            <div className="space-y-1">
+              <Label htmlFor="loginEmail" className="text-[11px]">
+                E-mail
+              </Label>
+              <Input
+                id="loginEmail"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-8 text-xs"
+                required
+              />
+            </div>
 
-          <Button type="submit" size="sm" className="w-full h-8 text-xs gap-1.5 mt-1">
-            <LogIn className="h-3.5 w-3.5" /> Autenticar
-          </Button>
-        </form>
+            <div className="space-y-1">
+              <Label htmlFor="loginSenha" className="text-[11px]">
+                Senha
+              </Label>
+              <Input
+                id="loginSenha"
+                type="password"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                className="h-8 text-xs"
+                required
+              />
+            </div>
 
-        {/* CONTAS DISPONÍVEIS */}
-        <div className="space-y-2 pt-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Troca Rápida de Usuário Ativo
-          </p>
-          <div className="space-y-1.5 max-h-48 overflow-y-auto">
-            {usuarios.map((u) => {
-              const isLogado = currentUser.id === u.id;
-              return (
-                <div
-                  key={u.id}
-                  onClick={() => {
-                    switchUser(u);
-                    toast.success(`Usuário ativo: ${u.nome} (${u.perfil})`);
-                    setOpen(false);
-                  }}
-                  className={`flex items-center justify-between p-2.5 rounded-lg border transition-all cursor-pointer text-xs ${
-                    isLogado ? "border-primary bg-primary/10" : "hover:bg-muted/40"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20 text-primary font-bold text-[11px]">
-                      {u.nome.substring(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-foreground">{u.nome}</p>
-                      <p className="text-[10px] text-muted-foreground">{u.email}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={isLogado ? "default" : "outline"} className="text-[10px]">
-                      {u.perfil}
-                    </Badge>
-                    {isLogado && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+            <Button type="submit" size="sm" disabled={enviando} className="mt-1 h-8 w-full gap-1.5 text-xs">
+              <LogIn className="h-3.5 w-3.5" /> {enviando ? "Autenticando..." : "Autenticar"}
+            </Button>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
