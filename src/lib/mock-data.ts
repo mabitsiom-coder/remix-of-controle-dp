@@ -38,6 +38,7 @@ export type Empresa = {
   regime: string;
   tipo?: "com-movimento" | "sem-movimento" | "domestico-pf";
   codigoDominio?: string;
+  grupoId?: string;
   responsavel: string;
   carteira: string;
   analista: string;
