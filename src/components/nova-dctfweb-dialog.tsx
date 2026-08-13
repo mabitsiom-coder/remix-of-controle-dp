@@ -59,9 +59,9 @@ export function NovaDCTFWebDialog({ trigger }: { trigger?: React.ReactNode }) {
       empresa: nomeEmpresa,
       codigo: emp?.codigoDominio || emp?.id || prev.codigo,
       cnpj: emp?.cnpj || prev.cnpj,
-      carteira: emp?.carteira || prev.carteira,
-      analista: emp?.analista || prev.analista,
-      supervisor: emp?.supervisor || prev.supervisor,
+      carteira: emp?.carteira || prev.carteira ?? "",
+      analista: emp?.analista || prev.analista ?? "",
+      supervisor: emp?.supervisor || prev.supervisor ?? "",
     }));
   };
 
