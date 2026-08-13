@@ -156,7 +156,7 @@ function GruposPage() {
 
 function GrupoCard({ grupo }: { grupo: GrupoEmpresarial }) {
   const { empresas } = useEmpresas();
-  const [expandido, setExpandido] = useState(true);
+  const [expandido, setExpandido] = useState(false);
 
   const empresasDoGrupo = empresas.filter((e) => grupo.empresaIds.includes(e.id));
   const totalFuncionarios = empresasDoGrupo.reduce((sum, e) => sum + (e.funcionarios || 0), 0);
@@ -166,9 +166,13 @@ function GrupoCard({ grupo }: { grupo: GrupoEmpresarial }) {
 
   return (
     <div className="surface-panel overflow-hidden rounded-xl border transition-all">
-      {/* CABEÇALHO DO GRUPO */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b bg-muted/20 p-5">
-        <div className="space-y-1 min-w-0">
+      {/* CABEÇALHO DO GRUPO — CLICÁVEL PARA EXPANDIR */}
+      <button
+        type="button"
+        onClick={() => setExpandido(!expandido)}
+        className="w-full text-left flex flex-wrap items-center justify-between gap-4 border-b bg-muted/20 p-5 hover:bg-muted/30 transition-colors"
+      >
+        <div className="space-y-1 min-w-0 flex-1">
           <div className="flex items-center gap-2.5 flex-wrap">
             <h2 className="text-base font-bold tracking-tight text-foreground">{grupo.nome}</h2>
             <Badge variant="secondary" className="text-xs font-mono">
@@ -186,20 +190,15 @@ function GrupoCard({ grupo }: { grupo: GrupoEmpresarial }) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           <GerenciarMembrosGrupoDialog grupo={grupo} />
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setExpandido(!expandido)}
-            className="gap-1 text-xs"
-          >
+          <div className="flex h-8 w-8 items-center justify-center rounded-md border bg-background text-muted-foreground">
             {expandido ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </Button>
+          </div>
         </div>
-      </div>
+      </button>
 
-      {/* METRICAS CONSOLIDADAS */}
+      {/* METRICAS CONSOLIDADAS — SEMPRE VISÍVEIS NO CARD */}
       <div className="grid gap-4 p-5 sm:grid-cols-3 border-b bg-background/50 text-xs">
         <div>
           <p className="font-semibold text-muted-foreground uppercase tracking-wider text-[10px]">
@@ -239,7 +238,7 @@ function GrupoCard({ grupo }: { grupo: GrupoEmpresarial }) {
         </div>
       </div>
 
-      {/* LISTA DE EMPRESAS INTEGRANTES DO GRUPO */}
+      {/* LISTA DE EMPRESAS INTEGRANTES DO GRUPO — EXIBIDO AO CLICAR */}
       {expandido && (
         <div className="p-5">
           {empresasDoGrupo.length === 0 ? (
