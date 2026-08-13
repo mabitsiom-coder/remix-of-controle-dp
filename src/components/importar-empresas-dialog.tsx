@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Upload, FileUp, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { sincronizarCadastrosComEmpresas } from "@/lib/cadastros-store";
 
 import {
   Dialog,
