@@ -24,6 +24,15 @@ import {
 import { useCadastros, getCarteiras } from "@/lib/cadastros-store";
 import { addUsuario, useAuth, type PerfilAcesso } from "@/lib/auth-store";
 
+export type PessoaCadastro = {
+  origemId: string;
+  nome: string;
+  email: string;
+  perfil: PerfilAcesso;
+  departamento: string;
+  origem: string;
+};
+
 function normalizar(valor: string) {
   return (valor || "")
     .trim()
