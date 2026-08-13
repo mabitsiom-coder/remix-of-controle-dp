@@ -255,8 +255,26 @@ function DefinirAcessoDialog({
           <form onSubmit={salvar} className="mt-2 space-y-3">
             <div className="rounded-lg border bg-muted/40 p-3 space-y-1 text-xs">
               <p className="font-semibold text-foreground">{pessoa.nome}</p>
-              <p className="text-muted-foreground">Perfil: {pessoa.perfil}</p>
               <p className="text-muted-foreground">Área: {pessoa.departamento}</p>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Perfil de acesso</Label>
+              <Select value={perfil} onValueChange={(v) => setPerfil(v as PerfilAcesso)}>
+                <SelectTrigger id="acessoPerfil">
+                  <SelectValue placeholder="Selecione o perfil" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PERFIS.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {p}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Sugerido pelo cadastro: {pessoa.perfil}
+              </p>
             </div>
 
             <div className="space-y-1">
