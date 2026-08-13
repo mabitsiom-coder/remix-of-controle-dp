@@ -121,6 +121,8 @@ function UsuariosPage() {
         </Badge>
       </div>
 
+      {isAdmin && <AcessosCadastros />}
+
       {/* KPIS */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="surface-panel p-4 flex items-center gap-3">
