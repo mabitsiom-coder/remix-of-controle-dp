@@ -95,6 +95,14 @@ function CarteirasPage() {
     ? carteirasAgrupadas.filter((c) => c.nome === carteiraSelecionada)
     : carteirasAgrupadas;
 
+  // Escopo dos KPIs: respeita a carteira selecionada
+  const empresasEscopo = carteiraSelecionada
+    ? empresas.filter((e) => e.carteira === carteiraSelecionada)
+    : empresas;
+  const kpiCarteiras = carteiraSelecionada ? 1 : todasCarteirasNomes.length;
+  const kpiVidas = empresasEscopo.reduce((sum, e) => sum + (e.funcionarios || 0), 0);
+  const kpiAnalistas = Array.from(new Set(empresasEscopo.map((e) => e.analista).filter(Boolean))).length;
+
   return (
     <div className="space-y-6">
       <PageHeader
