@@ -136,7 +136,7 @@ export function ImportarSSTDialog() {
       let idxObsC = -1;
 
       let startRow = 0;
-      const headerCandidates = matriz[0].map((c) => c.toLowerCase().trim());
+      const headerCandidates = (matriz[0] ?? []).map((c) => c.toLowerCase().trim());
 
       headerCandidates.forEach((col, idx) => {
         if (col.includes("cód") || col.includes("cod") || col.includes("domínio")) idxCod = idx;
@@ -189,9 +189,9 @@ export function ImportarSSTDialog() {
         const row = matriz[i];
         if (!row || row.length === 0) continue;
 
-        const rawCod = (idxCod >= 0 ? row[idxCod] : "").trim();
-        const rawCnpj = (idxCnpj >= 0 ? row[idxCnpj] : "").trim().replace(/\D/g, "");
-        const rawEmpresa = (idxEmpresa >= 0 ? row[idxEmpresa] : "").trim();
+        const rawCod = (idxCod >= 0 ? (row[idxCod] ?? "") : "").trim();
+        const rawCnpj = (idxCnpj >= 0 ? (row[idxCnpj] ?? "") : "").trim().replace(/\D/g, "");
+        const rawEmpresa = (idxEmpresa >= 0 ? (row[idxEmpresa] ?? "") : "").trim();
 
         if (!rawCod && !rawCnpj && !rawEmpresa) continue;
 
@@ -214,21 +214,21 @@ export function ImportarSSTDialog() {
           (s) => (s.codigo && s.codigo === codOficial) || s.empresa.toLowerCase() === nomeOficial.toLowerCase()
         );
 
-        const sstNaMabit = (idxSstMabit >= 0 ? row[idxSstMabit] : "").toUpperCase().includes("SIM") ? "SIM" : "NÃO";
-        const grauDeRisco = (idxRisco >= 0 ? row[idxRisco] : "1").trim() || "1";
-        const qtdFunc = Number((idxQtd >= 0 ? row[idxQtd] : "1").replace(/\D/g, "")) || empCadastrada?.funcionarios || 1;
-        const inicioContrato = (idxInicio >= 0 ? row[idxInicio] : "—").trim() || "—";
-        const examesVencidos = (idxExames >= 0 ? row[idxExames] : "").toUpperCase().includes("SIM") ? "SIM" : "NÃO";
-        const possuiProgramas = (idxProg >= 0 ? row[idxProg] : "").toUpperCase().includes("SIM") ? "SIM" : "NÃO";
+        const sstNaMabit = (idxSstMabit >= 0 ? (row[idxSstMabit] ?? "") : "").toUpperCase().includes("SIM") ? "SIM" : "NÃO";
+        const grauDeRisco = (idxRisco >= 0 ? (row[idxRisco] ?? "") : "1").trim() || "1";
+        const qtdFunc = Number((idxQtd >= 0 ? (row[idxQtd] ?? "") : "1").replace(/\D/g, "")) || empCadastrada?.funcionarios || 1;
+        const inicioContrato = (idxInicio >= 0 ? (row[idxInicio] ?? "") : "—").trim() || "—";
+        const examesVencidos = (idxExames >= 0 ? (row[idxExames] ?? "") : "").toUpperCase().includes("SIM") ? "SIM" : "NÃO";
+        const possuiProgramas = (idxProg >= 0 ? (row[idxProg] ?? "") : "").toUpperCase().includes("SIM") ? "SIM" : "NÃO";
         
-        const ltcat = (idxLtcat >= 0 ? row[idxLtcat] : "Indeterminado").trim() || "Indeterminado";
-        const pcmso = (idxPcmso >= 0 ? row[idxPcmso] : "—").trim() || "—";
-        const pgr = (idxPgr >= 0 ? row[idxPgr] : "—").trim() || "—";
-        const ltip = (idxLtip >= 0 ? row[idxLtip] : "—").trim() || "—";
-        const dir = (idxDir >= 0 ? row[idxDir] : "—").trim() || "—";
-        const linkProgramas = (idxLink >= 0 ? row[idxLink] : "").trim();
-        const obsAnalista = (idxObsA >= 0 ? row[idxObsA] : "").trim();
-        const obsCS = (idxObsC >= 0 ? row[idxObsC] : "").trim();
+        const ltcat = (idxLtcat >= 0 ? (row[idxLtcat] ?? "") : "Indeterminado").trim() || "Indeterminado";
+        const pcmso = (idxPcmso >= 0 ? (row[idxPcmso] ?? "") : "—").trim() || "—";
+        const pgr = (idxPgr >= 0 ? (row[idxPgr] ?? "") : "—").trim() || "—";
+        const ltip = (idxLtip >= 0 ? (row[idxLtip] ?? "") : "—").trim() || "—";
+        const dir = (idxDir >= 0 ? (row[idxDir] ?? "") : "—").trim() || "—";
+        const linkProgramas = (idxLink >= 0 ? (row[idxLink] ?? "") : "").trim();
+        const obsAnalista = (idxObsA >= 0 ? (row[idxObsA] ?? "") : "").trim();
+        const obsCS = (idxObsC >= 0 ? (row[idxObsC] ?? "") : "").trim();
 
         if (sstExistente) {
           updateRegSST(sstExistente.id, {
