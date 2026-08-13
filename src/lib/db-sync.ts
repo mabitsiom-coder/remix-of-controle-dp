@@ -53,7 +53,10 @@ async function enviar(entrada: Entrada) {
 
   const { error } = await getSupabase()
     .from("app_state")
-    .upsert({ chave: entrada.chave, dados, updated_by: usuarioId }, { onConflict: "chave" });
+    .upsert(
+      { chave: entrada.chave, dados: dados as never, updated_by: usuarioId },
+      { onConflict: "chave" },
+    );
 
   if (error) {
     console.error(`Falha ao salvar "${entrada.chave}" no banco:`, error.message);
