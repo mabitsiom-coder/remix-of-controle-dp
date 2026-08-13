@@ -94,81 +94,128 @@ function Empresas() {
           {lista.map((e) => {
             const codDominio = e.codigoDominio || e.id;
             return (
-              <Link
-                key={e.id}
-                to="/empresas/$empresaId"
-                params={{ empresaId: e.id }}
-                className="surface-panel block p-4 transition-all hover:-translate-y-0.5 hover:border-primary/50 group"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="truncate text-sm font-semibold group-hover:text-primary transition-colors">
-                        {e.nome}
-                      </h2>
-                    </div>
-                    
-                    {/* Tag com Código do Domínio com botão de Copiar */}
-                    <div className="mt-1 flex items-center gap-2 flex-wrap">
-                      {codDominio && (
-                        <button
-                          type="button"
-                          onClick={(ev) => handleCopy(ev, codDominio, "Código do Domínio")}
-                          title="Clique para copiar o Código do Domínio"
-                          className="inline-flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary transition-colors hover:bg-primary/20 hover:border-primary/40 cursor-pointer"
-                        >
-                          <span>Cód. {codDominio}</span>
-                          {copiedId === codDominio ? (
-                            <Check className="h-3 w-3 text-success" />
-                          ) : (
-                            <Copy className="h-3 w-3 opacity-70 group-hover:opacity-100" />
-                          )}
-                        </button>
-                      )}
+              <div key={e.id} className="relative">
+                <div className="absolute right-2 top-2 z-10">
+                  <ExcluirEmpresaButton empresa={e} />
+                </div>
+                <Link
+                  to="/empresas/$empresaId"
+                  params={{ empresaId: e.id }}
+                  className="surface-panel block p-4 transition-all hover:-translate-y-0.5 hover:border-primary/50 group"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="truncate text-sm font-semibold group-hover:text-primary transition-colors">
+                          {e.nome}
+                        </h2>
+                      </div>
 
-                      <span className="text-xs text-muted-foreground">{e.cnpj}</span>
-                      {e.cnpj && (
-                        <button
-                          type="button"
-                          onClick={(ev) => handleCopy(ev, e.cnpj, "CNPJ")}
-                          title="Copiar CNPJ"
-                          className="text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          <Copy className="h-3 w-3" />
-                        </button>
-                      )}
+                      {/* Tag com Código do Domínio com botão de Copiar */}
+                      <div className="mt-1 flex items-center gap-2 flex-wrap">
+                        {codDominio && (
+                          <button
+                            type="button"
+                            onClick={(ev) => handleCopy(ev, codDominio, "Código do Domínio")}
+                            title="Clique para copiar o Código do Domínio"
+                            className="inline-flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary transition-colors hover:bg-primary/20 hover:border-primary/40 cursor-pointer"
+                          >
+                            <span>Cód. {codDominio}</span>
+                            {copiedId === codDominio ? (
+                              <Check className="h-3 w-3 text-success" />
+                            ) : (
+                              <Copy className="h-3 w-3 opacity-70 group-hover:opacity-100" />
+                            )}
+                          </button>
+                        )}
+
+                        <span className="text-xs text-muted-foreground">{e.cnpj}</span>
+                        {e.cnpj && (
+                          <button
+                            type="button"
+                            onClick={(ev) => handleCopy(ev, e.cnpj, "CNPJ")}
+                            title="Copiar CNPJ"
+                            className="text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mr-8">
+                      <StatusBadge status={e.status} />
                     </div>
                   </div>
-                  <StatusBadge status={e.status} />
-                </div>
 
-                <div className="mt-4 grid grid-cols-2 gap-y-2.5 text-xs">
-                  <Info label="Regime" value={e.regime} />
-                  <Info label="Carteira" value={e.carteira} />
-                  <Info label="Analista" value={e.analista} />
-                  <Info label="Supervisor" value={e.supervisor} />
-                </div>
+                  <div className="mt-4 grid grid-cols-2 gap-y-2.5 text-xs">
+                    <Info label="Regime" value={e.regime} />
+                    <Info label="Carteira" value={carteiraDaEmpresa(e)} />
+                    <Info label="Analista" value={e.analista} />
+                    <Info label="Supervisor" value={e.supervisor} />
+                  </div>
 
-                <div className="mt-4 flex items-center justify-between border-t pt-3">
-                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Users className="h-3.5 w-3.5" /> {e.funcionarios} funcionários
-                  </span>
-                  {e.diasSemRevisao > 30 ? (
-                    <span className="flex items-center gap-1 text-xs font-medium text-destructive">
-                      <AlertTriangle className="h-3.5 w-3.5" /> {e.diasSemRevisao} dias sem revisão
+                  <div className="mt-4 flex items-center justify-between border-t pt-3">
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Users className="h-3.5 w-3.5" /> {e.funcionarios} funcionários
                     </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Revisado há {e.diasSemRevisao} dias</span>
-                  )}
-                </div>
-              </Link>
+                    {e.diasSemRevisao > 30 ? (
+                      <span className="flex items-center gap-1 text-xs font-medium text-destructive">
+                        <AlertTriangle className="h-3.5 w-3.5" /> {e.diasSemRevisao} dias sem revisão
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Revisado há {e.diasSemRevisao} dias</span>
+                    )}
+                  </div>
+                </Link>
+              </div>
             );
           })}
         </div>
       )}
+
+      <EmpresasExcluidas empresas={empresasExcluidas} />
     </div>
   );
 }
+
+function ExcluirEmpresaButton({ empresa }: { empresa: Empresa }) {
+  const { currentUser } = useAuth();
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <button
+          type="button"
+          title="Excluir empresa"
+          className="rounded-md border bg-background/90 p-1.5 text-muted-foreground shadow-sm transition-colors hover:border-destructive/40 hover:text-destructive"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Excluir empresa?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Esta empresa será removida dos controles ativos, mas seu histórico será preservado.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={() => {
+              excluirEmpresa(empresa.id, currentUser?.nome || "Sistema");
+              toast.success(`"${empresa.nome}" movida para Empresas Excluídas. Histórico preservado.`);
+            }}
+          >
+            Excluir empresa
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
