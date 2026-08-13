@@ -44,6 +44,7 @@ import { NovaObrigacaoDialog } from "@/components/nova-obrigacao-dialog";
 import { NovaDCTFWebDialog } from "@/components/nova-dctfweb-dialog";
 import { NovoEspelhoDebitoDialog } from "@/components/novo-espelho-debito-dialog";
 import { NovoFGTSTrimestralDialog } from "@/components/novo-fgts-trimestral-dialog";
+import { ParticularidadesCliente } from "@/components/particularidades-cliente";
 import { NovoReajusteSindicatoDialog } from "@/components/novo-reajuste-sindicato-dialog";
 import { useObrigacoes, deleteObrigacao } from "@/lib/obrigacoes-store";
 import { useRegDCTFWeb, deleteDCTFWeb, updateDCTFWeb, type RegDCTFWeb } from "@/lib/dctfweb-store";
@@ -91,6 +92,7 @@ export const Route = createFileRoute("/obrigacoes")({
 
 const tiposObriga = [
   "Todos",
+  "Particularidades do Cliente",
   "DCTFWeb",
   "Espelho de Débito",
   "Pesq. FGTS Trim.",
@@ -454,7 +456,7 @@ function Obrigacoes() {
               <NovoFGTSTrimestralDialog />
             ) : filtroTipo === "Reajuste Salarial Sindicato" ? (
               <NovoReajusteSindicatoDialog />
-            ) : (
+            ) : filtroTipo === "Particularidades do Cliente" ? null : (
               <NovaObrigacaoDialog />
             )}
           </div>
@@ -478,8 +480,10 @@ function Obrigacoes() {
         ))}
       </div>
 
-      {/* RENDERIZAÇÃO: PESQUISA FGTS TRIMESTRAL */}
-      {filtroTipo === "Pesq. FGTS Trim." || filtroTipo === "Pesquisa FGTS Trimestral" ? (
+      {/* RENDERIZAÇÃO: PARTICULARIDADES DO CLIENTE */}
+      {filtroTipo === "Particularidades do Cliente" ? (
+        <ParticularidadesCliente />
+      ) : filtroTipo === "Pesq. FGTS Trim." || filtroTipo === "Pesquisa FGTS Trimestral" ? (
         <div className="space-y-6">
           {/* Cards de Resumo FGTS Trimestral */}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

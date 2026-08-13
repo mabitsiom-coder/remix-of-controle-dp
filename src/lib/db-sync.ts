@@ -19,6 +19,11 @@ const MAPA: Entrada[] = [
   { chave: "tarefas", storage: "dp_control_tarefas_v1", evento: "tarefas-updated" },
   { chave: "obrigacoes", storage: "dp_control_obrigacoes_v1", evento: "obrigacoes-updated" },
   { chave: "sst", storage: "dp_control_sst_v1", evento: "sst-updated" },
+  {
+    chave: "particularidades",
+    storage: "dp_control_particularidades_v1",
+    evento: "particularidades-updated",
+  },
 ];
 
 const snapshot = new Map<string, string>();
