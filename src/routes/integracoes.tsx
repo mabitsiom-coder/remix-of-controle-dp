@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AcessoRestrito } from "@/components/acesso-restrito";
+import { PERFIS_GESTAO, isGestao } from "@/lib/permissoes";
 import { useAuth } from "@/lib/auth-store";
 import { useEffect, useState } from "react";
 import { Check, Copy, Plug, Bot, Code2 } from "lucide-react";
@@ -57,8 +58,8 @@ function CopyBox({ label, value }: { label: string; value: string }) {
 
 function IntegracoesPage() {
   const { currentUser } = useAuth();
-  if (currentUser.perfil !== "Administrador") {
-    return <AcessoRestrito perfisPermitidos={["Administrador"]} />;
+  if (!isGestao(currentUser.perfil)) {
+    return <AcessoRestrito perfisPermitidos={PERFIS_GESTAO} />;
   }
 
   const [origin, setOrigin] = useState("https://dp-control-center.lovable.app");

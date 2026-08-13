@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth-store";
 import { AuthModal } from "@/components/auth-modal";
+import { podeAcessarRota } from "@/lib/permissoes";
 
 const grupos = [
   {
@@ -80,14 +81,12 @@ const grupos = [
         title: "Cadastros do Sistema",
         url: "/cadastros",
         icon: ShieldCheck,
-        perfis: ["Administrador", "Coordenador"],
       },
       { title: "Usuários & Acesso", url: "/usuarios", icon: UserCog },
       {
         title: "API & Integrações",
         url: "/integracoes",
         icon: Plug,
-        perfis: ["Administrador"],
       },
     ],
   },
@@ -128,9 +127,7 @@ export function AppSidebar() {
 
       <SidebarContent>
         {grupos.map((grupo) => {
-          const items = grupo.items.filter(
-            (item) => !("perfis" in item) || !item.perfis || item.perfis.includes(currentUser.perfil),
-          );
+          const items = grupo.items.filter((item) => podeAcessarRota(currentUser.perfil, item.url));
           if (items.length === 0) return null;
           return (
             <SidebarGroup key={grupo.label}>
