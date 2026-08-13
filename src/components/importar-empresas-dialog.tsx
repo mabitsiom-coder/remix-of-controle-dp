@@ -19,6 +19,7 @@ import {
   empresaToForm,
   encontrarEmpresaDuplicada,
   EmpresaDuplicadaError,
+  getStoredEmpresas,
 } from "@/lib/empresas-store";
 import { getStoredGrupos, addGrupo } from "@/lib/grupos-store";
 
