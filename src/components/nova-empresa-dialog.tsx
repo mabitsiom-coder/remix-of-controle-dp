@@ -30,7 +30,7 @@ import {
   encontrarEmpresaDuplicada,
   type NovaEmpresaForm,
 } from "@/lib/empresas-store";
-import { useCadastros } from "@/lib/cadastros-store";
+import { useCadastros, resolverVinculoPorAnalista, resolverSupervisorPorCarteira } from "@/lib/cadastros-store";
 import { useGrupos } from "@/lib/grupos-store";
 import { useAuth } from "@/lib/auth-store";
 import { Link } from "@tanstack/react-router";
@@ -414,7 +414,10 @@ export function NovaEmpresaDialog({
                   </Label>
                   <Select
                     value={formData.carteira}
-                    onValueChange={(val) => setFormData({ ...formData, carteira: val })}
+                    onValueChange={(val) => {
+                      const sup = resolverSupervisorPorCarteira(val);
+                      setFormData({ ...formData, carteira: val, ...(sup ? { supervisor: sup } : {}) });
+                    }}
                   >
                     <SelectTrigger id="carteira">
                       <SelectValue placeholder="Selecione a carteira" />
@@ -435,7 +438,10 @@ export function NovaEmpresaDialog({
                   </Label>
                   <Select
                     value={formData.analista}
-                    onValueChange={(val) => setFormData({ ...formData, analista: val })}
+                    onValueChange={(val) => {
+                      const vinculo = resolverVinculoPorAnalista(val);
+                      setFormData({ ...formData, analista: val, ...vinculo });
+                    }}
                   >
                     <SelectTrigger id="analista">
                       <SelectValue placeholder="Selecione o analista" />
