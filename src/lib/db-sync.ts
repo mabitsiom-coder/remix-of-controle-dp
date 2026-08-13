@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { getSupabase } from "@/lib/supabase-browser";
 
 /**
  * Sincroniza os dados operacionais do sistema (que ficam em cache no navegador)
@@ -77,11 +77,11 @@ function agendarEnvio(entrada: Entrada) {
 export async function sincronizarComBanco() {
   if (typeof window === "undefined") return;
 
-  const { data: sessao } = await supabase.auth.getSession();
+  const { data: sessao } = await getSupabase().auth.getSession();
   usuarioId = sessao.session?.user.id ?? null;
   if (!usuarioId) return;
 
-  const { data, error } = await supabase.from("app_state").select("chave,dados");
+  const { data, error } = await getSupabase().from("app_state").select("chave,dados");
   if (error) {
     console.error("Falha ao carregar dados do banco:", error.message);
     return;
