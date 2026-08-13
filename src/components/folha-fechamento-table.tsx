@@ -149,10 +149,9 @@ export function FolhaFechamentoTable() {
       });
     }
 
-    // Fallback para empresas seed caso não haja empresas no localStorage
-    const list = Object.values(tarefasSalvas);
-    const listaOuSeed = list.length > 0 ? list : folhaTarefasSeed;
-    return listaOuSeed.filter((t) => t.competencia === competencia);
+    // Fallback: usa apenas as tarefas salvas
+    const list: FolhaTarefa[] = Object.values(tarefasSalvas);
+    return list.filter((t) => t.competencia === competencia);
   }, [empresas, competencia, tarefasSalvas]);
   
   const carteirasDisponiveis = useMemo(() => {
@@ -312,7 +311,7 @@ export function FolhaFechamentoTable() {
             <tr className="border-b text-left text-[11px] uppercase tracking-wide text-muted-foreground">
               <th className="p-2 font-medium">Cód.</th>
               <th className="p-2 font-medium">Empresa</th>
-              <th className="p-2 font-medium">Carteira</th>
+              
               <th className="p-2 font-medium">Grupo</th>
               {etapasChecklist.map((e) => (
                 <th key={e.key} className="p-2 text-center font-medium">
@@ -337,11 +336,6 @@ export function FolhaFechamentoTable() {
                 <tr key={t.id} className="border-b last:border-0 align-middle hover:bg-muted/40">
                   <td className="p-2 font-semibold tabular-nums">{t.codigo}</td>
                   <td className="p-2 font-medium">{t.empresa}</td>
-                  <td className="p-2">
-                    <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                      {cartNome}
-                    </span>
-                  </td>
                   <td className="p-2 text-xs text-muted-foreground">{t.grupo}</td>
                   {etapasChecklist.map((e) => (
                     <td key={e.key} className="p-2">
