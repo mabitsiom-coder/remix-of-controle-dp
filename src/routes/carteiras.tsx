@@ -164,6 +164,13 @@ function CarteirasPage() {
         </div>
       </div>
 
+      {/* FILTROS E BUSCA */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar empresa, CNPJ, analista ou supervisor na carteira..."
+            value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className="pl-8 text-xs"
           />
