@@ -14,6 +14,7 @@ import {
   UserCheck,
   User,
   Users,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -126,20 +127,33 @@ function SST() {
   const examesVencidos = registrosCompletos.filter((r) => r.examesVencidos === "SIM").length;
   const comProgramas = registrosCompletos.filter((r) => r.possuiProgramas === "SIM").length;
 
-  // Filtragem por carteira e busca
+  // Filtragem por busca e carteira
   const filtrados = registrosCompletos.filter((r) => {
-    const cart = r.carteira || "Sem Carteira";
-    if (carteiraFiltro !== "todas" && cart !== carteiraFiltro) return false;
     const q = busca.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      r.empresa.toLowerCase().includes(q) ||
-      r.codigo.toLowerCase().includes(q) ||
-      (r.analista || "").toLowerCase().includes(q) ||
-      (r.supervisor || "").toLowerCase().includes(q) ||
-      r.obsAnalista.toLowerCase().includes(q) ||
-      r.obsCS.toLowerCase().includes(q)
-    );
+    
+    // Se o usuário digitou uma busca, procurar globalmente em TODAS as carteiras
+    if (q) {
+      const cod = String(r.codigo ?? "").toLowerCase();
+      const emp = String(r.empresa ?? "").toLowerCase();
+      const ana = String(r.analista ?? "").toLowerCase();
+      const sup = String(r.supervisor ?? "").toLowerCase();
+      const obsA = String(r.obsAnalista ?? "").toLowerCase();
+      const obsC = String(r.obsCS ?? "").toLowerCase();
+
+      return (
+        cod.includes(q) ||
+        emp.includes(q) ||
+        ana.includes(q) ||
+        sup.includes(q) ||
+        obsA.includes(q) ||
+        obsC.includes(q)
+      );
+    }
+
+    // Se a busca estiver vazia, respeitar a aba de carteira selecionada
+    const cart = String(r.carteira || "Sem Carteira");
+    if (carteiraFiltro !== "todas" && cart !== carteiraFiltro) return false;
+    return true;
   });
 
   // Dados da carteira selecionada em destaque
@@ -331,8 +345,18 @@ function SST() {
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Pesquisar por código, empresa, analista ou observações..."
-            className="pl-8"
+            className="pl-8 pr-8"
           />
+          {busca && (
+            <button
+              type="button"
+              onClick={() => setBusca("")}
+              className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+              title="Limpar pesquisa"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <select
           value={carteiraFiltro}

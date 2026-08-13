@@ -169,12 +169,17 @@ export function FolhaFechamentoTable() {
   );
 
   const filtradas = daCompetencia.filter((t) => {
+    const q = busca.trim().toLowerCase();
+    if (q) {
+      const cod = String(t.codigo ?? "").toLowerCase();
+      const emp = String(t.empresa ?? "").toLowerCase();
+      const resp = String(t.responsavel ?? "").toLowerCase();
+      return cod.includes(q) || emp.includes(q) || resp.includes(q);
+    }
     const c = t.carteira || t.grupo || "Geral";
     if (carteiraFiltro !== "todas" && c !== carteiraFiltro) return false;
     if (statusFiltro !== "todos" && t.status !== statusFiltro) return false;
     if (responsavel !== "todos" && t.responsavel !== responsavel) return false;
-    const q = busca.trim().toLowerCase();
-    if (q && !t.empresa.toLowerCase().includes(q) && !t.codigo.includes(q)) return false;
     return true;
   });
 
