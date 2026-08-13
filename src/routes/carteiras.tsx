@@ -95,6 +95,14 @@ function CarteirasPage() {
     ? carteirasAgrupadas.filter((c) => c.nome === carteiraSelecionada)
     : carteirasAgrupadas;
 
+  // Escopo dos KPIs: respeita a carteira selecionada
+  const empresasEscopo = carteiraSelecionada
+    ? empresas.filter((e) => e.carteira === carteiraSelecionada)
+    : empresas;
+  const kpiCarteiras = carteiraSelecionada ? 1 : todasCarteirasNomes.length;
+  const kpiVidas = empresasEscopo.reduce((sum, e) => sum + (e.funcionarios || 0), 0);
+  const kpiAnalistas = Array.from(new Set(empresasEscopo.map((e) => e.analista).filter(Boolean))).length;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -118,8 +126,10 @@ function CarteirasPage() {
             <Briefcase className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Total de Carteiras</p>
-            <p className="text-xl font-bold">{todasCarteirasNomes.length}</p>
+            <p className="text-xs text-muted-foreground">
+              {carteiraSelecionada ? "Carteira Selecionada" : "Total de Carteiras"}
+            </p>
+            <p className="text-xl font-bold">{carteiraSelecionada ?? kpiCarteiras}</p>
           </div>
         </div>
 
@@ -129,7 +139,7 @@ function CarteirasPage() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Empresas Atendidas</p>
-            <p className="text-xl font-bold">{empresas.length}</p>
+            <p className="text-xl font-bold">{empresasEscopo.length}</p>
           </div>
         </div>
 
@@ -139,9 +149,7 @@ function CarteirasPage() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Total de Vidas / Func.</p>
-            <p className="text-xl font-bold">
-              {empresas.reduce((sum, e) => sum + (e.funcionarios || 0), 0).toLocaleString("pt-BR")}
-            </p>
+            <p className="text-xl font-bold">{kpiVidas.toLocaleString("pt-BR")}</p>
           </div>
         </div>
 
@@ -151,7 +159,7 @@ function CarteirasPage() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Analistas Ativos</p>
-            <p className="text-xl font-bold">{Array.from(new Set(empresas.map((e) => e.analista))).length}</p>
+            <p className="text-xl font-bold">{kpiAnalistas}</p>
           </div>
         </div>
       </div>
