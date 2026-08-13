@@ -332,15 +332,20 @@ function NovoUsuarioDialog() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome.trim() || !email.trim()) {
+    const emailLimpo = email.trim().toLowerCase();
+    if (!nome.trim() || !emailLimpo) {
       toast.error("Preencha o nome e e-mail do usuário.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailLimpo)) {
+      toast.error("Informe um e-mail válido.");
       return;
     }
 
     try {
       const novo = await addUsuario({
         nome: nome.trim(),
-        email: email.trim(),
+        email: emailLimpo,
         senha: senha.trim() || "123456",
         perfil,
         departamento: departamento.trim() || "Departamento Pessoal",
@@ -393,7 +398,7 @@ function NovoUsuarioDialog() {
             <Input
               id="emailUsr"
               type="email"
-              placeholder="carlos.eduardo@mabitcontabilidade.com.br"
+              placeholder="ex.: nome@empresa.com.br"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -471,10 +476,19 @@ function EditarUsuarioDialog({ usuario }: { usuario: Usuario }) {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    const emailLimpo = email.trim().toLowerCase();
+    if (!nome.trim() || !emailLimpo) {
+      toast.error("Preencha o nome e e-mail do usuário.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailLimpo)) {
+      toast.error("Informe um e-mail válido.");
+      return;
+    }
     try {
       await updateUsuario(usuario.id, {
         nome: nome.trim(),
-        email: email.trim(),
+        email: emailLimpo,
         senha: senha.trim(),
         perfil,
         departamento: departamento.trim(),

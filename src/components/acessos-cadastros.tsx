@@ -24,8 +24,6 @@ import {
 import { useCadastros, getCarteiras } from "@/lib/cadastros-store";
 import { addUsuario, useAuth, type PerfilAcesso } from "@/lib/auth-store";
 
-const DOMINIO = "mabitcontabilidade.com.br";
-
 export type PessoaCadastro = {
   origemId: string;
   nome: string;
@@ -43,14 +41,8 @@ function normalizar(valor: string) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function sugerirEmail(nome: string) {
-  const base = normalizar(nome)
-    .replace(/[^a-z0-9\s.]/g, "")
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .join(".");
-  return base ? `${base}@${DOMINIO}` : "";
+function emailValido(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
 }
 
 /** Pessoas dos Cadastros do Sistema, com perfil e departamento derivados automaticamente. */
@@ -210,7 +202,7 @@ function DefinirAcessoDialog({
 
   if (pessoa && pessoaAtual !== pessoa.origemId) {
     setPessoaAtual(pessoa.origemId);
-    setEmail(pessoa.email || sugerirEmail(pessoa.nome));
+    setEmail(pessoa.email || "");
     setSenha("123456");
     setPerfil(pessoa.perfil);
   }
@@ -219,8 +211,8 @@ function DefinirAcessoDialog({
     e.preventDefault();
     if (!pessoa) return;
     const emailLimpo = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailLimpo)) {
-      toast.error("Informe um e-mail válido (ex.: nome@mabitcontabilidade.com.br).");
+    if (!emailValido(emailLimpo)) {
+      toast.error("Informe um e-mail válido.");
       return;
     }
     if (senha.trim().length < 6) {
@@ -254,7 +246,7 @@ function DefinirAcessoDialog({
             <UserPlus className="h-4 w-4 text-primary" /> Definir acesso
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Os dados abaixo vêm do cadastro. Defina apenas e-mail e senha.
+            Nome e área vêm do cadastro. Defina o e-mail e a senha de acesso livremente.
           </DialogDescription>
         </DialogHeader>
 
