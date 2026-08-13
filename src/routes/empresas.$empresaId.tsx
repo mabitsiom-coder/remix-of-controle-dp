@@ -153,6 +153,16 @@ function EmpresaDetalhe() {
   );
 }
 
+function SectionTitle({ title }: { title: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="h-5 w-1 rounded-full bg-primary" />
+      <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+      <span className="h-px flex-1 bg-border" />
+    </div>
+  );
+}
+
 function Campo({ label, value }: { label: string; value: string }) {
   return (
     <div>
