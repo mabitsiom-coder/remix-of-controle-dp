@@ -20,8 +20,8 @@ export const registrarPrimeiroAdmin = createServerFn({ method: "POST" })
     z.object({ nome: z.string().min(1), email: z.string().email(), senha: z.string().min(6) }).parse(data),
   )
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = await supabaseAdmin;
+    const { getAdminClient } = await import("./supabase-admin.server");
+    const admin = getAdminClient();
 
     const { count, error: erroContagem } = await admin
       .from("usuarios")
@@ -64,8 +64,8 @@ export const criarUsuario = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) => criarSchema.parse(data))
   .handler(async ({ data, context }) => {
     await exigirAdmin(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = await supabaseAdmin;
+    const { getAdminClient } = await import("./supabase-admin.server");
+    const admin = getAdminClient();
 
     const { data: criado, error } = await admin.auth.admin.createUser({
       email: data.email,
@@ -104,8 +104,8 @@ export const atualizarUsuario = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await exigirAdmin(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = await supabaseAdmin;
+    const { getAdminClient } = await import("./supabase-admin.server");
+    const admin = getAdminClient();
 
     if (data.email || data.senha) {
       const { error } = await admin.auth.admin.updateUserById(data.id, {
@@ -138,8 +138,8 @@ export const removerUsuario = createServerFn({ method: "POST" })
     await exigirAdmin(context.supabase, context.userId);
     if (data.id === context.userId) throw new Error("Você não pode remover o seu próprio acesso.");
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const admin = await supabaseAdmin;
+    const { getAdminClient } = await import("./supabase-admin.server");
+    const admin = getAdminClient();
     const { error } = await admin.auth.admin.deleteUser(data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -147,8 +147,8 @@ export const removerUsuario = createServerFn({ method: "POST" })
 
 /** Indica se já existe algum usuário cadastrado (usado na primeira configuração). */
 export const existeUsuario = createServerFn({ method: "GET" }).handler(async () => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const admin = await supabaseAdmin;
+  const { getAdminClient } = await import("./supabase-admin.server");
+  const admin = getAdminClient();
   const { count, error } = await admin.from("usuarios").select("id", { count: "exact", head: true });
   if (error) throw new Error(error.message);
   return { existe: (count ?? 0) > 0 };
