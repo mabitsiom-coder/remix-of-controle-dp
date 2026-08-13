@@ -54,7 +54,7 @@ const grupos = [
     items: [
       { title: "Empresas", url: "/empresas", icon: Building2 },
       { title: "Grupos Econômicos", url: "/grupos", icon: Layers },
-      { title: "Painel de Carteiras", url: "/carteiras", icon: Briefcase },
+      { title: "Carteiras", url: "/carteiras", icon: Briefcase },
       { title: "Calendário", url: "/calendario", icon: CalendarDays },
       { title: "Obrigações", url: "/obrigacoes", icon: FileCheck2 },
       { title: "SST", url: "/sst", icon: HeartPulse },
@@ -102,8 +102,7 @@ export function AppSidebar() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { currentUser } = useAuth();
 
-  const isActive = (url: string) =>
-    url === "/" ? pathname === "/" : pathname.startsWith(url);
+  const isActive = (url: string) => (url === "/" ? pathname === "/" : pathname.startsWith(url));
 
   const getInitials = (nome: string) => {
     const parts = nome.split(" ");
@@ -121,9 +120,7 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-sidebar-foreground">DP Control</p>
-              <p className="truncate text-[11px] text-sidebar-foreground/60">
-                Centro de Controle Operacional
-              </p>
+              <p className="truncate text-[11px] text-sidebar-foreground/60">Centro de Controle Operacional</p>
             </div>
           )}
         </div>
@@ -136,23 +133,23 @@ export function AppSidebar() {
           );
           if (items.length === 0) return null;
           return (
-          <SidebarGroup key={grupo.label}>
-            <SidebarGroupLabel>{grupo.label}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {items.map((item) => (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                      <Link to={item.url} className="flex items-center gap-2">
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+            <SidebarGroup key={grupo.label}>
+              <SidebarGroupLabel>{grupo.label}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {items.map((item) => (
+                    <SidebarMenuItem key={item.url}>
+                      <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                        <Link to={item.url} className="flex items-center gap-2">
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
           );
         })}
       </SidebarContent>
@@ -166,12 +163,8 @@ export function AppSidebar() {
               </div>
               {!collapsed && (
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-medium text-sidebar-accent-foreground">
-                    {currentUser.nome}
-                  </p>
-                  <p className="truncate text-[11px] text-sidebar-foreground/60">
-                    {currentUser.perfil}
-                  </p>
+                  <p className="truncate text-xs font-medium text-sidebar-accent-foreground">{currentUser.nome}</p>
+                  <p className="truncate text-[11px] text-sidebar-foreground/60">{currentUser.perfil}</p>
                 </div>
               )}
             </button>
