@@ -7,7 +7,8 @@ import { vincularEmpresaAoGrupo } from "./grupos-store";
 const STORAGE_KEY = "dp_control_empresas_v1";
 const EVENT_NAME = "empresas-updated";
 
-export function getStoredEmpresas(): Empresa[] {
+/** TODAS as empresas, inclusive as excluídas logicamente. */
+export function getTodasEmpresas(): Empresa[] {
   if (typeof window === "undefined") return mockEmpresas;
   try {
     const item = localStorage.getItem(STORAGE_KEY);
@@ -15,16 +16,26 @@ export function getStoredEmpresas(): Empresa[] {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(mockEmpresas));
       return mockEmpresas;
     }
-    return JSON.parse(item);
+    const lista = JSON.parse(item);
+    return Array.isArray(lista) ? lista : mockEmpresas;
   } catch (error) {
     console.error("Erro ao ler empresas do localStorage:", error);
     return mockEmpresas;
   }
 }
 
+/** Empresas ATIVAS (padrão do sistema: exclui as que passaram por exclusão lógica). */
+export function getStoredEmpresas(): Empresa[] {
+  return getTodasEmpresas().filter((e) => e && !e.excluida);
+}
+
+/** Empresas excluídas logicamente — histórico preservado. */
+export function getEmpresasExcluidas(): Empresa[] {
+  return getTodasEmpresas().filter((e) => e && e.excluida);
+}
+
 export function getEmpresaById(id: string): Empresa | undefined {
-  const lista = getStoredEmpresas();
-  return lista.find((e) => e.id === id);
+  return getTodasEmpresas().find((e) => e.id === id);
 }
 
 export function saveEmpresas(lista: Empresa[]) {
@@ -36,6 +47,57 @@ export function saveEmpresas(lista: Empresa[]) {
     console.error("Erro ao salvar empresas no localStorage:", error);
   }
 }
+
+function dataHoje() {
+  const hoje = new Date();
+  return `${String(hoje.getDate()).padStart(2, "0")}/${String(hoje.getMonth() + 1).padStart(
+    2,
+    "0",
+  )}/${hoje.getFullYear()}`;
+}
+
+/** Exclusão lógica: remove dos controles ativos preservando dados e histórico. */
+export function excluirEmpresa(id: string, usuario = "Sistema"): Empresa | undefined {
+  const todas = getTodasEmpresas();
+  const atual = todas.find((e) => e.id === id);
+  if (!atual || atual.excluida) return undefined;
+  const data = dataHoje();
+  const atualizada: Empresa = {
+    ...atual,
+    excluida: true,
+    excluidaEm: data,
+    excluidaPor: usuario,
+    carteiraAnterior: atual.carteira || "Sem Carteira",
+    historico: [
+      { data, usuario, descricao: `Empresa excluída dos controles ativos por ${usuario}. Histórico preservado.` },
+      ...(atual.historico ?? []),
+    ],
+  };
+  saveEmpresas(todas.map((e) => (e.id === id ? atualizada : e)));
+  return atualizada;
+}
+
+/** Restaura uma empresa excluída, mantendo todos os dados e históricos anteriores. */
+export function restaurarEmpresa(id: string, usuario = "Sistema"): Empresa | undefined {
+  const todas = getTodasEmpresas();
+  const atual = todas.find((e) => e.id === id);
+  if (!atual || !atual.excluida) return undefined;
+  const data = dataHoje();
+  const restaurada: Empresa = {
+    ...atual,
+    excluida: false,
+    carteira: atual.carteira || atual.carteiraAnterior || "",
+    historico: [
+      { data, usuario, descricao: `Empresa restaurada aos controles ativos por ${usuario}.` },
+      ...(atual.historico ?? []),
+    ],
+  };
+  delete restaurada.excluidaEm;
+  delete restaurada.excluidaPor;
+  saveEmpresas(todas.map((e) => (e.id === id ? restaurada : e)));
+  return restaurada;
+}
+
 
 export type NovaEmpresaForm = {
   nome: string;
@@ -93,7 +155,7 @@ export function encontrarEmpresaDuplicada(
 ): { empresa: Empresa; motivo: "cnpj" | "nome" } | undefined {
   const digitos = (cnpj || "").replace(/\D/g, "");
   const nomeNorm = normalizarNome(nome || "");
-  const lista = getStoredEmpresas().filter((e) => e.id !== ignorarId);
+  const lista = getTodasEmpresas().filter((e) => e.id !== ignorarId);
 
   if (digitos.length >= 11) {
     const porCnpj = lista.find((e) => e.cnpj.replace(/\D/g, "") === digitos);
@@ -164,7 +226,7 @@ export function createEmpresa(dados: NovaEmpresaForm, criadoPor?: string): Empre
     ],
   };
 
-  const atuais = getStoredEmpresas();
+  const atuais = getTodasEmpresas();
   const atualizadas = [nova, ...atuais];
   saveEmpresas(atualizadas);
 
@@ -176,7 +238,7 @@ export function createEmpresa(dados: NovaEmpresaForm, criadoPor?: string): Empre
 }
 
 export function updateEmpresa(id: string, dados: NovaEmpresaForm): Empresa | undefined {
-  const atuais = getStoredEmpresas();
+  const atuais = getTodasEmpresas();
   const atual = atuais.find((e) => e.id === id);
   if (!atual) return undefined;
 
@@ -258,15 +320,17 @@ export function empresaToForm(empresa: Empresa): NovaEmpresaForm {
 }
 
 export function useEmpresas() {
-
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [empresasExcluidas, setEmpresasExcluidas] = useState<Empresa[]>([]);
 
   useEffect(() => {
-    setEmpresas(getStoredEmpresas());
-
-    const handleChange = () => {
+    const ler = () => {
       setEmpresas(getStoredEmpresas());
+      setEmpresasExcluidas(getEmpresasExcluidas());
     };
+    ler();
+
+    const handleChange = () => ler();
 
     window.addEventListener(EVENT_NAME, handleChange);
     window.addEventListener("storage", handleChange);
@@ -279,7 +343,13 @@ export function useEmpresas() {
 
   return {
     empresas,
+    empresasExcluidas,
     createEmpresa,
-    refresh: () => setEmpresas(getStoredEmpresas()),
+    excluirEmpresa,
+    restaurarEmpresa,
+    refresh: () => {
+      setEmpresas(getStoredEmpresas());
+      setEmpresasExcluidas(getEmpresasExcluidas());
+    },
   };
 }

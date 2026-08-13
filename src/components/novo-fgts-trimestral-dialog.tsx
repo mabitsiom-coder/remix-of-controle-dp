@@ -55,9 +55,9 @@ export function NovoFGTSTrimestralDialog({ trigger }: { trigger?: React.ReactNod
       empresa: nomeEmpresa,
       codigo: emp?.codigoDominio || emp?.id || prev.codigo,
       cnpj: emp?.cnpj || prev.cnpj,
-      carteira: emp?.carteira || prev.carteira,
-      analista: emp?.analista || prev.analista,
-      supervisor: emp?.supervisor || prev.supervisor,
+      carteira: emp?.carteira || prev.carteira || "",
+      analista: emp?.analista || prev.analista || "",
+      supervisor: emp?.supervisor || prev.supervisor || "",
     }));
   };
 

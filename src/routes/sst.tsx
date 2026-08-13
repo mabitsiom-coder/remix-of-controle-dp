@@ -41,6 +41,11 @@ import { ImportarSSTDialog } from "@/components/importar-sst-dialog";
 import { useRegSST, deleteRegSST, updateRegSST, type RegSST } from "@/lib/sst-store";
 import { useEmpresas } from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
+import {
+  carteiraDaEmpresa,
+  listarNomesCarteiras,
+  pertenceACarteira,
+} from "@/lib/carteiras-core";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/sst")({
@@ -79,7 +84,7 @@ function SST() {
             ...mat,
             codigo: cod,
             empresa: emp.nome,
-            carteira: emp.carteira || mat.carteira || "RH - G - 01",
+            carteira: carteiraDaEmpresa(emp),
             analista: emp.analista || mat.analista || "Não atribuído",
             supervisor: emp.supervisor || mat.supervisor || "Não atribuído",
             qtdFunc: emp.funcionarios || mat.qtdFunc || 0,
@@ -89,7 +94,7 @@ function SST() {
           id: `sst-${cod}`,
           codigo: cod,
           empresa: emp.nome,
-          carteira: emp.carteira || "RH - G - 01",
+          carteira: carteiraDaEmpresa(emp),
           analista: emp.analista || "Não atribuído",
           supervisor: emp.supervisor || "Não atribuído",
           sstNaMabit: "SIM",
@@ -113,14 +118,10 @@ function SST() {
   }, [empresas, registros]);
 
   // Lista de carteiras disponíveis
-  const carteirasDisponiveis = useMemo(() => {
-    const set = new Set([
-      ...carteiras.map((c) => c.nome),
-      ...empresas.map((e) => e.carteira).filter(Boolean),
-      ...registrosCompletos.map((r) => r.carteira).filter(Boolean),
-    ]);
-    return Array.from(set).sort();
-  }, [carteiras, empresas, registrosCompletos]);
+  const carteirasDisponiveis = useMemo(
+    () => listarNomesCarteiras(empresas, carteiras),
+    [carteiras, empresas],
+  );
 
   // Estatísticas gerais
   const totalEmpresas = registrosCompletos.length;
@@ -152,8 +153,7 @@ function SST() {
     }
 
     // Se a busca estiver vazia, respeitar a aba de carteira selecionada
-    const cart = String(r.carteira || "Sem Carteira");
-    if (carteiraFiltro !== "todas" && cart !== carteiraFiltro) return false;
+    if (!pertenceACarteira(r.carteira, carteiraFiltro)) return false;
     return true;
   });
 
@@ -171,7 +171,7 @@ function SST() {
         totalVidas,
       };
     }
-    const daCarteira = registrosCompletos.filter((r) => (r.carteira || "Sem Carteira") === carteiraFiltro);
+    const daCarteira = registrosCompletos.filter((r) => pertenceACarteira(r.carteira, carteiraFiltro));
     const supUnicos = Array.from(new Set(daCarteira.map((r) => r.supervisor).filter(Boolean)));
     const anaUnicos = Array.from(new Set(daCarteira.map((r) => r.analista).filter(Boolean)));
     const totalVidas = daCarteira.reduce((sum, r) => sum + (r.qtdFunc || 0), 0);
@@ -323,7 +323,7 @@ function SST() {
             Todas as Carteiras ({registrosCompletos.length})
           </button>
           {carteirasDisponiveis.map((cart) => {
-            const qtd = registrosCompletos.filter((r) => (r.carteira || "Sem Carteira") === cart).length;
+            const qtd = registrosCompletos.filter((r) => pertenceACarteira(r.carteira, cart)).length;
             return (
               <button
                 key={cart}

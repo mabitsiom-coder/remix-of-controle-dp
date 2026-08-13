@@ -44,6 +44,7 @@ import { NovaObrigacaoDialog } from "@/components/nova-obrigacao-dialog";
 import { NovaDCTFWebDialog } from "@/components/nova-dctfweb-dialog";
 import { NovoEspelhoDebitoDialog } from "@/components/novo-espelho-debito-dialog";
 import { NovoFGTSTrimestralDialog } from "@/components/novo-fgts-trimestral-dialog";
+import { ParticularidadesCliente } from "@/components/particularidades-cliente";
 import { NovoReajusteSindicatoDialog } from "@/components/novo-reajuste-sindicato-dialog";
 import { useObrigacoes, deleteObrigacao } from "@/lib/obrigacoes-store";
 import { useRegDCTFWeb, deleteDCTFWeb, updateDCTFWeb, type RegDCTFWeb } from "@/lib/dctfweb-store";
@@ -67,6 +68,11 @@ import {
 } from "@/lib/reajuste-sindicato-store";
 import { useEmpresas } from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
+import {
+  carteiraDaEmpresa,
+  listarNomesCarteiras,
+  pertenceACarteira,
+} from "@/lib/carteiras-core";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/obrigacoes")({
@@ -86,6 +92,7 @@ export const Route = createFileRoute("/obrigacoes")({
 
 const tiposObriga = [
   "Todos",
+  "Particularidades do Cliente",
   "DCTFWeb",
   "Espelho de Débito",
   "Pesq. FGTS Trim.",
@@ -129,18 +136,18 @@ function Obrigacoes() {
             codigo: cod,
             empresa: emp.nome || mat.empresa || "Empresa Sem Nome",
             cnpj: emp.cnpj || mat.cnpj || "",
-            carteira: emp.carteira || mat.carteira || "RH - G - 01",
+            carteira: carteiraDaEmpresa(emp),
             analista: emp.analista || mat.analista || "Não atribuído",
             supervisor: emp.supervisor || mat.supervisor || "Não atribuído",
           };
         }
         return {
-          id: `dctf-${cod}`,
+          id: `dctf-${emp.id || cod}`,
           ord: index + 1,
           codigo: cod,
           empresa: emp.nome || "Empresa Sem Nome",
           cnpj: emp.cnpj || "",
-          carteira: emp.carteira || "RH - G - 01",
+          carteira: carteiraDaEmpresa(emp),
           analista: emp.analista || "Não atribuído",
           supervisor: emp.supervisor || "Não atribuído",
           tipo: emp.tipo === "sem-movimento" ? "S/M" : "C/M",
@@ -176,18 +183,18 @@ function Obrigacoes() {
             codigo: cod,
             empresa: emp.nome || mat.empresa || "Empresa Sem Nome",
             cnpjCpf: emp.cnpj || mat.cnpjCpf || "",
-            carteira: emp.carteira || mat.carteira || "RH - G - 01",
+            carteira: carteiraDaEmpresa(emp),
             analista: emp.analista || mat.analista || "Não atribuído",
             supervisor: emp.supervisor || mat.supervisor || "Não atribuído",
           };
         }
         return {
-          id: `deb-${cod}`,
+          id: `deb-${emp.id || cod}`,
           ord: index + 1,
           codigo: cod,
           empresa: emp.nome || "Empresa Sem Nome",
           cnpjCpf: emp.cnpj || "",
-          carteira: emp.carteira || "RH - G - 01",
+          carteira: carteiraDaEmpresa(emp),
           analista: emp.analista || "Não atribuído",
           supervisor: emp.supervisor || "Não atribuído",
           tipo: emp.tipo === "sem-movimento" ? "S/M" : "C/M",
@@ -216,16 +223,17 @@ function Obrigacoes() {
         if (mat) {
           return {
             ...mat,
+            id: mat.id || `reg-${emp.id || cod}`,
             codigo: cod,
             empresa: emp.nome || mat.empresa || "Empresa Sem Nome",
             cnpj: emp.cnpj || mat.cnpj || "",
-            carteira: emp.carteira || mat.carteira || "RH - G - 01",
+            carteira: carteiraDaEmpresa(emp),
             analista: emp.analista || mat.analista || "Não atribuído",
             supervisor: emp.supervisor || mat.supervisor || "Não atribuído",
           };
         }
         return {
-          id: `fgts-${cod}`,
+          id: `fgts-${emp.id || cod}`,
           codigo: cod,
           empresa: emp.nome || "Empresa Sem Nome",
           cnpj: emp.cnpj || "",
@@ -236,7 +244,7 @@ function Obrigacoes() {
           enviadoCliente: "—",
           obsAnalistaSolicitacao: "—",
           obsCS: "—",
-          carteira: emp.carteira || "RH - G - 01",
+          carteira: carteiraDaEmpresa(emp),
           analista: emp.analista || "Não atribuído",
           supervisor: emp.supervisor || "Não atribuído",
         };
@@ -257,9 +265,10 @@ function Obrigacoes() {
         if (mat) {
           return {
             ...mat,
+            id: mat.id || `reg-${emp.id || cod}`,
             codigo: cod,
             empresa: emp.nome || mat.empresa || "Empresa Sem Nome",
-            carteira: emp.carteira || mat.carteira || "RH - G - 01",
+            carteira: carteiraDaEmpresa(emp),
             analista: emp.analista || mat.analista || "Não atribuído",
             supervisor: emp.supervisor || mat.supervisor || "Não atribuído",
           };
@@ -275,7 +284,7 @@ function Obrigacoes() {
           reajusteSalarial: "—",
           contribuicaoAssistencial: "—",
           observacao: "",
-          carteira: emp.carteira || "RH - G - 01",
+          carteira: carteiraDaEmpresa(emp),
           analista: emp.analista || "Não atribuído",
           supervisor: emp.supervisor || "Não atribuído",
         };
@@ -285,15 +294,10 @@ function Obrigacoes() {
   }, [empresas, reajusteRegistros]);
 
   // Lista de carteiras disponíveis
-  const carteirasDisponiveis = useMemo(() => {
-    const listCart = (carteiras || []).filter(Boolean);
-    const listEmp = (empresas || []).filter(Boolean);
-    const set = new Set([
-      ...listCart.map((c) => c?.nome).filter(Boolean),
-      ...listEmp.map((e) => e?.carteira).filter(Boolean),
-    ]);
-    return Array.from(set).sort();
-  }, [carteiras, empresas]);
+  const carteirasDisponiveis = useMemo(
+    () => listarNomesCarteiras((empresas || []).filter(Boolean), carteiras || []),
+    [carteiras, empresas],
+  );
 
   // Filtragem DCTFWeb
   const dctfFiltrados = useMemo(() => {
@@ -314,8 +318,7 @@ function Obrigacoes() {
           sup.includes(q)
         );
       }
-      const cart = String(r.carteira || "Sem Carteira");
-      if (carteiraFiltro !== "todas" && cart !== carteiraFiltro) return false;
+      if (!pertenceACarteira(r.carteira, carteiraFiltro)) return false;
       return true;
     });
   }, [dctfCompletos, busca, carteiraFiltro]);
@@ -343,8 +346,7 @@ function Obrigacoes() {
           obsCs.includes(q)
         );
       }
-      const cart = String(r.carteira || "Sem Carteira");
-      if (carteiraFiltro !== "todas" && cart !== carteiraFiltro) return false;
+      if (!pertenceACarteira(r.carteira, carteiraFiltro)) return false;
       return true;
     });
   }, [debitoCompletos, busca, carteiraFiltro]);
@@ -374,8 +376,7 @@ function Obrigacoes() {
           obsCS.includes(q)
         );
       }
-      const cart = String(r.carteira || "Sem Carteira");
-      if (carteiraFiltro !== "todas" && cart !== carteiraFiltro) return false;
+      if (!pertenceACarteira(r.carteira, carteiraFiltro)) return false;
       return true;
     });
   }, [fgtsCompletos, busca, carteiraFiltro]);
@@ -405,8 +406,7 @@ function Obrigacoes() {
           obs.includes(q)
         );
       }
-      const cart = String(r.carteira || "Sem Carteira");
-      if (carteiraFiltro !== "todas" && cart !== carteiraFiltro) return false;
+      if (!pertenceACarteira(r.carteira, carteiraFiltro)) return false;
       return true;
     });
   }, [reajusteCompletos, busca, carteiraFiltro]);
@@ -432,7 +432,7 @@ function Obrigacoes() {
         totalEmpresas: (listaAlvo || []).length,
       };
     }
-    const daCarteira = (listaAlvo || []).filter((r) => r && (r.carteira || "Sem Carteira") === carteiraFiltro);
+    const daCarteira = (listaAlvo || []).filter((r) => r && pertenceACarteira(r.carteira, carteiraFiltro));
     const supUnicos = Array.from(new Set(daCarteira.map((r) => r?.supervisor).filter(Boolean)));
     const anaUnicos = Array.from(new Set(daCarteira.map((r) => r?.analista).filter(Boolean)));
     return {
@@ -458,7 +458,7 @@ function Obrigacoes() {
               <NovoFGTSTrimestralDialog />
             ) : filtroTipo === "Reajuste Salarial Sindicato" ? (
               <NovoReajusteSindicatoDialog />
-            ) : (
+            ) : filtroTipo === "Particularidades do Cliente" ? null : (
               <NovaObrigacaoDialog />
             )}
           </div>
@@ -482,8 +482,10 @@ function Obrigacoes() {
         ))}
       </div>
 
-      {/* RENDERIZAÇÃO: PESQUISA FGTS TRIMESTRAL */}
-      {filtroTipo === "Pesq. FGTS Trim." || filtroTipo === "Pesquisa FGTS Trimestral" ? (
+      {/* RENDERIZAÇÃO: PARTICULARIDADES DO CLIENTE */}
+      {filtroTipo === "Particularidades do Cliente" ? (
+        <ParticularidadesCliente />
+      ) : filtroTipo === "Pesq. FGTS Trim." || filtroTipo === "Pesquisa FGTS Trimestral" ? (
         <div className="space-y-6">
           {/* Cards de Resumo FGTS Trimestral */}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -605,7 +607,7 @@ function Obrigacoes() {
                 Todas as Carteiras ({fgtsCompletos.length})
               </button>
               {carteirasDisponiveis.map((cart) => {
-                const qtd = fgtsCompletos.filter((r) => (r.carteira || "Sem Carteira") === cart).length;
+                const qtd = fgtsCompletos.filter((r) => pertenceACarteira(r.carteira, cart)).length;
                 return (
                   <button
                     key={cart}
@@ -689,10 +691,10 @@ function Obrigacoes() {
                 </tr>
               </thead>
               <tbody>
-                {fgtsFiltrados.map((r) => {
+                {fgtsFiltrados.map((r, idx) => {
                   const temPendencia = r.pendenciaFgts === "SIM";
                   return (
-                    <tr key={r.id} className="border-b last:border-0 hover:bg-muted/40 align-middle">
+                    <tr key={`${r.id}-${idx}`} className="border-b last:border-0 hover:bg-muted/40 align-middle">
                       <td className="p-2 font-bold text-center tabular-nums border-r">{r.codigo || "—"}</td>
                       <td className={cn(
                         "p-2 font-bold border-r transition-colors",
@@ -906,7 +908,7 @@ function Obrigacoes() {
                 Todas as Carteiras ({reajusteCompletos.length})
               </button>
               {carteirasDisponiveis.map((cart) => {
-                const qtd = reajusteCompletos.filter((r) => (r.carteira || "Sem Carteira") === cart).length;
+                const qtd = reajusteCompletos.filter((r) => pertenceACarteira(r.carteira, cart)).length;
                 return (
                   <button
                     key={cart}
@@ -1198,7 +1200,7 @@ function Obrigacoes() {
                 Todas as Carteiras ({debitoCompletos.length})
               </button>
               {carteirasDisponiveis.map((cart) => {
-                const qtd = debitoCompletos.filter((r) => (r.carteira || "Sem Carteira") === cart).length;
+                const qtd = debitoCompletos.filter((r) => pertenceACarteira(r.carteira, cart)).length;
                 return (
                   <button
                     key={cart}
@@ -1486,7 +1488,7 @@ function Obrigacoes() {
                 Todas as Carteiras ({dctfCompletos.length})
               </button>
               {carteirasDisponiveis.map((cart) => {
-                const qtd = dctfCompletos.filter((r) => (r.carteira || "Sem Carteira") === cart).length;
+                const qtd = dctfCompletos.filter((r) => pertenceACarteira(r.carteira, cart)).length;
                 return (
                   <button
                     key={cart}

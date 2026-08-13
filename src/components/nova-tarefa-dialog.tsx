@@ -25,6 +25,7 @@ import {
 import { createTarefa, type NovaTarefaForm } from "@/lib/tarefas-store";
 import { useEmpresas } from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
+import { CATEGORIAS_ROTINA } from "@/lib/rotinas-view";
 
 const EMPTY_FORM: NovaTarefaForm = {
   titulo: "",
@@ -36,6 +37,8 @@ const EMPTY_FORM: NovaTarefaForm = {
   horasPrevistas: 2,
   status: "backlog",
   checklistItens: "",
+  dataInicio: "",
+  categoria: "Folha",
 };
 
 export function NovaTarefaDialog({
@@ -220,6 +223,36 @@ export function NovaTarefaDialog({
                 value={form.prazo}
                 onChange={(e) => set("prazo", e.target.value)}
               />
+            </div>
+
+            {/* Data de início */}
+            <div className="space-y-1.5">
+              <Label htmlFor="nt-inicio" className="text-xs font-medium">
+                Data de Início (Calendário / Gantt)
+              </Label>
+              <Input
+                id="nt-inicio"
+                type="date"
+                value={form.dataInicio ?? ""}
+                onChange={(e) => set("dataInicio", e.target.value)}
+              />
+            </div>
+
+            {/* Categoria */}
+            <div className="space-y-1.5">
+              <Label htmlFor="nt-categoria" className="text-xs font-medium">Categoria</Label>
+              <Select value={form.categoria ?? "Folha"} onValueChange={(v) => set("categoria", v)}>
+                <SelectTrigger id="nt-categoria">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIAS_ROTINA.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Horas previstas */}

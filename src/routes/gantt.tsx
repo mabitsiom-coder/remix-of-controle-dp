@@ -31,12 +31,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  evolucaoConclusao,
-  reunioesIniciais,
-  tarefasGantt,
-  type Reuniao,
-} from "@/lib/mock-data";
+import { reunioesIniciais, type Reuniao } from "@/lib/mock-data";
+import { NovaTarefaDialog } from "@/components/nova-tarefa-dialog";
+import { useTarefas } from "@/lib/tarefas-store";
+import { barrasDoMes, diasNoMes, evolucaoDoMes, NOMES_MES } from "@/lib/rotinas-view";
 
 export const Route = createFileRoute("/gantt")({
   head: () => ({
@@ -59,8 +57,6 @@ export const Route = createFileRoute("/gantt")({
   component: PainelGantt,
 });
 
-const DIAS = 31;
-const OFFSET = 6; // 01/08/2026 = sábado
 const SEMANA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
 
 const corStatus: Record<string, string> = {
@@ -82,10 +78,21 @@ function PainelGantt() {
   const [aberto, setAberto] = useState(false);
   const [form, setForm] = useState({ titulo: "", dia: "1", hora: "09:00", participantes: "" });
 
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = hoje.getMonth();
+  const DIAS = diasNoMes(ano, mes);
+  const OFFSET = new Date(ano, mes, 1).getDay();
+
+  // Mesma fonte de dados de Rotinas e do Calendário
+  const { tarefas } = useTarefas();
+  const tarefasGantt = useMemo(() => barrasDoMes(tarefas, ano, mes), [tarefas, ano, mes]);
+  const evolucaoConclusao = useMemo(() => evolucaoDoMes(tarefas, ano, mes), [tarefas, ano, mes]);
+
   const kpis = useMemo(() => {
-    const c = (s: string) => tarefasGantt.filter((t) => t.status === s).length;
+    const c = (st: string) => tarefasGantt.filter((t) => t.status === st).length;
     return { atrasada: c("atrasada"), andamento: c("andamento"), planejada: c("planejada"), concluida: c("concluida") };
-  }, []);
+  }, [tarefasGantt]);
 
   const adicionarReuniao = () => {
     if (!form.titulo.trim()) return;
@@ -109,9 +116,11 @@ function PainelGantt() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Painel Gantt de Tarefas"
-        description="Agosto de 2026 · evolução de conclusão, cronograma por processo e reuniões marcadas"
+        title="Painel Gantt de Rotinas"
+        description={`${NOMES_MES[mes]} de ${ano} · mesma base de dados das Rotinas e do Calendário`}
         actions={
+          <div className="flex items-center gap-2">
+          <NovaTarefaDialog />
           <Dialog open={aberto} onOpenChange={setAberto}>
             <DialogTrigger asChild>
               <Button size="sm">
@@ -176,6 +185,7 @@ function PainelGantt() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         }
       />
 
@@ -249,7 +259,7 @@ function PainelGantt() {
           <h2 className="flex items-center gap-2 text-sm font-semibold">
             <Users className="h-4 w-4" /> Reuniões marcadas
           </h2>
-          <p className="text-xs text-muted-foreground">{reunioes.length} reuniões em agosto</p>
+          <p className="text-xs text-muted-foreground">{reunioes.length} reuniões em {NOMES_MES[mes]?.toLowerCase()}</p>
           <div className="mt-3 space-y-2 overflow-y-auto">
             {reunioes
               .slice()
@@ -258,7 +268,7 @@ function PainelGantt() {
                 <div key={r.id} className="flex items-start gap-3 rounded-lg border p-2.5">
                   <div className="w-9 shrink-0 rounded-md bg-chart-5/15 py-1 text-center">
                     <p className="text-sm font-semibold tabular-nums text-chart-5">{r.dia}</p>
-                    <p className="text-[9px] uppercase text-muted-foreground">ago</p>
+                    <p className="text-[9px] uppercase text-muted-foreground">{NOMES_MES[mes]?.slice(0, 3).toLowerCase()}</p>
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-xs font-medium">{r.titulo}</p>
@@ -314,6 +324,11 @@ function PainelGantt() {
             </div>
           </div>
 
+          {tarefasGantt.length === 0 && (
+            <div className="p-10 text-center text-sm text-muted-foreground">
+              Nenhuma rotina com datas neste mês. Cadastre rotinas para vê-las no cronograma.
+            </div>
+          )}
           {tarefasGantt.map((t) => (
             <div key={t.id} className="flex border-b last:border-0 hover:bg-muted/30">
               <div className="w-72 shrink-0 border-r p-2.5">
@@ -360,7 +375,7 @@ function PainelGantt() {
                     <TooltipContent>
                       <p className="text-xs font-medium">{t.titulo}</p>
                       <p className="text-xs text-muted-foreground">
-                        {t.inicio}/08 a {t.fim}/08 · {t.progresso}% · {rotuloStatus[t.status]}
+                        {t.inicio} a {t.fim} de {NOMES_MES[mes]} · {t.progresso}% · {rotuloStatus[t.status]}
                       </p>
                     </TooltipContent>
                   </Tooltip>

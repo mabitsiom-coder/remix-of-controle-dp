@@ -31,6 +31,11 @@ import {
 
 import { useEmpresas } from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
+import {
+  carteiraDaEmpresa,
+  listarNomesCarteiras,
+  pertenceACarteira,
+} from "@/lib/carteiras-core";
 
 const etapaIcon: Record<EtapaStatus, typeof Check | null> = {
   pendente: null,
@@ -108,7 +113,7 @@ export function FolhaFechamentoTable() {
             id,
             codigo: emp.codigoDominio || emp.id,
             empresa: emp.nome,
-            carteira: emp.carteira || "Sem Carteira",
+            carteira: carteiraDaEmpresa(emp),
             grupo: emp.grupoId || "Geral",
             responsavel: emp.analista || emp.responsavel || "Não atribuído",
             tipoEmpresa: emp.tipo || "com-movimento",
@@ -121,7 +126,7 @@ export function FolhaFechamentoTable() {
           codigo: emp.codigoDominio || emp.id,
           empresa: emp.nome,
           grupo: emp.grupoId || "Geral",
-          carteira: emp.carteira || "Sem Carteira",
+          carteira: carteiraDaEmpresa(emp),
           tipoEmpresa: emp.tipo || "com-movimento",
           competencia,
           responsavel: emp.analista || emp.responsavel || "Não atribuído",
@@ -154,14 +159,10 @@ export function FolhaFechamentoTable() {
     return list.filter((t) => t.competencia === competencia);
   }, [empresas, competencia, tarefasSalvas]);
   
-  const carteirasDisponiveis = useMemo(() => {
-    const set = new Set([
-      ...carteiras.map((c) => c.nome),
-      ...empresas.map((e) => e.carteira).filter(Boolean),
-      ...daCompetencia.map((t) => t.carteira).filter(Boolean),
-    ]);
-    return Array.from(set).sort();
-  }, [carteiras, empresas, daCompetencia]);
+  const carteirasDisponiveis = useMemo(
+    () => listarNomesCarteiras(empresas, carteiras),
+    [carteiras, empresas],
+  );
 
   const responsaveis = useMemo(
     () => Array.from(new Set(daCompetencia.map((t) => t.responsavel))).sort(),
@@ -176,8 +177,7 @@ export function FolhaFechamentoTable() {
       const resp = String(t.responsavel ?? "").toLowerCase();
       return cod.includes(q) || emp.includes(q) || resp.includes(q);
     }
-    const c = t.carteira || t.grupo || "Geral";
-    if (carteiraFiltro !== "todas" && c !== carteiraFiltro) return false;
+    if (!pertenceACarteira(t.carteira, carteiraFiltro)) return false;
     if (statusFiltro !== "todos" && t.status !== statusFiltro) return false;
     if (responsavel !== "todos" && t.responsavel !== responsavel) return false;
     return true;
@@ -186,8 +186,7 @@ export function FolhaFechamentoTable() {
   const resumo = statusFolhaOrder.map((s) => ({
     status: s,
     total: daCompetencia.filter((t) => {
-      const c = t.carteira || t.grupo || "Geral";
-      return (carteiraFiltro === "todas" || c === carteiraFiltro) && t.status === s;
+      return pertenceACarteira(t.carteira, carteiraFiltro) && t.status === s;
     }).length,
   }));
 
@@ -213,7 +212,7 @@ export function FolhaFechamentoTable() {
             Todas as Carteiras ({daCompetencia.length})
           </button>
           {carteirasDisponiveis.map((cart) => {
-            const qtd = daCompetencia.filter((t) => (t.carteira || t.grupo || "Geral") === cart).length;
+            const qtd = daCompetencia.filter((t) => pertenceACarteira(t.carteira, cart)).length;
             return (
               <button
                 key={cart}
