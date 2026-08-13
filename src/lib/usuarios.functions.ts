@@ -144,3 +144,12 @@ export const removerUsuario = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** Indica se já existe algum usuário cadastrado (usado na primeira configuração). */
+export const existeUsuario = createServerFn({ method: "GET" }).handler(async () => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const admin = await supabaseAdmin;
+  const { count, error } = await admin.from("usuarios").select("id", { count: "exact", head: true });
+  if (error) throw new Error(error.message);
+  return { existe: (count ?? 0) > 0 };
+});
