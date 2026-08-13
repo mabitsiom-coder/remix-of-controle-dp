@@ -23,7 +23,7 @@ export const registrarPrimeiroAdmin = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const admin = await supabaseAdmin;
 
-    const { count, error: erroContagem } = await supabaseAdmin
+    const { count, error: erroContagem } = await admin
       .from("usuarios")
       .select("id", { count: "exact", head: true });
     if (erroContagem) throw new Error(erroContagem.message);
