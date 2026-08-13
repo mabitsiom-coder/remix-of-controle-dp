@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
+import { AcessosCadastros } from "@/components/acessos-cadastros";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -120,6 +121,8 @@ function UsuariosPage() {
           Acesso Total ao Sistema
         </Badge>
       </div>
+
+      {isAdmin && <AcessosCadastros />}
 
       {/* KPIS */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
