@@ -246,7 +246,7 @@ function DefinirAcessoDialog({
             <UserPlus className="h-4 w-4 text-primary" /> Definir acesso
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Os dados abaixo vêm do cadastro. Defina apenas e-mail e senha.
+            Nome e área vêm do cadastro. Defina o e-mail e a senha de acesso livremente.
           </DialogDescription>
         </DialogHeader>
 
