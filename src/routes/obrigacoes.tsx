@@ -691,10 +691,10 @@ function Obrigacoes() {
                 </tr>
               </thead>
               <tbody>
-                {fgtsFiltrados.map((r) => {
+                {fgtsFiltrados.map((r, idx) => {
                   const temPendencia = r.pendenciaFgts === "SIM";
                   return (
-                    <tr key={r.id} className="border-b last:border-0 hover:bg-muted/40 align-middle">
+                    <tr key={`${r.id}-${idx}`} className="border-b last:border-0 hover:bg-muted/40 align-middle">
                       <td className="p-2 font-bold text-center tabular-nums border-r">{r.codigo || "—"}</td>
                       <td className={cn(
                         "p-2 font-bold border-r transition-colors",
