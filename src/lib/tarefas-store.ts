@@ -16,6 +16,9 @@ export type NovaTarefaForm = {
   horasPrevistas: number;
   status: "backlog" | "fazendo" | "revisao" | "concluida";
   checklistItens: string;
+  dataInicio?: string;
+  categoria?: string;
+  carteira?: string;
 };
 
 function getStored(): Tarefa[] {
@@ -65,6 +68,9 @@ export function createTarefa(dados: NovaTarefaForm): Tarefa {
         ? checklist
         : [{ item: "Executar tarefa", feito: false, obrigatorio: true }],
     status: dados.status,
+    ...(dados.dataInicio ? { dataInicio: dados.dataInicio } : {}),
+    ...(dados.categoria ? { categoria: dados.categoria } : {}),
+    ...(dados.carteira ? { carteira: dados.carteira } : {}),
   };
 
   const atuais = getStored();
