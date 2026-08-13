@@ -155,7 +155,7 @@ export function encontrarEmpresaDuplicada(
 ): { empresa: Empresa; motivo: "cnpj" | "nome" } | undefined {
   const digitos = (cnpj || "").replace(/\D/g, "");
   const nomeNorm = normalizarNome(nome || "");
-  const lista = getStoredEmpresas().filter((e) => e.id !== ignorarId);
+  const lista = getTodasEmpresas().filter((e) => e.id !== ignorarId);
 
   if (digitos.length >= 11) {
     const porCnpj = lista.find((e) => e.cnpj.replace(/\D/g, "") === digitos);
@@ -226,7 +226,7 @@ export function createEmpresa(dados: NovaEmpresaForm, criadoPor?: string): Empre
     ],
   };
 
-  const atuais = getStoredEmpresas();
+  const atuais = getTodasEmpresas();
   const atualizadas = [nova, ...atuais];
   saveEmpresas(atualizadas);
 
@@ -238,7 +238,7 @@ export function createEmpresa(dados: NovaEmpresaForm, criadoPor?: string): Empre
 }
 
 export function updateEmpresa(id: string, dados: NovaEmpresaForm): Empresa | undefined {
-  const atuais = getStoredEmpresas();
+  const atuais = getTodasEmpresas();
   const atual = atuais.find((e) => e.id === id);
   if (!atual) return undefined;
 
@@ -320,15 +320,17 @@ export function empresaToForm(empresa: Empresa): NovaEmpresaForm {
 }
 
 export function useEmpresas() {
-
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [empresasExcluidas, setEmpresasExcluidas] = useState<Empresa[]>([]);
 
   useEffect(() => {
-    setEmpresas(getStoredEmpresas());
-
-    const handleChange = () => {
+    const ler = () => {
       setEmpresas(getStoredEmpresas());
+      setEmpresasExcluidas(getEmpresasExcluidas());
     };
+    ler();
+
+    const handleChange = () => ler();
 
     window.addEventListener(EVENT_NAME, handleChange);
     window.addEventListener("storage", handleChange);
@@ -341,7 +343,13 @@ export function useEmpresas() {
 
   return {
     empresas,
+    empresasExcluidas,
     createEmpresa,
-    refresh: () => setEmpresas(getStoredEmpresas()),
+    excluirEmpresa,
+    restaurarEmpresa,
+    refresh: () => {
+      setEmpresas(getStoredEmpresas());
+      setEmpresasExcluidas(getEmpresasExcluidas());
+    },
   };
 }
