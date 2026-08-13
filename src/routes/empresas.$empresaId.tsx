@@ -3,7 +3,7 @@ import { AlertTriangle, ArrowLeft, CheckCircle2 } from "lucide-react";
 
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { type Empresa } from "@/lib/mock-data";
 import { getEmpresaById } from "@/lib/empresas-store";
 import { EditarEmpresaDialog } from "@/components/editar-empresa-dialog";
@@ -76,83 +76,79 @@ function EmpresaDetalhe() {
         </div>
       )}
 
-      <Tabs defaultValue="cadastro">
-        <TabsList>
-          <TabsTrigger value="cadastro">Dados cadastrais</TabsTrigger>
-          <TabsTrigger value="particularidades">Particularidades</TabsTrigger>
-          <TabsTrigger value="historico">Histórico</TabsTrigger>
-        </TabsList>
+      <section className="space-y-4">
+        <SectionTitle title="Dados cadastrais" />
+        <div className="surface-panel grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
+          <Campo label="Responsável" value={empresa.responsavel} />
+          <Campo label="Carteira" value={empresa.carteira} />
+          <Campo label="Analista" value={empresa.analista} />
+          <Campo label="Supervisor" value={empresa.supervisor} />
+          <Campo label="Regime tributário" value={empresa.regime} />
+          <Campo label="Convênio / Sindicato" value={empresa.convenio} />
+          <Campo label="Certificado digital" value={empresa.certificadoDigital} />
+          <Campo label="Procuração" value={empresa.procuracao} />
+          <Campo label="Nível de risco" value={empresa.risco} />
+          <Campo label="Funcionários" value={String(empresa.funcionarios)} />
+          <Campo label="Última revisão" value={empresa.ultimaRevisao} />
+        </div>
+      </section>
 
-        <TabsContent value="cadastro" className="mt-4">
-          <div className="surface-panel grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
-            <Campo label="Responsável" value={empresa.responsavel} />
-            <Campo label="Carteira" value={empresa.carteira} />
-            <Campo label="Analista" value={empresa.analista} />
-            <Campo label="Supervisor" value={empresa.supervisor} />
-            <Campo label="Regime tributário" value={empresa.regime} />
-            <Campo label="Convênio / Sindicato" value={empresa.convenio} />
-            <Campo label="Certificado digital" value={empresa.certificadoDigital} />
-            <Campo label="Procuração" value={empresa.procuracao} />
-            <Campo label="Nível de risco" value={empresa.risco} />
-            <Campo label="Funcionários" value={String(empresa.funcionarios)} />
-            <Campo label="Última revisão" value={empresa.ultimaRevisao} />
-          </div>
-        </TabsContent>
+      <section className="space-y-4">
+        <SectionTitle title="Particularidades" />
+        <div className="surface-panel grid gap-4 p-5 sm:grid-cols-2">
+          <Campo label="Forma de fechamento da folha" value={p.fechamento} />
+          <Campo label="Forma de envio" value={p.envio} />
+          <Campo label="Fluxo de aprovação" value={p.fluxoAprovacao} />
+          <Campo label="Dupla conferência" value={p.duplaConferencia ? "Obrigatória" : "Não exigida"} />
+        </div>
 
-        <TabsContent value="particularidades" className="mt-4 space-y-4">
-          <div className="surface-panel grid gap-4 p-5 sm:grid-cols-2">
-            <Campo label="Forma de fechamento da folha" value={p.fechamento} />
-            <Campo label="Forma de envio" value={p.envio} />
-            <Campo label="Fluxo de aprovação" value={p.fluxoAprovacao} />
-            <Campo
-              label="Dupla conferência"
-              value={p.duplaConferencia ? "Obrigatória" : "Não exigida"}
-            />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="surface-panel p-5">
-              <h3 className="mb-3 text-sm font-semibold">Rubricas personalizadas</h3>
-              <ul className="space-y-2">
-                {p.rubricas.map((r) => (
-                  <li key={r} className="flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="h-4 w-4 text-primary" /> {r}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="surface-panel p-5">
-              <h3 className="mb-3 text-sm font-semibold">Eventos e regras próprias</h3>
-              <ul className="space-y-2">
-                {p.eventos.map((r) => (
-                  <li key={r} className="flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="h-4 w-4 text-primary" /> {r}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
+        <div className="grid gap-4 md:grid-cols-2">
           <div className="surface-panel p-5">
-            <h3 className="mb-2 text-sm font-semibold">Informações importantes</h3>
-            <p className="text-sm text-muted-foreground">{p.observacoes}</p>
+            <h3 className="mb-3 text-sm font-semibold">Rubricas personalizadas</h3>
+            <ul className="space-y-2">
+              {p.rubricas.map((r) => (
+                <li key={r} className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="h-4 w-4 text-primary" /> {r}
+                </li>
+              ))}
+            </ul>
           </div>
-        </TabsContent>
+          <div className="surface-panel p-5">
+            <h3 className="mb-3 text-sm font-semibold">Eventos e regras próprias</h3>
+            <ul className="space-y-2">
+              {p.eventos.map((r) => (
+                <li key={r} className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="h-4 w-4 text-primary" /> {r}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
 
-        <TabsContent value="historico" className="mt-4">
-          <div className="surface-panel divide-y p-2">
-            {empresa.historico.map((h, i) => (
-              <div key={i} className="flex items-start gap-4 p-3">
-                <span className="w-24 shrink-0 text-xs text-muted-foreground">{h.data}</span>
-                <div>
-                  <p className="text-sm">{h.descricao}</p>
-                  <p className="text-xs text-muted-foreground">por {h.usuario}</p>
-                </div>
+        <div className="surface-panel p-5">
+          <h3 className="mb-2 text-sm font-semibold">Informações importantes</h3>
+          <p className="text-sm text-muted-foreground">{p.observacoes}</p>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <SectionTitle title="Histórico" />
+        <div className="surface-panel divide-y p-2">
+          {empresa.historico.length === 0 && (
+            <p className="p-3 text-sm text-muted-foreground">Nenhum registro de histórico.</p>
+          )}
+          {empresa.historico.map((h, i) => (
+            <div key={i} className="flex items-start gap-4 p-3">
+              <span className="w-24 shrink-0 text-xs text-muted-foreground">{h.data}</span>
+              <div>
+                <p className="text-sm">{h.descricao}</p>
+                <p className="text-xs text-muted-foreground">por {h.usuario}</p>
               </div>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
+            </div>
+          ))}
+        </div>
+      </section>
+
     </div>
   );
 }
