@@ -16,6 +16,7 @@ import {
   X,
   FileCheck,
   Receipt,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,6 +24,7 @@ import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -40,7 +42,8 @@ import {
 } from "@/components/ui/select";
 import { NovaObrigacaoDialog } from "@/components/nova-obrigacao-dialog";
 import { NovaDCTFWebDialog } from "@/components/nova-dctfweb-dialog";
-import { NovoEspelhoDebitoDialog } from "@/components/novo-espelho-debito-dialog";
+import { NovaEspelhoDebitoDialog } from "@/components/novo-espelho-debito-dialog";
+import { NovaFGTSTrimestralDialog } from "@/components/novo-fgts-trimestral-dialog";
 import { useObrigacoes, deleteObrigacao } from "@/lib/obrigacoes-store";
 import { useRegDCTFWeb, deleteDCTFWeb, updateDCTFWeb, type RegDCTFWeb } from "@/lib/dctfweb-store";
 import {
@@ -49,6 +52,12 @@ import {
   updateEspelhoDebito,
   type RegEspelhoDebito,
 } from "@/lib/espelho-debito-store";
+import {
+  useRegFGTSTrimestral,
+  deleteFGTSTrimestral,
+  updateFGTSTrimestral,
+  type RegFGTSTrimestral,
+} from "@/lib/fgts-trimestral-store";
 import { useEmpresas } from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
 import { cn } from "@/lib/utils";
@@ -59,10 +68,10 @@ export const Route = createFileRoute("/obrigacoes")({
       { title: "Gestão de Obrigações — DP Control" },
       {
         name: "description",
-        content: "Acompanhe eSocial, FGTS Digital, DCTFWeb, Espelho de Débito, MIT, EFD-Reinf e SST.",
+        content: "Acompanhe eSocial, FGTS Digital, DCTFWeb, Espelho de Débito, Pesquisa FGTS Trimestral, MIT, EFD-Reinf e SST.",
       },
       { property: "og:title", content: "Gestão de Obrigações — DP Control" },
-      { property: "og:description", content: "Painel de obrigações acessórias do DP com espelho de débito." },
+      { property: "og:description", content: "Painel de obrigações acessórias do DP com pesquisa FGTS trimestral." },
     ],
   }),
   component: Obrigacoes,
@@ -72,6 +81,7 @@ const tiposObriga = [
   "Todos",
   "DCTFWeb",
   "Espelho de Débito",
+  "Pesquisa FGTS Trimestral",
   "eSocial",
   "FGTS Digital",
   "EFD-Reinf",
@@ -80,10 +90,11 @@ const tiposObriga = [
 ];
 
 function Obrigacoes() {
-  const [filtroTipo, setFiltroTipo] = useState("Espelho de Débito");
+  const [filtroTipo, setFiltroTipo] = useState("Pesquisa FGTS Trimestral");
   const { obrigacoes = [] } = useObrigacoes() || {};
   const { registros: dctfRegistros = [] } = useRegDCTFWeb() || {};
   const { registros: debitoRegistros = [] } = useRegEspelhoDebito() || {};
+  const { registros: fgtsRegistros = [] } = useRegFGTSTrimestral() || {};
   const { empresas = [] } = useEmpresas() || {};
   const { carteiras = [] } = useCadastros() || {};
 
@@ -91,6 +102,7 @@ function Obrigacoes() {
   const [carteiraFiltro, setCarteiraFiltro] = useState<string>("todas");
   const [editingDCTF, setEditingDCTF] = useState<RegDCTFWeb | null>(null);
   const [editingDebito, setEditingDebito] = useState<RegEspelhoDebito | null>(null);
+  const [editingFGTS, setEditingFGTS] = useState<RegFGTSTrimestral | null>(null);
 
   // Sincronizar todos os registros de DCTFWeb com as empresas
   const dctfCompletos: RegDCTFWeb[] = useMemo(() => {
@@ -183,6 +195,47 @@ function Obrigacoes() {
     return listDebito;
   }, [empresas, debitoRegistros]);
 
+  // Sincronizar todos os registros de FGTS Trimestral com as empresas
+  const fgtsCompletos: RegFGTSTrimestral[] = useMemo(() => {
+    const listEmp = (empresas || []).filter(Boolean);
+    const listFgts = (fgtsRegistros || []).filter(Boolean);
+    if (listEmp.length > 0) {
+      const mapa = new Map(listFgts.map((r) => [r.codigo || r.id, r]));
+      return listEmp.map((emp, index) => {
+        const cod = emp.codigoDominio || emp.id || String(index + 1);
+        const mat = mapa.get(cod) || mapa.get(emp.nome);
+        if (mat) {
+          return {
+            ...mat,
+            codigo: cod,
+            empresa: emp.nome || mat.empresa || "Empresa Sem Nome",
+            cnpj: emp.cnpj || mat.cnpj || "",
+            carteira: emp.carteira || mat.carteira || "RH - G - 01",
+            analista: emp.analista || mat.analista || "Não atribuído",
+            supervisor: emp.supervisor || mat.supervisor || "Não atribuído",
+          };
+        }
+        return {
+          id: `fgts-${cod}`,
+          codigo: cod,
+          empresa: emp.nome || "Empresa Sem Nome",
+          cnpj: emp.cnpj || "",
+          numPis: "—",
+          pedidoExtConsolidado: "—",
+          baixadoExtConsolidado: "—",
+          pendenciaFgts: "NÃO",
+          enviadoCliente: "—",
+          obsAnalistaSolicitacao: "—",
+          obsCS: "—",
+          carteira: emp.carteira || "RH - G - 01",
+          analista: emp.analista || "Não atribuído",
+          supervisor: emp.supervisor || "Não atribuído",
+        };
+      });
+    }
+    return listFgts;
+  }, [empresas, fgtsRegistros]);
+
   // Lista de carteiras disponíveis
   const carteirasDisponiveis = useMemo(() => {
     const listCart = (carteiras || []).filter(Boolean);
@@ -248,20 +301,57 @@ function Obrigacoes() {
     });
   }, [debitoCompletos, busca, carteiraFiltro]);
 
+  // Filtragem FGTS Trimestral
+  const fgtsFiltrados = useMemo(() => {
+    return (fgtsCompletos || []).filter((r) => {
+      if (!r) return false;
+      const q = busca.trim().toLowerCase();
+      if (q) {
+        const cod = String(r.codigo ?? "").toLowerCase();
+        const emp = String(r.empresa ?? "").toLowerCase();
+        const cnpj = String(r.cnpj ?? "").toLowerCase();
+        const pis = String(r.numPis ?? "").toLowerCase();
+        const ana = String(r.analista ?? "").toLowerCase();
+        const sup = String(r.supervisor ?? "").toLowerCase();
+        const obsAna = String(r.obsAnalistaSolicitacao ?? "").toLowerCase();
+        const obsCS = String(r.obsCS ?? "").toLowerCase();
+        return (
+          cod.includes(q) ||
+          emp.includes(q) ||
+          cnpj.includes(q) ||
+          pis.includes(q) ||
+          ana.includes(q) ||
+          sup.includes(q) ||
+          obsAna.includes(q) ||
+          obsCS.includes(q)
+        );
+      }
+      const cart = String(r.carteira || "Sem Carteira");
+      if (carteiraFiltro !== "todas" && cart !== carteiraFiltro) return false;
+      return true;
+    });
+  }, [fgtsCompletos, busca, carteiraFiltro]);
+
   // Dados da carteira em destaque
   const informacoesCarteira = useMemo(() => {
-    const listaAlvo = (filtroTipo === "DCTFWeb" ? dctfCompletos : debitoCompletos) || [];
+    const listaAlvo =
+      filtroTipo === "DCTFWeb"
+        ? dctfCompletos
+        : filtroTipo === "Pesquisa FGTS Trimestral"
+          ? fgtsCompletos
+          : debitoCompletos;
+
     if (carteiraFiltro === "todas") {
-      const supUnicos = Array.from(new Set(listaAlvo.map((r) => r?.supervisor).filter(Boolean)));
-      const anaUnicos = Array.from(new Set(listaAlvo.map((r) => r?.analista).filter(Boolean)));
+      const supUnicos = Array.from(new Set((listaAlvo || []).map((r) => r?.supervisor).filter(Boolean)));
+      const anaUnicos = Array.from(new Set((listaAlvo || []).map((r) => r?.analista).filter(Boolean)));
       return {
         nome: "Todas as Carteiras",
         supervisores: supUnicos as string[],
         analistas: anaUnicos as string[],
-        totalEmpresas: listaAlvo.length,
+        totalEmpresas: (listaAlvo || []).length,
       };
     }
-    const daCarteira = listaAlvo.filter((r) => r && (r.carteira || "Sem Carteira") === carteiraFiltro);
+    const daCarteira = (listaAlvo || []).filter((r) => r && (r.carteira || "Sem Carteira") === carteiraFiltro);
     const supUnicos = Array.from(new Set(daCarteira.map((r) => r?.supervisor).filter(Boolean)));
     const anaUnicos = Array.from(new Set(daCarteira.map((r) => r?.analista).filter(Boolean)));
     return {
@@ -270,19 +360,21 @@ function Obrigacoes() {
       analistas: anaUnicos.length > 0 ? (anaUnicos as string[]) : ["SIMEANE"],
       totalEmpresas: daCarteira.length,
     };
-  }, [carteiraFiltro, filtroTipo, dctfCompletos, debitoCompletos]);
+  }, [carteiraFiltro, filtroTipo, dctfCompletos, debitoCompletos, fgtsCompletos]);
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Gestão de Obrigações"
-        description="eSocial, FGTS Digital, DCTFWeb, Espelho de Débito, MIT, EFD-Reinf e SST"
+        description="eSocial, FGTS Digital, DCTFWeb, Espelho de Débito, Pesquisa FGTS Trimestral, MIT, EFD-Reinf e SST"
         actions={
           <div className="flex gap-2">
             {filtroTipo === "DCTFWeb" ? (
               <NovaDCTFWebDialog />
             ) : filtroTipo === "Espelho de Débito" ? (
-              <NovoEspelhoDebitoDialog />
+              <NovaEspelhoDebitoDialog />
+            ) : filtroTipo === "Pesquisa FGTS Trimestral" ? (
+              <NovaFGTSTrimestralDialog />
             ) : (
               <NovaObrigacaoDialog />
             )}
@@ -307,8 +399,309 @@ function Obrigacoes() {
         ))}
       </div>
 
-      {/* RENDERIZAÇÃO: ESPELHO DE DÉBITO */}
-      {filtroTipo === "Espelho de Débito" ? (
+      {/* RENDERIZAÇÃO: PESQUISA FGTS TRIMESTRAL */}
+      {filtroTipo === "Pesquisa FGTS Trimestral" ? (
+        <div className="space-y-6">
+          {/* Cards de Resumo FGTS Trimestral */}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="surface-panel flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Total de Empresas</p>
+                <p className="text-2xl font-bold tabular-nums">{informacoesCarteira.totalEmpresas}</p>
+              </div>
+            </div>
+
+            <div className="surface-panel flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+                <AlertCircle className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Com Pendência de FGTS</p>
+                <p className="text-2xl font-bold tabular-nums text-destructive">
+                  {fgtsCompletos.filter((r) => r.pendenciaFgts === "SIM").length}
+                </p>
+              </div>
+            </div>
+
+            <div className="surface-panel flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Enviados ao Cliente</p>
+                <p className="text-2xl font-bold tabular-nums text-success">
+                  {fgtsCompletos.filter((r) => r.enviadoCliente === "SIM").length}
+                </p>
+              </div>
+            </div>
+
+            <div className="surface-panel flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-info/10 text-info">
+                <FileSpreadsheet className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Extrato Baixado</p>
+                <p className="text-2xl font-bold tabular-nums">
+                  {fgtsCompletos.filter((r) => r.baixadoExtConsolidado && r.baixadoExtConsolidado !== "—").length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Destaque da Carteira Selecionada */}
+          <div className="surface-panel p-4 rounded-xl border bg-card/60 backdrop-blur space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
+                  <Briefcase className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Carteira em Destaque
+                  </p>
+                  <h3 className="text-base font-bold text-foreground">
+                    {informacoesCarteira.nome}
+                  </h3>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-6 text-xs">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="h-4 w-4 text-primary" />
+                  <div>
+                    <span className="text-[10px] uppercase font-medium text-muted-foreground block">
+                      Supervisor(a)
+                    </span>
+                    <span className="font-bold text-foreground">
+                      {informacoesCarteira.supervisores.join(", ") || "Não atribuído"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-info" />
+                  <div>
+                    <span className="text-[10px] uppercase font-medium text-muted-foreground block">
+                      Analista(s)
+                    </span>
+                    <span className="font-bold text-foreground">
+                      {informacoesCarteira.analistas.join(", ") || "Não atribuído"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-success" />
+                  <div>
+                    <span className="text-[10px] uppercase font-medium text-muted-foreground block">
+                      Empresas Vinc.
+                    </span>
+                    <span className="font-bold text-foreground tabular-nums">
+                      {informacoesCarteira.totalEmpresas} empresas
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Abas de Seleção de Carteiras */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setCarteiraFiltro("todas")}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
+                  carteiraFiltro === "todas"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                Todas as Carteiras ({fgtsCompletos.length})
+              </button>
+              {carteirasDisponiveis.map((cart) => {
+                const qtd = fgtsCompletos.filter((r) => (r.carteira || "Sem Carteira") === cart).length;
+                return (
+                  <button
+                    key={cart}
+                    type="button"
+                    onClick={() => setCarteiraFiltro(cart)}
+                    className={cn(
+                      "rounded-lg px-3 py-1.5 text-xs transition-all",
+                      carteiraFiltro === cart
+                        ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    {cart} ({qtd})
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Barra de Pesquisa */}
+          <div className="surface-panel flex flex-wrap items-center gap-2 p-3">
+            <div className="relative min-w-60 flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Pesquisar por código, empresa, CNPJ, PIS ou observações..."
+                className="pl-8 pr-8"
+              />
+              {busca && (
+                <button
+                  type="button"
+                  onClick={() => setBusca("")}
+                  className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                  title="Limpar pesquisa"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <select
+              value={carteiraFiltro}
+              onChange={(e) => setCarteiraFiltro(e.target.value)}
+              className="h-9 rounded-md border bg-background px-2 text-sm font-medium"
+            >
+              <option value="todas">Todas as Carteiras</option>
+              {carteirasDisponiveis.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Tabela Planilha Pesquisa FGTS Trimestral */}
+          <div className="surface-panel overflow-x-auto">
+            <table className="w-full min-w-[1500px] text-xs border-collapse">
+              <thead>
+                <tr className="border-b bg-muted/30 text-center font-bold text-[11px] uppercase tracking-wide text-foreground">
+                  <th rowSpan={2} className="p-2 border-r text-center w-14">COD.</th>
+                  <th rowSpan={2} className="p-2 border-r text-left min-w-[200px]">EMPRESA</th>
+                  <th rowSpan={2} className="p-2 border-r text-center min-w-[140px]">CNPJ</th>
+                  <th rowSpan={2} className="p-2 border-r text-center min-w-[150px]">Nº PIS</th>
+                  <th rowSpan={2} className="p-2 border-r text-center min-w-[140px]">PEDIDO DE EXT.<br/>CONSOLIDADO</th>
+                  <th rowSpan={2} className="p-2 border-r text-center min-w-[140px]">BAIXADO EXT.<br/>CONSOLIDADO</th>
+                  
+                  <th colSpan={1} className="p-2 border-r border-b text-center bg-destructive/10 text-destructive font-bold">
+                    PENDÊNCIA DE FGTS
+                  </th>
+                  <th colSpan={1} className="p-2 border-r border-b text-center bg-success/10 text-success font-bold">
+                    ENVIADO AO CLIENTE
+                  </th>
+                  <th rowSpan={2} className="p-2 border-r text-left min-w-[280px]">OBS. ANALISTA / Nº DA SOLICITAÇÃO</th>
+                  <th rowSpan={2} className="p-2 border-r text-left min-w-[150px]">OBS. CS</th>
+
+                  <th rowSpan={2} className="p-2 text-center w-16">AÇÕES</th>
+                </tr>
+                <tr className="border-b bg-muted/40 text-center text-[10px] font-semibold text-muted-foreground">
+                  <th className="p-2 border-r">SIM/NÃO</th>
+                  <th className="p-2 border-r">SIM/NÃO</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fgtsFiltrados.map((r) => {
+                  const temPendencia = r.pendenciaFgts === "SIM";
+                  return (
+                    <tr key={r.id} className="border-b last:border-0 hover:bg-muted/40 align-middle">
+                      <td className="p-2 font-bold text-center tabular-nums border-r">{r.codigo || "—"}</td>
+                      <td className={cn(
+                        "p-2 font-bold border-r transition-colors",
+                        temPendencia ? "bg-amber-100 dark:bg-amber-950/40 text-amber-950 dark:text-amber-200" : "text-foreground"
+                      )}>
+                        {r.empresa}
+                      </td>
+                      <td className="p-2 text-center tabular-nums border-r text-muted-foreground">{r.cnpj || "—"}</td>
+                      
+                      {/* N° PIS */}
+                      <td className="p-2 text-center border-r font-medium text-foreground whitespace-pre-line tabular-nums">
+                        {r.numPis || "—"}
+                      </td>
+
+                      {/* Pedido Ext. Consolidado */}
+                      <td className="p-2 text-center border-r tabular-nums font-semibold">
+                        {r.pedidoExtConsolidado || "—"}
+                      </td>
+
+                      {/* Baixado Ext. Consolidado */}
+                      <td className="p-2 text-center border-r tabular-nums font-semibold">
+                        {r.baixadoExtConsolidado || "—"}
+                      </td>
+
+                      {/* Pendência FGTS */}
+                      <td className="p-2 text-center font-bold border-r">
+                        <span className={temPendencia ? "text-destructive font-extrabold" : "text-foreground"}>
+                          {r.pendenciaFgts}
+                        </span>
+                      </td>
+
+                      {/* Enviado Cliente */}
+                      <td className="p-2 text-center font-bold border-r">
+                        <span className={r.enviadoCliente === "SIM" ? "text-success font-extrabold" : "text-muted-foreground"}>
+                          {r.enviadoCliente}
+                        </span>
+                      </td>
+
+                      {/* Obs. Analista */}
+                      <td className="p-2 border-r text-foreground font-medium max-w-lg break-words">
+                        {r.obsAnalistaSolicitacao || "—"}
+                      </td>
+
+                      {/* Obs. CS */}
+                      <td className="p-2 border-r text-muted-foreground">
+                        {r.obsCS || "—"}
+                      </td>
+
+                      <td className="p-2 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-primary"
+                            onClick={() => setEditingFGTS(r)}
+                            title="Editar Pesquisa FGTS"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={() => deleteFGTSTrimestral(r.id)}
+                            title="Excluir Pesquisa FGTS"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {fgtsFiltrados.length === 0 && (
+                  <tr>
+                    <td colSpan={11} className="p-8 text-center text-sm text-muted-foreground">
+                      Nenhum registro de Pesquisa FGTS Trimestral encontrado para os filtros selecionados.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 px-1">
+            <span>
+              Mostrando <strong>{fgtsFiltrados.length}</strong> de <strong>{fgtsCompletos.length}</strong> empresas na Pesquisa FGTS Trimestral
+            </span>
+          </div>
+        </div>
+      ) : filtroTipo === "Espelho de Débito" ? (
+        /* RENDERIZAÇÃO: ESPELHO DE DÉBITO */
         <div className="space-y-6">
           {/* Cards de Resumo Espelho de Débito */}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -591,21 +984,8 @@ function Obrigacoes() {
                     </tr>
                   );
                 })}
-                {debitoFiltrados.length === 0 && (
-                  <tr>
-                    <td colSpan={13} className="p-8 text-center text-sm text-muted-foreground">
-                      Nenhum registro de Espelho de Débito encontrado para os filtros selecionados.
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
-          </div>
-
-          <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 px-1">
-            <span>
-              Mostrando <strong>{debitoFiltrados.length}</strong> de <strong>{debitoCompletos.length}</strong> empresas de Espelho de Débito
-            </span>
           </div>
         </div>
       ) : filtroTipo === "DCTFWeb" ? (
@@ -960,6 +1340,14 @@ function Obrigacoes() {
           onClose={() => setEditingDebito(null)}
         />
       )}
+
+      {/* Modal de Edição Pesquisa FGTS Trimestral */}
+      {editingFGTS && (
+        <EditFGTSTrimestralDialog
+          item={editingFGTS}
+          onClose={() => setEditingFGTS(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1151,6 +1539,124 @@ function EditEspelhoDebitoDialog({ item, onClose }: { item: RegEspelhoDebito; on
                 />
               </div>
             </div>
+          </div>
+
+          <DialogFooter className="gap-2 border-t pt-4 sm:justify-end">
+            <Button type="button" variant="outline" onClick={onClose} className="text-xs">
+              Cancelar
+            </Button>
+            <Button type="submit" className="gap-1.5 text-xs">
+              <CheckCircle2 className="h-4 w-4" /> Salvar Alterações
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditFGTSTrimestralDialog({ item, onClose }: { item: RegFGTSTrimestral; onClose: () => void }) {
+  const [form, setForm] = useState<RegFGTSTrimestral>(item);
+  const set = <K extends keyof RegFGTSTrimestral>(field: K, value: RegFGTSTrimestral[K]) =>
+    setForm((prev) => ({ ...prev, [field]: value }));
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateFGTSTrimestral(item.id, form);
+    toast.success("Pesquisa FGTS Trimestral atualizada!");
+    onClose();
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto sm:rounded-xl p-6">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-semibold">Editar Pesquisa FGTS — {item.empresa}</DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label className="text-xs font-medium">Empresa</Label>
+              <Input value={form.empresa} onChange={(e) => set("empresa", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Cód. Domínio</Label>
+              <Input value={form.codigo} onChange={(e) => set("codigo", e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">CNPJ</Label>
+              <Input value={form.cnpj} onChange={(e) => set("cnpj", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Nº PIS</Label>
+              <Input value={form.numPis} onChange={(e) => set("numPis", e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Pedido de Ext. Consolidado</Label>
+              <Input
+                value={form.pedidoExtConsolidado}
+                onChange={(e) => set("pedidoExtConsolidado", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Baixado Ext. Consolidado</Label>
+              <Input
+                value={form.baixadoExtConsolidado}
+                onChange={(e) => set("baixadoExtConsolidado", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Pendência de FGTS</Label>
+              <Select value={form.pendenciaFgts} onValueChange={(v) => set("pendenciaFgts", v as "SIM" | "NÃO" | "—")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SIM">SIM</SelectItem>
+                  <SelectItem value="NÃO">NÃO</SelectItem>
+                  <SelectItem value="—">—</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Enviado Ao Cliente</Label>
+              <Select value={form.enviadoCliente} onValueChange={(v) => set("enviadoCliente", v as "SIM" | "NÃO" | "—")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SIM">SIM</SelectItem>
+                  <SelectItem value="NÃO">NÃO</SelectItem>
+                  <SelectItem value="—">—</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Obs. Analista / Nº da Solicitação</Label>
+            <Textarea
+              rows={2}
+              value={form.obsAnalistaSolicitacao}
+              onChange={(e) => set("obsAnalistaSolicitacao", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Obs. CS</Label>
+            <Input value={form.obsCS} onChange={(e) => set("obsCS", e.target.value)} />
           </div>
 
           <DialogFooter className="gap-2 border-t pt-4 sm:justify-end">
