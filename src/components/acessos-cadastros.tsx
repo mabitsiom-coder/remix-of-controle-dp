@@ -202,7 +202,7 @@ function DefinirAcessoDialog({
 
   if (pessoa && pessoaAtual !== pessoa.origemId) {
     setPessoaAtual(pessoa.origemId);
-    setEmail(pessoa.email || sugerirEmail(pessoa.nome));
+    setEmail(pessoa.email || "");
     setSenha("123456");
     setPerfil(pessoa.perfil);
   }
@@ -211,8 +211,8 @@ function DefinirAcessoDialog({
     e.preventDefault();
     if (!pessoa) return;
     const emailLimpo = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailLimpo)) {
-      toast.error("Informe um e-mail válido (ex.: nome@mabitcontabilidade.com.br).");
+    if (!emailValido(emailLimpo)) {
+      toast.error("Informe um e-mail válido.");
       return;
     }
     if (senha.trim().length < 6) {
