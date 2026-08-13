@@ -94,20 +94,20 @@ function Obrigacoes() {
 
   // Sincronizar todos os registros de DCTFWeb com as empresas
   const dctfCompletos: RegDCTFWeb[] = useMemo(() => {
-    const listEmp = empresas || [];
-    const listDctf = dctfRegistros || [];
+    const listEmp = (empresas || []).filter(Boolean);
+    const listDctf = (dctfRegistros || []).filter(Boolean);
     if (listEmp.length > 0) {
       const mapa = new Map(listDctf.map((r) => [r.codigo || r.id, r]));
       return listEmp.map((emp, index) => {
-        const cod = emp.codigoDominio || emp.id;
+        const cod = emp.codigoDominio || emp.id || String(index + 1);
         const mat = mapa.get(cod) || mapa.get(emp.nome);
         if (mat) {
           return {
             ...mat,
             ord: mat.ord || index + 1,
             codigo: cod,
-            empresa: emp.nome,
-            cnpj: emp.cnpj || mat.cnpj,
+            empresa: emp.nome || mat.empresa || "Empresa Sem Nome",
+            cnpj: emp.cnpj || mat.cnpj || "",
             carteira: emp.carteira || mat.carteira || "RH - G - 01",
             analista: emp.analista || mat.analista || "Não atribuído",
             supervisor: emp.supervisor || mat.supervisor || "Não atribuído",
@@ -117,8 +117,8 @@ function Obrigacoes() {
           id: `dctf-${cod}`,
           ord: index + 1,
           codigo: cod,
-          empresa: emp.nome,
-          cnpj: emp.cnpj,
+          empresa: emp.nome || "Empresa Sem Nome",
+          cnpj: emp.cnpj || "",
           carteira: emp.carteira || "RH - G - 01",
           analista: emp.analista || "Não atribuído",
           supervisor: emp.supervisor || "Não atribuído",
@@ -141,20 +141,20 @@ function Obrigacoes() {
 
   // Sincronizar todos os registros de Espelho de Débito com as empresas
   const debitoCompletos: RegEspelhoDebito[] = useMemo(() => {
-    const listEmp = empresas || [];
-    const listDebito = debitoRegistros || [];
+    const listEmp = (empresas || []).filter(Boolean);
+    const listDebito = (debitoRegistros || []).filter(Boolean);
     if (listEmp.length > 0) {
       const mapa = new Map(listDebito.map((r) => [r.codigo || r.id, r]));
       return listEmp.map((emp, index) => {
-        const cod = emp.codigoDominio || emp.id;
+        const cod = emp.codigoDominio || emp.id || String(index + 1);
         const mat = mapa.get(cod) || mapa.get(emp.nome);
         if (mat) {
           return {
             ...mat,
             ord: mat.ord || index + 1,
             codigo: cod,
-            empresa: emp.nome,
-            cnpjCpf: emp.cnpj || mat.cnpjCpf,
+            empresa: emp.nome || mat.empresa || "Empresa Sem Nome",
+            cnpjCpf: emp.cnpj || mat.cnpjCpf || "",
             carteira: emp.carteira || mat.carteira || "RH - G - 01",
             analista: emp.analista || mat.analista || "Não atribuído",
             supervisor: emp.supervisor || mat.supervisor || "Não atribuído",
@@ -164,8 +164,8 @@ function Obrigacoes() {
           id: `deb-${cod}`,
           ord: index + 1,
           codigo: cod,
-          empresa: emp.nome,
-          cnpjCpf: emp.cnpj,
+          empresa: emp.nome || "Empresa Sem Nome",
+          cnpjCpf: emp.cnpj || "",
           carteira: emp.carteira || "RH - G - 01",
           analista: emp.analista || "Não atribuído",
           supervisor: emp.supervisor || "Não atribuído",
@@ -185,18 +185,19 @@ function Obrigacoes() {
 
   // Lista de carteiras disponíveis
   const carteirasDisponiveis = useMemo(() => {
-    const listCart = carteiras || [];
-    const listEmp = empresas || [];
+    const listCart = (carteiras || []).filter(Boolean);
+    const listEmp = (empresas || []).filter(Boolean);
     const set = new Set([
-      ...listCart.map((c) => c.nome),
-      ...listEmp.map((e) => e.carteira).filter(Boolean),
+      ...listCart.map((c) => c?.nome).filter(Boolean),
+      ...listEmp.map((e) => e?.carteira).filter(Boolean),
     ]);
     return Array.from(set).sort();
   }, [carteiras, empresas]);
 
   // Filtragem DCTFWeb
   const dctfFiltrados = useMemo(() => {
-    return dctfCompletos.filter((r) => {
+    return (dctfCompletos || []).filter((r) => {
+      if (!r) return false;
       const q = busca.trim().toLowerCase();
       if (q) {
         const cod = String(r.codigo ?? "").toLowerCase();
@@ -220,7 +221,8 @@ function Obrigacoes() {
 
   // Filtragem Espelho de Débito
   const debitoFiltrados = useMemo(() => {
-    return debitoCompletos.filter((r) => {
+    return (debitoCompletos || []).filter((r) => {
+      if (!r) return false;
       const q = busca.trim().toLowerCase();
       if (q) {
         const cod = String(r.codigo ?? "").toLowerCase();
@@ -248,24 +250,24 @@ function Obrigacoes() {
 
   // Dados da carteira em destaque
   const informacoesCarteira = useMemo(() => {
-    const listaAlvo = filtroTipo === "DCTFWeb" ? dctfCompletos : debitoCompletos;
+    const listaAlvo = (filtroTipo === "DCTFWeb" ? dctfCompletos : debitoCompletos) || [];
     if (carteiraFiltro === "todas") {
-      const supUnicos = Array.from(new Set(listaAlvo.map((r) => r.supervisor).filter(Boolean)));
-      const anaUnicos = Array.from(new Set(listaAlvo.map((r) => r.analista).filter(Boolean)));
+      const supUnicos = Array.from(new Set(listaAlvo.map((r) => r?.supervisor).filter(Boolean)));
+      const anaUnicos = Array.from(new Set(listaAlvo.map((r) => r?.analista).filter(Boolean)));
       return {
         nome: "Todas as Carteiras",
-        supervisores: supUnicos,
-        analistas: anaUnicos,
+        supervisores: supUnicos as string[],
+        analistas: anaUnicos as string[],
         totalEmpresas: listaAlvo.length,
       };
     }
-    const daCarteira = listaAlvo.filter((r) => (r.carteira || "Sem Carteira") === carteiraFiltro);
-    const supUnicos = Array.from(new Set(daCarteira.map((r) => r.supervisor).filter(Boolean)));
-    const anaUnicos = Array.from(new Set(daCarteira.map((r) => r.analista).filter(Boolean)));
+    const daCarteira = listaAlvo.filter((r) => r && (r.carteira || "Sem Carteira") === carteiraFiltro);
+    const supUnicos = Array.from(new Set(daCarteira.map((r) => r?.supervisor).filter(Boolean)));
+    const anaUnicos = Array.from(new Set(daCarteira.map((r) => r?.analista).filter(Boolean)));
     return {
       nome: carteiraFiltro,
-      supervisores: supUnicos.length > 0 ? supUnicos : ["ADRIELLE"],
-      analistas: anaUnicos.length > 0 ? anaUnicos : ["SIMEANE"],
+      supervisores: supUnicos.length > 0 ? (supUnicos as string[]) : ["ADRIELLE"],
+      analistas: anaUnicos.length > 0 ? (anaUnicos as string[]) : ["SIMEANE"],
       totalEmpresas: daCarteira.length,
     };
   }, [carteiraFiltro, filtroTipo, dctfCompletos, debitoCompletos]);
