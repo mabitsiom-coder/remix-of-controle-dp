@@ -44,6 +44,7 @@ import { NovaObrigacaoDialog } from "@/components/nova-obrigacao-dialog";
 import { NovaDCTFWebDialog } from "@/components/nova-dctfweb-dialog";
 import { NovoEspelhoDebitoDialog } from "@/components/novo-espelho-debito-dialog";
 import { NovoFGTSTrimestralDialog } from "@/components/novo-fgts-trimestral-dialog";
+import { NovoReajusteSindicatoDialog } from "@/components/novo-reajuste-sindicato-dialog";
 import { useObrigacoes, deleteObrigacao } from "@/lib/obrigacoes-store";
 import { useRegDCTFWeb, deleteDCTFWeb, updateDCTFWeb, type RegDCTFWeb } from "@/lib/dctfweb-store";
 import {
@@ -58,6 +59,12 @@ import {
   updateFGTSTrimestral,
   type RegFGTSTrimestral,
 } from "@/lib/fgts-trimestral-store";
+import {
+  useRegReajusteSindicato,
+  deleteReajusteSindicato,
+  updateReajusteSindicato,
+  type RegReajusteSindicato,
+} from "@/lib/reajuste-sindicato-store";
 import { useEmpresas } from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
 import { cn } from "@/lib/utils";
@@ -81,20 +88,21 @@ const tiposObriga = [
   "Todos",
   "DCTFWeb",
   "Espelho de Débito",
-  "Pesquisa FGTS Trimestral",
+  "Pesq. FGTS Trim.",
+  "Reajuste Salarial Sindicato",
   "eSocial",
-  "FGTS Digital",
   "EFD-Reinf",
   "MIT",
   "SST (S-2220)",
 ];
 
 function Obrigacoes() {
-  const [filtroTipo, setFiltroTipo] = useState("Pesquisa FGTS Trimestral");
+  const [filtroTipo, setFiltroTipo] = useState("Pesq. FGTS Trim.");
   const { obrigacoes = [] } = useObrigacoes() || {};
   const { registros: dctfRegistros = [] } = useRegDCTFWeb() || {};
   const { registros: debitoRegistros = [] } = useRegEspelhoDebito() || {};
   const { registros: fgtsRegistros = [] } = useRegFGTSTrimestral() || {};
+  const { registros: reajusteRegistros = [] } = useRegReajusteSindicato() || {};
   const { empresas = [] } = useEmpresas() || {};
   const { carteiras = [] } = useCadastros() || {};
 
@@ -103,6 +111,7 @@ function Obrigacoes() {
   const [editingDCTF, setEditingDCTF] = useState<RegDCTFWeb | null>(null);
   const [editingDebito, setEditingDebito] = useState<RegEspelhoDebito | null>(null);
   const [editingFGTS, setEditingFGTS] = useState<RegFGTSTrimestral | null>(null);
+  const [editingReajuste, setEditingReajuste] = useState<RegReajusteSindicato | null>(null);
 
   // Sincronizar todos os registros de DCTFWeb com as empresas
   const dctfCompletos: RegDCTFWeb[] = useMemo(() => {
@@ -236,6 +245,45 @@ function Obrigacoes() {
     return listFgts;
   }, [empresas, fgtsRegistros]);
 
+  // Sincronizar todos os registros de Reajuste Salarial Sindicato com as empresas
+  const reajusteCompletos: RegReajusteSindicato[] = useMemo(() => {
+    const listEmp = (empresas || []).filter(Boolean);
+    const listReaj = (reajusteRegistros || []).filter(Boolean);
+    if (listEmp.length > 0) {
+      const mapa = new Map(listReaj.map((r) => [r.codigo || r.id, r]));
+      return listEmp.map((emp, index) => {
+        const cod = emp.codigoDominio || emp.id || String(index + 1);
+        const mat = mapa.get(cod) || mapa.get(emp.nome);
+        if (mat) {
+          return {
+            ...mat,
+            codigo: cod,
+            empresa: emp.nome || mat.empresa || "Empresa Sem Nome",
+            carteira: emp.carteira || mat.carteira || "RH - G - 01",
+            analista: emp.analista || mat.analista || "Não atribuído",
+            supervisor: emp.supervisor || mat.supervisor || "Não atribuído",
+          };
+        }
+        return {
+          id: `reaj-${cod}`,
+          codigo: cod,
+          empresa: emp.nome || "Empresa Sem Nome",
+          ramoAtividade: "COMÉRCIO",
+          sindicato: "COMÉRCIO EM GERAL",
+          numSolicitacao: "—",
+          autorizacao: "—",
+          reajusteSalarial: "—",
+          contribuicaoAssistencial: "—",
+          observacao: "",
+          carteira: emp.carteira || "RH - G - 01",
+          analista: emp.analista || "Não atribuído",
+          supervisor: emp.supervisor || "Não atribuído",
+        };
+      });
+    }
+    return listReaj;
+  }, [empresas, reajusteRegistros]);
+
   // Lista de carteiras disponíveis
   const carteirasDisponiveis = useMemo(() => {
     const listCart = (carteiras || []).filter(Boolean);
@@ -332,14 +380,47 @@ function Obrigacoes() {
     });
   }, [fgtsCompletos, busca, carteiraFiltro]);
 
+  // Filtragem Reajuste Salarial Sindicato
+  const reajusteFiltrados = useMemo(() => {
+    return (reajusteCompletos || []).filter((r) => {
+      if (!r) return false;
+      const q = busca.trim().toLowerCase();
+      if (q) {
+        const cod = String(r.codigo ?? "").toLowerCase();
+        const emp = String(r.empresa ?? "").toLowerCase();
+        const ram = String(r.ramoAtividade ?? "").toLowerCase();
+        const sind = String(r.sindicato ?? "").toLowerCase();
+        const sol = String(r.numSolicitacao ?? "").toLowerCase();
+        const ana = String(r.analista ?? "").toLowerCase();
+        const sup = String(r.supervisor ?? "").toLowerCase();
+        const obs = String(r.observacao ?? "").toLowerCase();
+        return (
+          cod.includes(q) ||
+          emp.includes(q) ||
+          ram.includes(q) ||
+          sind.includes(q) ||
+          sol.includes(q) ||
+          ana.includes(q) ||
+          sup.includes(q) ||
+          obs.includes(q)
+        );
+      }
+      const cart = String(r.carteira || "Sem Carteira");
+      if (carteiraFiltro !== "todas" && cart !== carteiraFiltro) return false;
+      return true;
+    });
+  }, [reajusteCompletos, busca, carteiraFiltro]);
+
   // Dados da carteira em destaque
   const informacoesCarteira = useMemo(() => {
     const listaAlvo =
       filtroTipo === "DCTFWeb"
         ? dctfCompletos
-        : filtroTipo === "Pesquisa FGTS Trimestral"
+        : (filtroTipo === "Pesq. FGTS Trim." || filtroTipo === "Pesquisa FGTS Trimestral")
           ? fgtsCompletos
-          : debitoCompletos;
+          : filtroTipo === "Reajuste Salarial Sindicato"
+            ? reajusteCompletos
+            : debitoCompletos;
 
     if (carteiraFiltro === "todas") {
       const supUnicos = Array.from(new Set((listaAlvo || []).map((r) => r?.supervisor).filter(Boolean)));
@@ -373,8 +454,10 @@ function Obrigacoes() {
               <NovaDCTFWebDialog />
             ) : filtroTipo === "Espelho de Débito" ? (
               <NovoEspelhoDebitoDialog />
-            ) : filtroTipo === "Pesquisa FGTS Trimestral" ? (
+            ) : (filtroTipo === "Pesq. FGTS Trim." || filtroTipo === "Pesquisa FGTS Trimestral") ? (
               <NovoFGTSTrimestralDialog />
+            ) : filtroTipo === "Reajuste Salarial Sindicato" ? (
+              <NovoReajusteSindicatoDialog />
             ) : (
               <NovaObrigacaoDialog />
             )}
@@ -400,7 +483,7 @@ function Obrigacoes() {
       </div>
 
       {/* RENDERIZAÇÃO: PESQUISA FGTS TRIMESTRAL */}
-      {filtroTipo === "Pesquisa FGTS Trimestral" ? (
+      {filtroTipo === "Pesq. FGTS Trim." || filtroTipo === "Pesquisa FGTS Trimestral" ? (
         <div className="space-y-6">
           {/* Cards de Resumo FGTS Trimestral */}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -697,6 +780,298 @@ function Obrigacoes() {
           <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 px-1">
             <span>
               Mostrando <strong>{fgtsFiltrados.length}</strong> de <strong>{fgtsCompletos.length}</strong> empresas na Pesquisa FGTS Trimestral
+            </span>
+          </div>
+        </div>
+      ) : filtroTipo === "Reajuste Salarial Sindicato" ? (
+        /* RENDERIZAÇÃO: REAJUSTE SALARIAL SINDICATO */
+        <div className="space-y-6">
+          {/* Cards de Resumo Reajuste Salarial Sindicato */}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="surface-panel flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Building2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Total de Empresas</p>
+                <p className="text-2xl font-bold tabular-nums">{informacoesCarteira.totalEmpresas}</p>
+              </div>
+            </div>
+
+            <div className="surface-panel flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Autorizados (SIM)</p>
+                <p className="text-2xl font-bold tabular-nums text-success">
+                  {reajusteCompletos.filter((r) => r.autorizacao === "SIM").length}
+                </p>
+              </div>
+            </div>
+
+            <div className="surface-panel flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-info/10 text-info">
+                <FileCheck className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Reajuste Salarial (SIM)</p>
+                <p className="text-2xl font-bold tabular-nums text-info">
+                  {reajusteCompletos.filter((r) => r.reajusteSalarial === "SIM").length}
+                </p>
+              </div>
+            </div>
+
+            <div className="surface-panel flex items-center gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                <Receipt className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Contrib. Assistencial</p>
+                <p className="text-2xl font-bold tabular-nums text-purple-600 dark:text-purple-400">
+                  {reajusteCompletos.filter((r) => r.contribuicaoAssistencial === "SIM").length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Destaque da Carteira Selecionada */}
+          <div className="surface-panel p-4 rounded-xl border bg-card/60 backdrop-blur space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
+                  <Briefcase className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Carteira em Destaque
+                  </p>
+                  <h3 className="text-base font-bold text-foreground">
+                    {informacoesCarteira.nome}
+                  </h3>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-6 text-xs">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="h-4 w-4 text-primary" />
+                  <div>
+                    <span className="text-[10px] uppercase font-medium text-muted-foreground block">
+                      Supervisor(a)
+                    </span>
+                    <span className="font-bold text-foreground">
+                      {informacoesCarteira.supervisores.join(", ") || "Não atribuído"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-info" />
+                  <div>
+                    <span className="text-[10px] uppercase font-medium text-muted-foreground block">
+                      Analista(s)
+                    </span>
+                    <span className="font-bold text-foreground">
+                      {informacoesCarteira.analistas.join(", ") || "Não atribuído"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-success" />
+                  <div>
+                    <span className="text-[10px] uppercase font-medium text-muted-foreground block">
+                      Empresas Vinc.
+                    </span>
+                    <span className="font-bold text-foreground tabular-nums">
+                      {informacoesCarteira.totalEmpresas} empresas
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Abas de Seleção de Carteiras */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setCarteiraFiltro("todas")}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
+                  carteiraFiltro === "todas"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                Todas as Carteiras ({reajusteCompletos.length})
+              </button>
+              {carteirasDisponiveis.map((cart) => {
+                const qtd = reajusteCompletos.filter((r) => (r.carteira || "Sem Carteira") === cart).length;
+                return (
+                  <button
+                    key={cart}
+                    type="button"
+                    onClick={() => setCarteiraFiltro(cart)}
+                    className={cn(
+                      "rounded-lg px-3 py-1.5 text-xs transition-all",
+                      carteiraFiltro === cart
+                        ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+                    )}
+                  >
+                    {cart} ({qtd})
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Barra de Pesquisa */}
+          <div className="surface-panel flex flex-wrap items-center gap-2 p-3">
+            <div className="relative min-w-60 flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Pesquisar por código, empresa, ramo de atividade, sindicato, solicitação..."
+                className="pl-8 pr-8"
+              />
+              {busca && (
+                <button
+                  type="button"
+                  onClick={() => setBusca("")}
+                  className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                  title="Limpar pesquisa"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <select
+              value={carteiraFiltro}
+              onChange={(e) => setCarteiraFiltro(e.target.value)}
+              className="h-9 rounded-md border bg-background px-2 text-sm font-medium"
+            >
+              <option value="todas">Todas as Carteiras</option>
+              {carteirasDisponiveis.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Tabela Planilha Reajuste Salarial Sindicato */}
+          <div className="surface-panel overflow-x-auto">
+            <table className="w-full min-w-[1500px] text-xs border-collapse">
+              <thead>
+                <tr className="border-b bg-muted/30 text-center font-bold text-[11px] uppercase tracking-wide text-foreground">
+                  <th rowSpan={2} className="p-2.5 border-r text-center w-14">CÓD.</th>
+                  <th rowSpan={2} className="p-2.5 border-r text-left min-w-[200px]">EMPRESAS</th>
+                  <th rowSpan={2} className="p-2.5 border-r text-left min-w-[220px]">RAMO ATIVIDADE</th>
+                  <th rowSpan={2} className="p-2.5 border-r text-center min-w-[180px]">SINDICATO</th>
+                  <th rowSpan={2} className="p-2.5 border-r text-center min-w-[150px]">Nº DA SOLICITAÇÃO</th>
+                  
+                  <th colSpan={1} className="p-2 border-r border-b text-center bg-blue-500/10 text-blue-700 dark:text-blue-300 font-bold">
+                    AUTORIZAÇÃO
+                  </th>
+                  <th colSpan={1} className="p-2 border-r border-b text-center bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-bold">
+                    REAJUSTE SALARIAL
+                  </th>
+                  <th colSpan={1} className="p-2 border-r border-b text-center bg-purple-500/10 text-purple-700 dark:text-purple-300 font-bold">
+                    CONTRIBUIÇÃO ASSISTENCIAL
+                  </th>
+
+                  <th rowSpan={2} className="p-2.5 border-r text-left min-w-[220px]">OBSERVAÇÃO</th>
+                  <th rowSpan={2} className="p-2.5 text-center w-16">AÇÕES</th>
+                </tr>
+                <tr className="border-b bg-muted/40 text-center text-[10px] font-semibold text-muted-foreground">
+                  <th className="p-2 border-r">SIM/NÃO</th>
+                  <th className="p-2 border-r">SIM/NÃO</th>
+                  <th className="p-2 border-r">SIM/NÃO</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reajusteFiltrados.map((r) => {
+                  const temReajuste = r.reajusteSalarial === "SIM";
+                  return (
+                    <tr key={r.id} className="border-b last:border-0 hover:bg-muted/40 align-middle">
+                      <td className="p-2.5 font-bold text-center tabular-nums border-r">{r.codigo || "—"}</td>
+                      <td className={cn(
+                        "p-2.5 font-bold border-r transition-colors",
+                        temReajuste ? "bg-emerald-50 dark:bg-emerald-950/30 text-foreground" : "text-foreground"
+                      )}>
+                        {r.empresa}
+                      </td>
+                      <td className="p-2.5 border-r text-muted-foreground font-medium">{r.ramoAtividade || "—"}</td>
+                      <td className="p-2.5 text-center border-r font-semibold text-foreground">{r.sindicato || "—"}</td>
+                      <td className="p-2.5 text-center border-r tabular-nums font-semibold text-primary">{r.numSolicitacao || "—"}</td>
+
+                      {/* Autorização */}
+                      <td className="p-2.5 text-center font-bold border-r">
+                        <span className={r.autorizacao === "SIM" ? "text-success font-extrabold" : r.autorizacao === "NÃO" ? "text-destructive" : "text-muted-foreground"}>
+                          {r.autorizacao}
+                        </span>
+                      </td>
+
+                      {/* Reajuste Salarial */}
+                      <td className="p-2.5 text-center font-bold border-r">
+                        <span className={r.reajusteSalarial === "SIM" ? "text-success font-extrabold" : r.reajusteSalarial === "NÃO" ? "text-destructive" : "text-muted-foreground"}>
+                          {r.reajusteSalarial}
+                        </span>
+                      </td>
+
+                      {/* Contribuição Assistencial */}
+                      <td className="p-2.5 text-center font-bold border-r">
+                        <span className={r.contribuicaoAssistencial === "SIM" ? "text-purple-600 dark:text-purple-400 font-extrabold" : r.contribuicaoAssistencial === "NÃO" ? "text-destructive" : "text-muted-foreground"}>
+                          {r.contribuicaoAssistencial}
+                        </span>
+                      </td>
+
+                      {/* Observação */}
+                      <td className="p-2.5 border-r text-muted-foreground font-medium max-w-xs break-words">
+                        {r.observacao || "—"}
+                      </td>
+
+                      <td className="p-2.5 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-primary"
+                            onClick={() => setEditingReajuste(r)}
+                            title="Editar Reajuste Sindicato"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={() => deleteReajusteSindicato(r.id)}
+                            title="Excluir Registro"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {reajusteFiltrados.length === 0 && (
+                  <tr>
+                    <td colSpan={10} className="p-8 text-center text-sm text-muted-foreground">
+                      Nenhum registro de Reajuste Salarial Sindicato encontrado para os filtros selecionados.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 px-1">
+            <span>
+              Mostrando <strong>{reajusteFiltrados.length}</strong> de <strong>{reajusteCompletos.length}</strong> empresas em Reajuste Salarial Sindicato
             </span>
           </div>
         </div>
@@ -1348,6 +1723,14 @@ function Obrigacoes() {
           onClose={() => setEditingFGTS(null)}
         />
       )}
+
+      {/* Modal de Edição Reajuste Salarial Sindicato */}
+      {editingReajuste && (
+        <EditReajusteSindicatoDialog
+          item={editingReajuste}
+          onClose={() => setEditingReajuste(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1657,6 +2040,122 @@ function EditFGTSTrimestralDialog({ item, onClose }: { item: RegFGTSTrimestral; 
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Obs. CS</Label>
             <Input value={form.obsCS} onChange={(e) => set("obsCS", e.target.value)} />
+          </div>
+
+          <DialogFooter className="gap-2 border-t pt-4 sm:justify-end">
+            <Button type="button" variant="outline" onClick={onClose} className="text-xs">
+              Cancelar
+            </Button>
+            <Button type="submit" className="gap-1.5 text-xs">
+              <CheckCircle2 className="h-4 w-4" /> Salvar Alterações
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditReajusteSindicatoDialog({ item, onClose }: { item: RegReajusteSindicato; onClose: () => void }) {
+  const [form, setForm] = useState<RegReajusteSindicato>(item);
+  const set = <K extends keyof RegReajusteSindicato>(field: K, value: RegReajusteSindicato[K]) =>
+    setForm((prev) => ({ ...prev, [field]: value }));
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateReajusteSindicato(item.id, form);
+    toast.success("Reajuste Salarial Sindicato atualizado!");
+    onClose();
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto sm:rounded-xl p-6">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-semibold">Editar Reajuste Sindicato — {item.empresa}</DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label className="text-xs font-medium">Empresa</Label>
+              <Input value={form.empresa} onChange={(e) => set("empresa", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Cód. Domínio</Label>
+              <Input value={form.codigo} onChange={(e) => set("codigo", e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Ramo de Atividade</Label>
+              <Input value={form.ramoAtividade} onChange={(e) => set("ramoAtividade", e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Sindicato</Label>
+              <Input value={form.sindicato} onChange={(e) => set("sindicato", e.target.value)} />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Nº da Solicitação</Label>
+              <Input value={form.numSolicitacao} onChange={(e) => set("numSolicitacao", e.target.value)} />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Autorização</Label>
+              <Select value={form.autorizacao} onValueChange={(v) => set("autorizacao", v as "SIM" | "NÃO" | "—")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SIM">SIM</SelectItem>
+                  <SelectItem value="NÃO">NÃO</SelectItem>
+                  <SelectItem value="—">—</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Reajuste Salarial</Label>
+              <Select value={form.reajusteSalarial} onValueChange={(v) => set("reajusteSalarial", v as "SIM" | "NÃO" | "—")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SIM">SIM</SelectItem>
+                  <SelectItem value="NÃO">NÃO</SelectItem>
+                  <SelectItem value="—">—</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Contribuição Assistencial</Label>
+              <Select value={form.contribuicaoAssistencial} onValueChange={(v) => set("contribuicaoAssistencial", v as "SIM" | "NÃO" | "—")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SIM">SIM</SelectItem>
+                  <SelectItem value="NÃO">NÃO</SelectItem>
+                  <SelectItem value="—">—</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Observação</Label>
+            <Textarea
+              rows={2}
+              value={form.observacao}
+              onChange={(e) => set("observacao", e.target.value)}
+            />
           </div>
 
           <DialogFooter className="gap-2 border-t pt-4 sm:justify-end">
