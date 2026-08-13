@@ -49,6 +49,11 @@ export type Empresa = {
   procuracao: string;
   risco: "baixo" | "medio" | "alto";
   status: "ativa" | "atencao" | "atraso";
+  /** Exclusão lógica (soft delete): a empresa sai dos controles ativos mas o histórico é preservado. */
+  excluida?: boolean;
+  excluidaEm?: string;
+  excluidaPor?: string;
+  carteiraAnterior?: string;
   ultimaRevisao: string;
   diasSemRevisao: number;
   particularidades: {
@@ -126,6 +131,13 @@ export type Tarefa = {
   horasGastas: number;
   checklist: { item: string; feito: boolean; obrigatorio: boolean }[];
   status: "backlog" | "fazendo" | "revisao" | "concluida";
+  /** Campos compartilhados entre Rotinas, Calendário e Painel de Gantt. */
+  descricao?: string;
+  carteira?: string;
+  dataInicio?: string;
+  categoria?: string;
+  progresso?: number;
+  observacoes?: string;
 };
 
 export const tarefas: Tarefa[] = [];
