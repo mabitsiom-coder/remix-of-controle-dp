@@ -79,6 +79,8 @@ function UsuariosPage() {
     switch (perfil) {
       case "Administrador":
         return "destructive";
+      case "Gerente":
+        return "default";
       case "Supervisor":
         return "default";
       case "Coordenador":
@@ -194,6 +196,7 @@ function UsuariosPage() {
             <SelectContent>
               <SelectItem value="todos">Todos os perfis</SelectItem>
               <SelectItem value="Administrador">Administrador</SelectItem>
+                  <SelectItem value="Gerente">Gerente</SelectItem>
               <SelectItem value="Supervisor">Supervisor</SelectItem>
               <SelectItem value="Coordenador">Coordenador</SelectItem>
               <SelectItem value="Analista">Analista</SelectItem>
@@ -421,6 +424,7 @@ function NovoUsuarioDialog() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Administrador">Administrador</SelectItem>
+                  <SelectItem value="Gerente">Gerente</SelectItem>
                   <SelectItem value="Supervisor">Supervisor</SelectItem>
                   <SelectItem value="Coordenador">Coordenador</SelectItem>
                   <SelectItem value="Analista">Analista</SelectItem>
@@ -529,6 +533,7 @@ function EditarUsuarioDialog({ usuario }: { usuario: Usuario }) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Administrador">Administrador</SelectItem>
+                  <SelectItem value="Gerente">Gerente</SelectItem>
                   <SelectItem value="Supervisor">Supervisor</SelectItem>
                   <SelectItem value="Coordenador">Coordenador</SelectItem>
                   <SelectItem value="Analista">Analista</SelectItem>

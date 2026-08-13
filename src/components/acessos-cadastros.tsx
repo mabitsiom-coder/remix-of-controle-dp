@@ -80,7 +80,7 @@ export function usePessoasCadastro(): PessoaCadastro[] {
     origemId: m.id,
     nome: m.nome,
     email: m.email || "",
-    perfil: (/coorden/i.test(m.cargo) ? "Coordenador" : /gerent|diret|auditor/i.test(m.cargo) ? "Administrador" : "Analista") as PerfilAcesso,
+    perfil: (/coorden/i.test(m.cargo) ? "Coordenador" : /gerent|diret/i.test(m.cargo) ? "Gerente" : /auditor/i.test(m.cargo) ? "Coordenador" : "Analista") as PerfilAcesso,
     departamento: m.cargo + (m.nivel ? ` · ${m.nivel}` : ""),
     origem: m.cargo || "Equipe",
   }));

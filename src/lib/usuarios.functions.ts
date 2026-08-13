@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const perfilSchema = z.enum(["Administrador", "Coordenador", "Supervisor", "Analista"]);
+const perfilSchema = z.enum(["Administrador", "Gerente", "Coordenador", "Supervisor", "Analista"]);
 
 const criarSchema = z.object({
   nome: z.string().min(1),

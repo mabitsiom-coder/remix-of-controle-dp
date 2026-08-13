@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
+  useRouterState,
   createRootRouteWithContext,
   useRouter,
   HeadContent,
@@ -21,6 +22,8 @@ import { AuthModal } from "@/components/auth-modal";
 import { useAuth } from "@/lib/auth-store";
 import { resetDados } from "@/lib/reset-dados";
 import { PortaoAcesso } from "@/components/portao-acesso";
+import { AcessoRestrito } from "@/components/acesso-restrito";
+import { PERFIS_GESTAO, podeAcessarRota } from "@/lib/permissoes";
 
 function NotFoundComponent() {
   return (
@@ -130,6 +133,8 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const { currentUser } = useAuth();
+  const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const liberado = !currentUser.id || podeAcessarRota(currentUser.perfil, pathname);
 
   useEffect(() => {
     resetDados();
@@ -167,7 +172,7 @@ function RootComponent() {
               </div>
             </header>
             <main className="min-w-0 flex-1 p-4 md:p-6">
-              <Outlet />
+              {liberado ? <Outlet /> : <AcessoRestrito perfisPermitidos={PERFIS_GESTAO} />}
             </main>
           </div>
         </div>

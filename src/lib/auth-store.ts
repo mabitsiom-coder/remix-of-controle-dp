@@ -8,7 +8,7 @@ import {
   registrarPrimeiroAdmin as registrarPrimeiroAdminFn,
 } from "./usuarios.functions";
 
-export type PerfilAcesso = "Administrador" | "Supervisor" | "Coordenador" | "Analista";
+export type PerfilAcesso = "Administrador" | "Gerente" | "Supervisor" | "Coordenador" | "Analista";
 
 export type Usuario = {
   id: string;
@@ -206,8 +206,9 @@ export function useAuth() {
     usuarios,
     autenticado: Boolean(currentUser.id),
     isAdmin: currentUser.perfil === "Administrador",
-    isSupervisor: currentUser.perfil === "Supervisor" || currentUser.perfil === "Administrador",
-    isCoordenador: currentUser.perfil === "Coordenador" || currentUser.perfil === "Administrador",
+    isGestao: ["Administrador", "Gerente", "Coordenador", "Supervisor"].includes(currentUser.perfil),
+    isSupervisor: ["Supervisor", "Gerente", "Administrador"].includes(currentUser.perfil),
+    isCoordenador: ["Coordenador", "Gerente", "Administrador"].includes(currentUser.perfil),
     login: loginUser,
     logout: logoutUser,
     addUsuario,
