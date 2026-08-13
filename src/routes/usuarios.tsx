@@ -398,7 +398,7 @@ function NovoUsuarioDialog() {
             <Input
               id="emailUsr"
               type="email"
-              placeholder="carlos.eduardo@mabitcontabilidade.com.br"
+              placeholder="ex.: nome@empresa.com.br"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
