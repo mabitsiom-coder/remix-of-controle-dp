@@ -45,7 +45,7 @@ export const Route = createFileRoute("/empresas/")({
 function Empresas() {
   const [busca, setBusca] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const { empresas } = useEmpresas();
+  const { empresas, empresasExcluidas } = useEmpresas();
 
   const handleCopy = (e: React.MouseEvent, texto: string, tipo: string) => {
     e.preventDefault();
