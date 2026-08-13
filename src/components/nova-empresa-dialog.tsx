@@ -30,7 +30,7 @@ import {
   encontrarEmpresaDuplicada,
   type NovaEmpresaForm,
 } from "@/lib/empresas-store";
-import { useCadastros } from "@/lib/cadastros-store";
+import { useCadastros, resolverVinculoPorAnalista, resolverSupervisorPorCarteira } from "@/lib/cadastros-store";
 import { useGrupos } from "@/lib/grupos-store";
 import { useAuth } from "@/lib/auth-store";
 import { Link } from "@tanstack/react-router";
@@ -84,18 +84,6 @@ export function NovaEmpresaDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!formData.nome.trim()) {
-      toast.error("Por favor, preencha a Razão Social/Nome da Empresa.");
-      setActiveTab("dados");
-      return;
-    }
-
-    if (!formData.cnpj.trim() || formData.cnpj.replace(/\D/g, "").length < 14) {
-      toast.error("Por favor, informe um CNPJ válido com 14 dígitos.");
-      setActiveTab("dados");
-      return;
-    }
 
     const duplicada = encontrarEmpresaDuplicada(formData.nome, formData.cnpj);
     if (duplicada) {
@@ -252,20 +240,19 @@ export function NovaEmpresaDialog({
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5 sm:col-span-2">
                   <Label htmlFor="nome" className="text-xs font-medium">
-                    Razão Social / Nome Fantasia <span className="text-destructive">*</span>
+                    Razão Social / Nome Fantasia
                   </Label>
                   <Input
                     id="nome"
                     placeholder="Ex: Indústrias Metalúrgicas Ramos S/A"
                     value={formData.nome}
                     onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                    required
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <Label htmlFor="cnpj" className="text-xs font-medium">
-                    CNPJ <span className="text-destructive">*</span>
+                    CNPJ
                   </Label>
                   <div className="flex gap-2">
                     <Input
@@ -274,7 +261,6 @@ export function NovaEmpresaDialog({
                       value={formData.cnpj}
                       onChange={(e) => setFormData({ ...formData, cnpj: formatCNPJ(e.target.value) })}
                       maxLength={18}
-                      required
                     />
                     <Button 
                       type="button" 
@@ -428,7 +414,10 @@ export function NovaEmpresaDialog({
                   </Label>
                   <Select
                     value={formData.carteira}
-                    onValueChange={(val) => setFormData({ ...formData, carteira: val })}
+                    onValueChange={(val) => {
+                      const sup = resolverSupervisorPorCarteira(val);
+                      setFormData({ ...formData, carteira: val, ...(sup ? { supervisor: sup } : {}) });
+                    }}
                   >
                     <SelectTrigger id="carteira">
                       <SelectValue placeholder="Selecione a carteira" />
@@ -449,7 +438,10 @@ export function NovaEmpresaDialog({
                   </Label>
                   <Select
                     value={formData.analista}
-                    onValueChange={(val) => setFormData({ ...formData, analista: val })}
+                    onValueChange={(val) => {
+                      const vinculo = resolverVinculoPorAnalista(val);
+                      setFormData({ ...formData, analista: val, ...vinculo });
+                    }}
                   >
                     <SelectTrigger id="analista">
                       <SelectValue placeholder="Selecione o analista" />
