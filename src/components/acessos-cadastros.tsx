@@ -24,17 +24,6 @@ import {
 import { useCadastros, getCarteiras } from "@/lib/cadastros-store";
 import { addUsuario, useAuth, type PerfilAcesso } from "@/lib/auth-store";
 
-const DOMINIO = "mabitcontabilidade.com.br";
-
-export type PessoaCadastro = {
-  origemId: string;
-  nome: string;
-  email: string;
-  perfil: PerfilAcesso;
-  departamento: string;
-  origem: string;
-};
-
 function normalizar(valor: string) {
   return (valor || "")
     .trim()
@@ -43,14 +32,8 @@ function normalizar(valor: string) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function sugerirEmail(nome: string) {
-  const base = normalizar(nome)
-    .replace(/[^a-z0-9\s.]/g, "")
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .join(".");
-  return base ? `${base}@${DOMINIO}` : "";
+function emailValido(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
 }
 
 /** Pessoas dos Cadastros do Sistema, com perfil e departamento derivados automaticamente. */
