@@ -4,6 +4,9 @@ export type RegSST = {
   id: string;
   codigo: string;
   empresa: string;
+  carteira?: string;
+  analista?: string;
+  supervisor?: string;
   sstNaMabit: "SIM" | "NÃO";
   grauDeRisco: string;
   qtdFunc: number;
@@ -20,7 +23,7 @@ export type RegSST = {
   obsCS: string;
 };
 
-const STORAGE_KEY_MATRIX = "dp_control_sst_matrix_v2";
+const STORAGE_KEY_MATRIX = "dp_control_sst_matrix_v3";
 const EVENT_NAME_MATRIX = "sst-matrix-updated";
 
 export const sstMatrixSeed: RegSST[] = [
@@ -28,6 +31,9 @@ export const sstMatrixSeed: RegSST[] = [
     id: "sst-1",
     codigo: "66",
     empresa: "KELIANE S MATRIZ",
+    carteira: "RH - G - 01",
+    analista: "Camila Rocha",
+    supervisor: "Paulo Serra",
     sstNaMabit: "SIM",
     grauDeRisco: "2",
     qtdFunc: 7,
@@ -47,6 +53,9 @@ export const sstMatrixSeed: RegSST[] = [
     id: "sst-2",
     codigo: "40",
     empresa: "D M A MACIEL",
+    carteira: "RH - G - 06",
+    analista: "SIMEANE",
+    supervisor: "ADRIELLE",
     sstNaMabit: "SIM",
     grauDeRisco: "1",
     qtdFunc: 3,
@@ -66,6 +75,9 @@ export const sstMatrixSeed: RegSST[] = [
     id: "sst-3",
     codigo: "658",
     empresa: "STOP MED",
+    carteira: "RH - G - 06",
+    analista: "SIMEANE",
+    supervisor: "ADRIELLE",
     sstNaMabit: "SIM",
     grauDeRisco: "1",
     qtdFunc: 12,
@@ -85,6 +97,9 @@ export const sstMatrixSeed: RegSST[] = [
     id: "sst-4",
     codigo: "247",
     empresa: "EXPRESSO SAUDE",
+    carteira: "RH - G - 06",
+    analista: "SIMEANE",
+    supervisor: "ADRIELLE",
     sstNaMabit: "SIM",
     grauDeRisco: "2",
     qtdFunc: 2,
@@ -104,6 +119,9 @@ export const sstMatrixSeed: RegSST[] = [
     id: "sst-5",
     codigo: "1094",
     empresa: "CENTER CLIN",
+    carteira: "RH - G - 03",
+    analista: "Rafael Prado",
+    supervisor: "Paulo Serra",
     sstNaMabit: "SIM",
     grauDeRisco: "3",
     qtdFunc: 10,
@@ -123,6 +141,9 @@ export const sstMatrixSeed: RegSST[] = [
     id: "sst-6",
     codigo: "1587",
     empresa: "Y M SERVIÇOS MEDICOS",
+    carteira: "RH - G - 02",
+    analista: "Juliana Reis",
+    supervisor: "Paulo Serra",
     sstNaMabit: "SIM",
     grauDeRisco: "3",
     qtdFunc: 1,
@@ -142,6 +163,9 @@ export const sstMatrixSeed: RegSST[] = [
     id: "sst-7",
     codigo: "1529",
     empresa: "M M GESTÃO",
+    carteira: "RH - G - 01",
+    analista: "Camila Rocha",
+    supervisor: "Paulo Serra",
     sstNaMabit: "NÃO",
     grauDeRisco: "3",
     qtdFunc: 40,
@@ -218,7 +242,7 @@ export function useRegSST() {
   return { registros, createRegSST, updateRegSST, deleteRegSST };
 }
 
-// Retrocompatibilidade se necessário
+// Retrocompatibilidade
 export type EventoSST = {
   id: string;
   empresa: string;

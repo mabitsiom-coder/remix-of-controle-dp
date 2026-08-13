@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Trash2,
   Search,
@@ -10,6 +10,10 @@ import {
   Building2,
   Edit2,
   CheckCircle2,
+  Briefcase,
+  UserCheck,
+  User,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,10 +23,9 @@ import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -34,6 +37,9 @@ import {
 } from "@/components/ui/select";
 import { NovoEventoSSTDialog } from "@/components/novo-evento-sst-dialog";
 import { useRegSST, deleteRegSST, updateRegSST, type RegSST } from "@/lib/sst-store";
+import { useEmpresas } from "@/lib/empresas-store";
+import { useCadastros } from "@/lib/cadastros-store";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/sst")({
   head: () => ({
@@ -44,7 +50,7 @@ export const Route = createFileRoute("/sst")({
         content: "Controle de programas LTCAT, PCMSO, PGR, LTIP, DIR, exames e grau de risco por empresa.",
       },
       { property: "og:title", content: "SST — DP Control" },
-      { property: "og:description", content: "Matriz de controle de SST e programas ocupacionais." },
+      { property: "og:description", content: "Matriz de controle de SST e programas ocupacionais por carteira." },
     ],
   }),
   component: SST,
@@ -52,24 +58,116 @@ export const Route = createFileRoute("/sst")({
 
 function SST() {
   const { registros } = useRegSST();
+  const { empresas } = useEmpresas();
+  const { carteiras } = useCadastros();
+
   const [busca, setBusca] = useState("");
+  const [carteiraFiltro, setCarteiraFiltro] = useState<string>("todas");
   const [editingItem, setEditingItem] = useState<RegSST | null>(null);
 
-  const totalEmpresas = registros.length;
-  const sstNaMabit = registros.filter((r) => r.sstNaMabit === "SIM").length;
-  const examesVencidos = registros.filter((r) => r.examesVencidos === "SIM").length;
-  const comProgramas = registros.filter((r) => r.possuiProgramas === "SIM").length;
+  // Sincronizar todos os registros de SST combinando com as empresas cadastradas no sistema
+  const registrosCompletos: RegSST[] = useMemo(() => {
+    if (empresas.length > 0) {
+      const mapaMatrix = new Map(registros.map((r) => [r.codigo || r.id, r]));
+      return empresas.map((emp) => {
+        const cod = emp.codigoDominio || emp.id;
+        const mat = mapaMatrix.get(cod) || mapaMatrix.get(emp.nome);
+        if (mat) {
+          return {
+            ...mat,
+            codigo: cod,
+            empresa: emp.nome,
+            carteira: emp.carteira || mat.carteira || "RH - G - 01",
+            analista: emp.analista || mat.analista || "Não atribuído",
+            supervisor: emp.supervisor || mat.supervisor || "Não atribuído",
+            qtdFunc: emp.funcionarios || mat.qtdFunc || 0,
+          };
+        }
+        return {
+          id: `sst-${cod}`,
+          codigo: cod,
+          empresa: emp.nome,
+          carteira: emp.carteira || "RH - G - 01",
+          analista: emp.analista || "Não atribuído",
+          supervisor: emp.supervisor || "Não atribuído",
+          sstNaMabit: "SIM",
+          grauDeRisco: "1",
+          qtdFunc: emp.funcionarios || 0,
+          inicioContrato: "—",
+          examesVencidos: "NÃO",
+          possuiProgramas: "SIM",
+          ltcat: "Indeterminado",
+          pcmso: "—",
+          pgr: "—",
+          ltip: "—",
+          dir: "—",
+          linkProgramas: "",
+          obsAnalista: "",
+          obsCS: "",
+        };
+      });
+    }
+    return registros;
+  }, [empresas, registros]);
 
-  const filtrados = registros.filter((r) => {
+  // Lista de carteiras disponíveis
+  const carteirasDisponiveis = useMemo(() => {
+    const set = new Set([
+      ...carteiras.map((c) => c.nome),
+      ...empresas.map((e) => e.carteira).filter(Boolean),
+      ...registrosCompletos.map((r) => r.carteira).filter(Boolean),
+    ]);
+    return Array.from(set).sort();
+  }, [carteiras, empresas, registrosCompletos]);
+
+  // Estatísticas gerais
+  const totalEmpresas = registrosCompletos.length;
+  const sstNaMabit = registrosCompletos.filter((r) => r.sstNaMabit === "SIM").length;
+  const examesVencidos = registrosCompletos.filter((r) => r.examesVencidos === "SIM").length;
+  const comProgramas = registrosCompletos.filter((r) => r.possuiProgramas === "SIM").length;
+
+  // Filtragem por carteira e busca
+  const filtrados = registrosCompletos.filter((r) => {
+    const cart = r.carteira || "Sem Carteira";
+    if (carteiraFiltro !== "todas" && cart !== carteiraFiltro) return false;
     const q = busca.trim().toLowerCase();
     if (!q) return true;
     return (
       r.empresa.toLowerCase().includes(q) ||
       r.codigo.toLowerCase().includes(q) ||
+      (r.analista || "").toLowerCase().includes(q) ||
+      (r.supervisor || "").toLowerCase().includes(q) ||
       r.obsAnalista.toLowerCase().includes(q) ||
       r.obsCS.toLowerCase().includes(q)
     );
   });
+
+  // Dados da carteira selecionada em destaque
+  const informacoesCarteira = useMemo(() => {
+    if (carteiraFiltro === "todas") {
+      const supUnicos = Array.from(new Set(registrosCompletos.map((r) => r.supervisor).filter(Boolean)));
+      const anaUnicos = Array.from(new Set(registrosCompletos.map((r) => r.analista).filter(Boolean)));
+      const totalVidas = registrosCompletos.reduce((sum, r) => sum + (r.qtdFunc || 0), 0);
+      return {
+        nome: "Todas as Carteiras",
+        supervisores: supUnicos,
+        analistas: anaUnicos,
+        totalEmpresas: registrosCompletos.length,
+        totalVidas,
+      };
+    }
+    const daCarteira = registrosCompletos.filter((r) => (r.carteira || "Sem Carteira") === carteiraFiltro);
+    const supUnicos = Array.from(new Set(daCarteira.map((r) => r.supervisor).filter(Boolean)));
+    const anaUnicos = Array.from(new Set(daCarteira.map((r) => r.analista).filter(Boolean)));
+    const totalVidas = daCarteira.reduce((sum, r) => sum + (r.qtdFunc || 0), 0);
+    return {
+      nome: carteiraFiltro,
+      supervisores: supUnicos.length > 0 ? supUnicos : ["ADRIELLE"],
+      analistas: anaUnicos.length > 0 ? anaUnicos : ["SIMEANE"],
+      totalEmpresas: daCarteira.length,
+      totalVidas,
+    };
+  }, [carteiraFiltro, registrosCompletos]);
 
   return (
     <div className="space-y-6">
@@ -79,7 +177,7 @@ function SST() {
         actions={<NovoEventoSSTDialog />}
       />
 
-      {/* Cards de Resumo */}
+      {/* Cards de Resumo Operacional */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div className="surface-panel flex items-center gap-3 p-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -122,17 +220,132 @@ function SST() {
         </div>
       </div>
 
+      {/* Destaque da Carteira Selecionada, Supervisor e Analistas */}
+      <div className="surface-panel p-4 rounded-xl border bg-card/60 backdrop-blur space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
+              <Briefcase className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Carteira em Destaque
+              </p>
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                {informacoesCarteira.nome}
+              </h3>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-6 text-xs">
+            <div className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4 text-primary" />
+              <div>
+                <span className="text-[10px] uppercase font-medium text-muted-foreground block">
+                  Supervisor(a)
+                </span>
+                <span className="font-bold text-foreground">
+                  {informacoesCarteira.supervisores.join(", ") || "Não atribuído"}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-info" />
+              <div>
+                <span className="text-[10px] uppercase font-medium text-muted-foreground block">
+                  Analista(s)
+                </span>
+                <span className="font-bold text-foreground">
+                  {informacoesCarteira.analistas.join(", ") || "Não atribuído"}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-success" />
+              <div>
+                <span className="text-[10px] uppercase font-medium text-muted-foreground block">
+                  Empresas Vinc.
+                </span>
+                <span className="font-bold text-foreground tabular-nums">
+                  {informacoesCarteira.totalEmpresas} empresas
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-warning" />
+              <div>
+                <span className="text-[10px] uppercase font-medium text-muted-foreground block">
+                  Total Vidas / Func.
+                </span>
+                <span className="font-bold text-foreground tabular-nums">
+                  {informacoesCarteira.totalVidas} funcionários
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Abas por Carteira */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          <button
+            type="button"
+            onClick={() => setCarteiraFiltro("todas")}
+            className={cn(
+              "rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
+              carteiraFiltro === "todas"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            Todas as Carteiras ({registrosCompletos.length})
+          </button>
+          {carteirasDisponiveis.map((cart) => {
+            const qtd = registrosCompletos.filter((r) => (r.carteira || "Sem Carteira") === cart).length;
+            return (
+              <button
+                key={cart}
+                type="button"
+                onClick={() => setCarteiraFiltro(cart)}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-xs transition-all",
+                  carteiraFiltro === cart
+                    ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                {cart} ({qtd})
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Barra de Pesquisa */}
-      <div className="surface-panel flex items-center gap-2 p-3">
-        <div className="relative flex-1">
+      <div className="surface-panel flex flex-wrap items-center gap-2 p-3">
+        <div className="relative min-w-60 flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Pesquisar por código, empresa ou observações..."
+            placeholder="Pesquisar por código, empresa, analista ou observações..."
             className="pl-8"
           />
         </div>
+        <select
+          value={carteiraFiltro}
+          onChange={(e) => setCarteiraFiltro(e.target.value)}
+          className="h-9 rounded-md border bg-background px-2 text-sm font-medium"
+        >
+          <option value="todas">Todas as Carteiras</option>
+          {carteirasDisponiveis.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Tabela de Matriz SST */}
