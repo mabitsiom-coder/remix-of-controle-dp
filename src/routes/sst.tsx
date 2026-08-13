@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { NovoEventoSSTDialog } from "@/components/novo-evento-sst-dialog";
+import { ImportarSSTDialog } from "@/components/importar-sst-dialog";
 import { useRegSST, deleteRegSST, updateRegSST, type RegSST } from "@/lib/sst-store";
 import { useEmpresas } from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
@@ -188,7 +189,12 @@ function SST() {
       <PageHeader
         title="SST — Saúde e Segurança do Trabalho"
         description="Controle de programas (LTCAT, PCMSO, PGR, LTIP, DIR), exames e graus de risco por empresa"
-        actions={<NovoEventoSSTDialog />}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <ImportarSSTDialog />
+            <NovoEventoSSTDialog />
+          </div>
+        }
       />
 
       {/* Cards de Resumo Operacional */}
