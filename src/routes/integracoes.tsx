@@ -58,15 +58,16 @@ function CopyBox({ label, value }: { label: string; value: string }) {
 
 function IntegracoesPage() {
   const { currentUser } = useAuth();
-  if (!isGestao(currentUser.perfil)) {
-    return <AcessoRestrito perfisPermitidos={PERFIS_GESTAO} />;
-  }
-
   const [origin, setOrigin] = useState("https://dp-control-center.lovable.app");
 
   useEffect(() => {
     setOrigin(window.location.origin);
   }, []);
+
+  if (!isGestao(currentUser.perfil)) {
+    return <AcessoRestrito perfisPermitidos={PERFIS_GESTAO} />;
+  }
+
 
   const mcpUrl = `${origin}/api/public/mcp`;
   const openApiUrl = `${origin}/api/public/chatgpt/openapi.json`;
