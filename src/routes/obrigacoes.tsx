@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/select";
 import { NovaObrigacaoDialog } from "@/components/nova-obrigacao-dialog";
 import { NovaDCTFWebDialog } from "@/components/nova-dctfweb-dialog";
-import { NovaEspelhoDebitoDialog } from "@/components/novo-espelho-debito-dialog";
+import { NovoEspelhoDebitoDialog } from "@/components/novo-espelho-debito-dialog";
 import { useObrigacoes, deleteObrigacao } from "@/lib/obrigacoes-store";
 import { useRegDCTFWeb, deleteDCTFWeb, updateDCTFWeb, type RegDCTFWeb } from "@/lib/dctfweb-store";
 import {
@@ -282,7 +282,7 @@ function Obrigacoes() {
             {filtroTipo === "DCTFWeb" ? (
               <NovaDCTFWebDialog />
             ) : filtroTipo === "Espelho de Débito" ? (
-              <NovaEspelhoDebitoDialog />
+              <NovoEspelhoDebitoDialog />
             ) : (
               <NovaObrigacaoDialog />
             )}
