@@ -254,6 +254,8 @@ export function ImportarEmpresasDialog({
         );
       }
       
+      sincronizarCadastrosComEmpresas(getStoredEmpresas());
+
       setOpen(false);
       if (onSuccess) onSuccess();
       
