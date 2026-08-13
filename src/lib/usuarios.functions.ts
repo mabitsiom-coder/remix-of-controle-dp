@@ -21,6 +21,7 @@ export const registrarPrimeiroAdmin = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = await supabaseAdmin;
 
     const { count, error: erroContagem } = await supabaseAdmin
       .from("usuarios")
@@ -28,14 +29,14 @@ export const registrarPrimeiroAdmin = createServerFn({ method: "POST" })
     if (erroContagem) throw new Error(erroContagem.message);
     if ((count ?? 0) > 0) throw new Error("Já existe um administrador cadastrado. Entre com seu e-mail e senha.");
 
-    const { data: criado, error } = await supabaseAdmin.auth.admin.createUser({
+    const { data: criado, error } = await admin.auth.admin.createUser({
       email: data.email,
       password: data.senha,
       email_confirm: true,
     });
     if (error || !criado.user) throw new Error(error?.message ?? "Não foi possível criar o acesso.");
 
-    const { error: erroPerfil } = await supabaseAdmin.from("usuarios").insert({
+    const { error: erroPerfil } = await admin.from("usuarios").insert({
       id: criado.user.id,
       nome: data.nome,
       email: data.email,
@@ -64,15 +65,16 @@ export const criarUsuario = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await exigirAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = await supabaseAdmin;
 
-    const { data: criado, error } = await supabaseAdmin.auth.admin.createUser({
+    const { data: criado, error } = await admin.auth.admin.createUser({
       email: data.email,
       password: data.senha,
       email_confirm: true,
     });
     if (error || !criado.user) throw new Error(error?.message ?? "Não foi possível criar o acesso.");
 
-    const { error: erroPerfil } = await supabaseAdmin.from("usuarios").insert({
+    const { error: erroPerfil } = await admin.from("usuarios").insert({
       id: criado.user.id,
       nome: data.nome,
       email: data.email,
@@ -103,9 +105,10 @@ export const atualizarUsuario = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await exigirAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const admin = await supabaseAdmin;
 
     if (data.email || data.senha) {
-      const { error } = await supabaseAdmin.auth.admin.updateUserById(data.id, {
+      const { error } = await admin.auth.admin.updateUserById(data.id, {
         ...(data.email ? { email: data.email } : {}),
         ...(data.senha ? { password: data.senha } : {}),
       });
@@ -121,7 +124,7 @@ export const atualizarUsuario = createServerFn({ method: "POST" })
     };
 
     if (Object.keys(campos).length > 0) {
-      const { error } = await supabaseAdmin.from("usuarios").update(campos).eq("id", data.id);
+      const { error } = await admin.from("usuarios").update(campos).eq("id", data.id);
       if (error) throw new Error(error.message);
     }
 
@@ -136,7 +139,8 @@ export const removerUsuario = createServerFn({ method: "POST" })
     if (data.id === context.userId) throw new Error("Você não pode remover o seu próprio acesso.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.id);
+    const admin = await supabaseAdmin;
+    const { error } = await admin.auth.admin.deleteUser(data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
