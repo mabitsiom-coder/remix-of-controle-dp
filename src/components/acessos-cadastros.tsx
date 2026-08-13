@@ -180,6 +180,14 @@ export function AcessosCadastros() {
   );
 }
 
+const PERFIS: PerfilAcesso[] = [
+  "Administrador",
+  "Gerente",
+  "Coordenador",
+  "Supervisor",
+  "Analista",
+];
+
 function DefinirAcessoDialog({
   pessoa,
   onClose,
@@ -189,6 +197,7 @@ function DefinirAcessoDialog({
 }) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("123456");
+  const [perfil, setPerfil] = useState<PerfilAcesso>("Analista");
   const [salvando, setSalvando] = useState(false);
   const [pessoaAtual, setPessoaAtual] = useState<string | null>(null);
 
@@ -196,26 +205,32 @@ function DefinirAcessoDialog({
     setPessoaAtual(pessoa.origemId);
     setEmail(pessoa.email || sugerirEmail(pessoa.nome));
     setSenha("123456");
+    setPerfil(pessoa.perfil);
   }
 
   const salvar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pessoa) return;
-    if (!email.trim() || senha.trim().length < 6) {
-      toast.error("Informe o e-mail e uma senha com pelo menos 6 caracteres.");
+    const emailLimpo = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailLimpo)) {
+      toast.error("Informe um e-mail válido (ex.: nome@mabitcontabilidade.com.br).");
+      return;
+    }
+    if (senha.trim().length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres.");
       return;
     }
     setSalvando(true);
     try {
       await addUsuario({
         nome: pessoa.nome,
-        email: email.trim(),
+        email: emailLimpo,
         senha: senha.trim(),
-        perfil: pessoa.perfil,
+        perfil,
         departamento: pessoa.departamento,
         status: "ativo",
       });
-      toast.success(`Acesso criado para ${pessoa.nome} (${pessoa.perfil}).`);
+      toast.success(`Acesso criado para ${pessoa.nome} (${perfil}).`);
       onClose();
     } catch (err: any) {
       toast.error(err?.message || "Erro ao criar acesso.");
