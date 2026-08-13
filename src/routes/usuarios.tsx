@@ -466,8 +466,8 @@ function EditarUsuarioDialog({ usuario }: { usuario: Usuario }) {
     e.preventDefault();
     try {
       await updateUsuario(usuario.id, {
-      nome: nome.trim(),
-      email: email.trim(),
+        nome: nome.trim(),
+        email: email.trim(),
         senha: senha.trim(),
         perfil,
         departamento: departamento.trim(),
