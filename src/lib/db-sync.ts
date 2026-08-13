@@ -51,7 +51,7 @@ async function enviar(entrada: Entrada) {
   const serializado = JSON.stringify(dados);
   if (snapshot.get(entrada.chave) === serializado) return;
 
-  const { error } = await supabase
+  const { error } = await getSupabase()
     .from("app_state")
     .upsert({ chave: entrada.chave, dados, updated_by: usuarioId }, { onConflict: "chave" });
 
@@ -123,7 +123,7 @@ export function iniciarSincronizacao() {
     });
   }
 
-  supabase
+  getSupabase()
     .channel("app_state_sync")
     .on(
       "postgres_changes",

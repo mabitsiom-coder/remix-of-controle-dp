@@ -81,7 +81,7 @@ export async function recarregarUsuarios(): Promise<{ atual: Usuario; lista: Usu
     return { atual: usuarioVazio, lista: [] };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("usuarios")
     .select("id,nome,email,perfil,departamento,status,created_at")
     .order("created_at", { ascending: true });
