@@ -223,6 +223,7 @@ function Obrigacoes() {
         if (mat) {
           return {
             ...mat,
+            id: mat.id || `reg-${emp.id || cod}`,
             codigo: cod,
             empresa: emp.nome || mat.empresa || "Empresa Sem Nome",
             cnpj: emp.cnpj || mat.cnpj || "",
@@ -264,6 +265,7 @@ function Obrigacoes() {
         if (mat) {
           return {
             ...mat,
+            id: mat.id || `reg-${emp.id || cod}`,
             codigo: cod,
             empresa: emp.nome || mat.empresa || "Empresa Sem Nome",
             carteira: carteiraDaEmpresa(emp),
