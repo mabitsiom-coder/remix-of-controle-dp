@@ -74,6 +74,8 @@ export type Database = {
     }
     Functions: {
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_gestao: { Args: { _user_id: string }; Returns: boolean }
+      is_usuario_ativo: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_perfil:
