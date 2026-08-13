@@ -129,7 +129,7 @@ function Obrigacoes() {
             codigo: cod,
             empresa: emp.nome || mat.empresa || "Empresa Sem Nome",
             cnpj: emp.cnpj || mat.cnpj || "",
-            carteira: emp.carteira || mat.carteira || "RH - G - 01",
+            carteira: carteiraDaEmpresa(emp),
             analista: emp.analista || mat.analista || "Não atribuído",
             supervisor: emp.supervisor || mat.supervisor || "Não atribuído",
           };
@@ -140,7 +140,7 @@ function Obrigacoes() {
           codigo: cod,
           empresa: emp.nome || "Empresa Sem Nome",
           cnpj: emp.cnpj || "",
-          carteira: emp.carteira || "RH - G - 01",
+          carteira: carteiraDaEmpresa(emp),
           analista: emp.analista || "Não atribuído",
           supervisor: emp.supervisor || "Não atribuído",
           tipo: emp.tipo === "sem-movimento" ? "S/M" : "C/M",
@@ -176,7 +176,7 @@ function Obrigacoes() {
             codigo: cod,
             empresa: emp.nome || mat.empresa || "Empresa Sem Nome",
             cnpjCpf: emp.cnpj || mat.cnpjCpf || "",
-            carteira: emp.carteira || mat.carteira || "RH - G - 01",
+            carteira: carteiraDaEmpresa(emp),
             analista: emp.analista || mat.analista || "Não atribuído",
             supervisor: emp.supervisor || mat.supervisor || "Não atribuído",
           };
@@ -187,7 +187,7 @@ function Obrigacoes() {
           codigo: cod,
           empresa: emp.nome || "Empresa Sem Nome",
           cnpjCpf: emp.cnpj || "",
-          carteira: emp.carteira || "RH - G - 01",
+          carteira: carteiraDaEmpresa(emp),
           analista: emp.analista || "Não atribuído",
           supervisor: emp.supervisor || "Não atribuído",
           tipo: emp.tipo === "sem-movimento" ? "S/M" : "C/M",
@@ -219,7 +219,7 @@ function Obrigacoes() {
             codigo: cod,
             empresa: emp.nome || mat.empresa || "Empresa Sem Nome",
             cnpj: emp.cnpj || mat.cnpj || "",
-            carteira: emp.carteira || mat.carteira || "RH - G - 01",
+            carteira: carteiraDaEmpresa(emp),
             analista: emp.analista || mat.analista || "Não atribuído",
             supervisor: emp.supervisor || mat.supervisor || "Não atribuído",
           };
@@ -236,7 +236,7 @@ function Obrigacoes() {
           enviadoCliente: "—",
           obsAnalistaSolicitacao: "—",
           obsCS: "—",
-          carteira: emp.carteira || "RH - G - 01",
+          carteira: carteiraDaEmpresa(emp),
           analista: emp.analista || "Não atribuído",
           supervisor: emp.supervisor || "Não atribuído",
         };
@@ -259,7 +259,7 @@ function Obrigacoes() {
             ...mat,
             codigo: cod,
             empresa: emp.nome || mat.empresa || "Empresa Sem Nome",
-            carteira: emp.carteira || mat.carteira || "RH - G - 01",
+            carteira: carteiraDaEmpresa(emp),
             analista: emp.analista || mat.analista || "Não atribuído",
             supervisor: emp.supervisor || mat.supervisor || "Não atribuído",
           };
@@ -275,7 +275,7 @@ function Obrigacoes() {
           reajusteSalarial: "—",
           contribuicaoAssistencial: "—",
           observacao: "",
-          carteira: emp.carteira || "RH - G - 01",
+          carteira: carteiraDaEmpresa(emp),
           analista: emp.analista || "Não atribuído",
           supervisor: emp.supervisor || "Não atribuído",
         };
@@ -314,8 +314,7 @@ function Obrigacoes() {
           sup.includes(q)
         );
       }
-      const cart = String(r.carteira || "Sem Carteira");
-      if (carteiraFiltro !== "todas" && cart !== carteiraFiltro) return false;
+      if (!pertenceACarteira(r.carteira, carteiraFiltro)) return false;
       return true;
     });
   }, [dctfCompletos, busca, carteiraFiltro]);
@@ -343,8 +342,7 @@ function Obrigacoes() {
           obsCs.includes(q)
         );
       }
-      const cart = String(r.carteira || "Sem Carteira");
-      if (carteiraFiltro !== "todas" && cart !== carteiraFiltro) return false;
+      if (!pertenceACarteira(r.carteira, carteiraFiltro)) return false;
       return true;
     });
   }, [debitoCompletos, busca, carteiraFiltro]);
@@ -374,8 +372,7 @@ function Obrigacoes() {
           obsCS.includes(q)
         );
       }
-      const cart = String(r.carteira || "Sem Carteira");
-      if (carteiraFiltro !== "todas" && cart !== carteiraFiltro) return false;
+      if (!pertenceACarteira(r.carteira, carteiraFiltro)) return false;
       return true;
     });
   }, [fgtsCompletos, busca, carteiraFiltro]);
@@ -405,8 +402,7 @@ function Obrigacoes() {
           obs.includes(q)
         );
       }
-      const cart = String(r.carteira || "Sem Carteira");
-      if (carteiraFiltro !== "todas" && cart !== carteiraFiltro) return false;
+      if (!pertenceACarteira(r.carteira, carteiraFiltro)) return false;
       return true;
     });
   }, [reajusteCompletos, busca, carteiraFiltro]);
@@ -432,7 +428,7 @@ function Obrigacoes() {
         totalEmpresas: (listaAlvo || []).length,
       };
     }
-    const daCarteira = (listaAlvo || []).filter((r) => r && (r.carteira || "Sem Carteira") === carteiraFiltro);
+    const daCarteira = (listaAlvo || []).filter((r) => r && pertenceACarteira(r.carteira, carteiraFiltro));
     const supUnicos = Array.from(new Set(daCarteira.map((r) => r?.supervisor).filter(Boolean)));
     const anaUnicos = Array.from(new Set(daCarteira.map((r) => r?.analista).filter(Boolean)));
     return {
@@ -605,7 +601,7 @@ function Obrigacoes() {
                 Todas as Carteiras ({fgtsCompletos.length})
               </button>
               {carteirasDisponiveis.map((cart) => {
-                const qtd = fgtsCompletos.filter((r) => (r.carteira || "Sem Carteira") === cart).length;
+                const qtd = fgtsCompletos.filter((r) => pertenceACarteira(r.carteira, cart)).length;
                 return (
                   <button
                     key={cart}
@@ -906,7 +902,7 @@ function Obrigacoes() {
                 Todas as Carteiras ({reajusteCompletos.length})
               </button>
               {carteirasDisponiveis.map((cart) => {
-                const qtd = reajusteCompletos.filter((r) => (r.carteira || "Sem Carteira") === cart).length;
+                const qtd = reajusteCompletos.filter((r) => pertenceACarteira(r.carteira, cart)).length;
                 return (
                   <button
                     key={cart}
@@ -1198,7 +1194,7 @@ function Obrigacoes() {
                 Todas as Carteiras ({debitoCompletos.length})
               </button>
               {carteirasDisponiveis.map((cart) => {
-                const qtd = debitoCompletos.filter((r) => (r.carteira || "Sem Carteira") === cart).length;
+                const qtd = debitoCompletos.filter((r) => pertenceACarteira(r.carteira, cart)).length;
                 return (
                   <button
                     key={cart}
@@ -1486,7 +1482,7 @@ function Obrigacoes() {
                 Todas as Carteiras ({dctfCompletos.length})
               </button>
               {carteirasDisponiveis.map((cart) => {
-                const qtd = dctfCompletos.filter((r) => (r.carteira || "Sem Carteira") === cart).length;
+                const qtd = dctfCompletos.filter((r) => pertenceACarteira(r.carteira, cart)).length;
                 return (
                   <button
                     key={cart}
