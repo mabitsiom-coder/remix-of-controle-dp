@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Users, UserPlus, Briefcase, Trash2, Plus, CheckCircle2, ShieldCheck,
   Pencil, X, Crown, ClipboardCheck, Handshake, GraduationCap,
@@ -17,7 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { useCadastros, type Membro } from "@/lib/cadastros-store";
+import { useCadastros, sincronizarCadastrosComEmpresas, type Membro } from "@/lib/cadastros-store";
+import { useEmpresas } from "@/lib/empresas-store";
 
 export const Route = createFileRoute("/cadastros")({
   component: CadastrosPage,
@@ -294,6 +295,20 @@ function CadastrosPage() {
     addCarteira, removeCarteira, updateCarteira,
     addMembro, removeMembro, updateMembro,
   } = useCadastros();
+
+  const { empresas } = useEmpresas();
+  const sincronizado = useRef(false);
+
+  useEffect(() => {
+    if (sincronizado.current || empresas.length === 0) return;
+    sincronizado.current = true;
+    const res = sincronizarCadastrosComEmpresas(empresas);
+    if (res.analistas || res.supervisores || res.carteiras) {
+      toast.success("Cadastros sincronizados com as empresas importadas", {
+        description: `${res.analistas} analista(s), ${res.supervisores} supervisor(es) e ${res.carteiras} carteira(s) adicionados.`,
+      });
+    }
+  }, [empresas]);
 
   const possiveisAssistentes = analistas.filter(
     (a) => a.cargo === "Analista Jr." || a.cargo === "Assistente" || a.cargo === "Trainee" || a.cargo.includes("Jr")
