@@ -67,6 +67,11 @@ import {
 } from "@/lib/reajuste-sindicato-store";
 import { useEmpresas } from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
+import {
+  carteiraDaEmpresa,
+  listarNomesCarteiras,
+  pertenceACarteira,
+} from "@/lib/carteiras-core";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/obrigacoes")({
@@ -285,15 +290,10 @@ function Obrigacoes() {
   }, [empresas, reajusteRegistros]);
 
   // Lista de carteiras disponíveis
-  const carteirasDisponiveis = useMemo(() => {
-    const listCart = (carteiras || []).filter(Boolean);
-    const listEmp = (empresas || []).filter(Boolean);
-    const set = new Set([
-      ...listCart.map((c) => c?.nome).filter(Boolean),
-      ...listEmp.map((e) => e?.carteira).filter(Boolean),
-    ]);
-    return Array.from(set).sort();
-  }, [carteiras, empresas]);
+  const carteirasDisponiveis = useMemo(
+    () => listarNomesCarteiras((empresas || []).filter(Boolean), carteiras || []),
+    [carteiras, empresas],
+  );
 
   // Filtragem DCTFWeb
   const dctfFiltrados = useMemo(() => {

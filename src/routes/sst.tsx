@@ -41,6 +41,11 @@ import { ImportarSSTDialog } from "@/components/importar-sst-dialog";
 import { useRegSST, deleteRegSST, updateRegSST, type RegSST } from "@/lib/sst-store";
 import { useEmpresas } from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
+import {
+  carteiraDaEmpresa,
+  listarNomesCarteiras,
+  pertenceACarteira,
+} from "@/lib/carteiras-core";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/sst")({
@@ -113,14 +118,10 @@ function SST() {
   }, [empresas, registros]);
 
   // Lista de carteiras disponíveis
-  const carteirasDisponiveis = useMemo(() => {
-    const set = new Set([
-      ...carteiras.map((c) => c.nome),
-      ...empresas.map((e) => e.carteira).filter(Boolean),
-      ...registrosCompletos.map((r) => r.carteira).filter(Boolean),
-    ]);
-    return Array.from(set).sort();
-  }, [carteiras, empresas, registrosCompletos]);
+  const carteirasDisponiveis = useMemo(
+    () => listarNomesCarteiras(empresas, carteiras),
+    [carteiras, empresas],
+  );
 
   // Estatísticas gerais
   const totalEmpresas = registrosCompletos.length;
