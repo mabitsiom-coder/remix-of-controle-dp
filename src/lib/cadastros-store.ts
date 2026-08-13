@@ -232,3 +232,26 @@ export function useCadastros() {
     updateMembro,
   };
 }
+
+// Vínculos entre analista → carteira → supervisor
+export function resolverVinculoPorAnalista(nomeAnalista: string): {
+  carteira?: string;
+  supervisor?: string;
+} {
+  const analista = getAnalistas().find((a) => a.nome === nomeAnalista);
+  if (!analista) return {};
+  const carteira = getCarteiras().find((c) => c.id === analista.carteiraId);
+  const supervisor = carteira
+    ? getSupervisores().find((s) => (s.carteiraIds || []).includes(carteira.id))
+    : undefined;
+  return {
+    ...(carteira ? { carteira: carteira.nome } : {}),
+    ...(supervisor ? { supervisor: supervisor.nome } : {}),
+  };
+}
+
+export function resolverSupervisorPorCarteira(nomeCarteira: string): string | undefined {
+  const carteira = getCarteiras().find((c) => c.nome === nomeCarteira);
+  if (!carteira) return undefined;
+  return getSupervisores().find((s) => (s.carteiraIds || []).includes(carteira.id))?.nome;
+}
