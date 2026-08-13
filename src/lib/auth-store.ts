@@ -91,7 +91,17 @@ export async function recarregarUsuarios(): Promise<{ atual: Usuario; lista: Usu
     return { atual: getCurrentUser(), lista: getStoredUsers() };
   }
 
-  const lista: Usuario[] = (data ?? []).map((u) => ({
+  type Linha = {
+    id: string;
+    nome: string;
+    email: string;
+    perfil: string;
+    departamento: string;
+    status: string;
+    created_at: string;
+  };
+
+  const lista: Usuario[] = ((data ?? []) as Linha[]).map((u) => ({
     id: u.id,
     nome: u.nome,
     email: u.email,

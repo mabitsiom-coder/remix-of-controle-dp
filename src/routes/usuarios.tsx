@@ -61,7 +61,7 @@ export const Route = createFileRoute("/usuarios")({
 });
 
 function UsuariosPage() {
-  const { usuarios, currentUser, switchUser, isAdmin } = useAuth();
+  const { usuarios, currentUser, isAdmin } = useAuth();
   const [busca, setBusca] = useState("");
   const [filtroPerfil, setFiltroPerfil] = useState<string>("todos");
 
@@ -256,19 +256,7 @@ function UsuariosPage() {
                     <td className="py-3 px-4 text-center text-muted-foreground">{usr.criadoEm}</td>
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        {!isLogado && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              switchUser(usr);
-                              toast.success(`Sessão alterada para ${usr.nome} (${usr.perfil})`);
-                            }}
-                            className="h-7 text-[11px] gap-1"
-                          >
-                            <LogIn className="h-3.5 w-3.5" /> Alternar Login
-                          </Button>
-                        )}
+
                         <EditarUsuarioDialog usuario={usr} />
                       </div>
                     </td>
@@ -336,7 +324,7 @@ function NovoUsuarioDialog() {
   const [perfil, setPerfil] = useState<PerfilAcesso>("Analista");
   const [departamento, setDepartamento] = useState("Operações DP");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nome.trim() || !email.trim()) {
       toast.error("Preencha o nome e e-mail do usuário.");
@@ -344,7 +332,7 @@ function NovoUsuarioDialog() {
     }
 
     try {
-      const novo = addUsuario({
+      const novo = await addUsuario({
         nome: nome.trim(),
         email: email.trim(),
         senha: senha.trim() || "123456",
@@ -358,8 +346,8 @@ function NovoUsuarioDialog() {
       setNome("");
       setEmail("");
       setSenha("123456");
-    } catch (err) {
-      toast.error("Erro ao cadastrar usuário.");
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao cadastrar usuário.");
     }
   };
 
@@ -469,23 +457,27 @@ function EditarUsuarioDialog({ usuario }: { usuario: Usuario }) {
   const [open, setOpen] = useState(false);
   const [nome, setNome] = useState(usuario.nome);
   const [email, setEmail] = useState(usuario.email);
-  const [senha, setSenha] = useState(usuario.senha);
+  const [senha, setSenha] = useState("");
   const [perfil, setPerfil] = useState<PerfilAcesso>(usuario.perfil);
   const [departamento, setDepartamento] = useState(usuario.departamento);
   const [status, setStatus] = useState<"ativo" | "inativo">(usuario.status);
 
-  const handleUpdate = (e: React.FormEvent) => {
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateUsuario(usuario.id, {
+    try {
+      await updateUsuario(usuario.id, {
       nome: nome.trim(),
       email: email.trim(),
-      senha: senha.trim(),
-      perfil,
-      departamento: departamento.trim(),
-      status,
-    });
-    toast.success(`Usuário "${nome}" atualizado!`);
-    setOpen(false);
+        senha: senha.trim(),
+        perfil,
+        departamento: departamento.trim(),
+        status,
+      });
+      toast.success(`Usuário "${nome}" atualizado!`);
+      setOpen(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao atualizar usuário.");
+    }
   };
 
   return (
@@ -517,7 +509,13 @@ function EditarUsuarioDialog({ usuario }: { usuario: Usuario }) {
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <Label htmlFor="editSenha" className="text-xs font-medium">Senha</Label>
-              <Input id="editSenha" value={senha} onChange={(e) => setSenha(e.target.value)} required />
+              <Input
+                id="editSenha"
+                type="password"
+                placeholder="Deixe em branco para manter a senha atual"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+              />
             </div>
 
             <div className="space-y-1">
@@ -562,9 +560,9 @@ function EditarUsuarioDialog({ usuario }: { usuario: Usuario }) {
               variant="ghost"
               size="sm"
               className="text-destructive hover:bg-destructive/10 text-xs gap-1"
-              onClick={() => {
+              onClick={async () => {
                 try {
-                  removeUsuario(usuario.id);
+                  await removeUsuario(usuario.id);
                   toast.info(`Usuário "${usuario.nome}" removido.`);
                   setOpen(false);
                 } catch (err: any) {
