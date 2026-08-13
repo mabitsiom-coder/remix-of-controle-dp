@@ -7,6 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -180,6 +187,14 @@ export function AcessosCadastros() {
   );
 }
 
+const PERFIS: PerfilAcesso[] = [
+  "Administrador",
+  "Gerente",
+  "Coordenador",
+  "Supervisor",
+  "Analista",
+];
+
 function DefinirAcessoDialog({
   pessoa,
   onClose,
@@ -189,6 +204,7 @@ function DefinirAcessoDialog({
 }) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("123456");
+  const [perfil, setPerfil] = useState<PerfilAcesso>("Analista");
   const [salvando, setSalvando] = useState(false);
   const [pessoaAtual, setPessoaAtual] = useState<string | null>(null);
 
@@ -196,26 +212,32 @@ function DefinirAcessoDialog({
     setPessoaAtual(pessoa.origemId);
     setEmail(pessoa.email || sugerirEmail(pessoa.nome));
     setSenha("123456");
+    setPerfil(pessoa.perfil);
   }
 
   const salvar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pessoa) return;
-    if (!email.trim() || senha.trim().length < 6) {
-      toast.error("Informe o e-mail e uma senha com pelo menos 6 caracteres.");
+    const emailLimpo = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailLimpo)) {
+      toast.error("Informe um e-mail válido (ex.: nome@mabitcontabilidade.com.br).");
+      return;
+    }
+    if (senha.trim().length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres.");
       return;
     }
     setSalvando(true);
     try {
       await addUsuario({
         nome: pessoa.nome,
-        email: email.trim(),
+        email: emailLimpo,
         senha: senha.trim(),
-        perfil: pessoa.perfil,
+        perfil,
         departamento: pessoa.departamento,
         status: "ativo",
       });
-      toast.success(`Acesso criado para ${pessoa.nome} (${pessoa.perfil}).`);
+      toast.success(`Acesso criado para ${pessoa.nome} (${perfil}).`);
       onClose();
     } catch (err: any) {
       toast.error(err?.message || "Erro ao criar acesso.");
@@ -240,8 +262,26 @@ function DefinirAcessoDialog({
           <form onSubmit={salvar} className="mt-2 space-y-3">
             <div className="rounded-lg border bg-muted/40 p-3 space-y-1 text-xs">
               <p className="font-semibold text-foreground">{pessoa.nome}</p>
-              <p className="text-muted-foreground">Perfil: {pessoa.perfil}</p>
               <p className="text-muted-foreground">Área: {pessoa.departamento}</p>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Perfil de acesso</Label>
+              <Select value={perfil} onValueChange={(v) => setPerfil(v as PerfilAcesso)}>
+                <SelectTrigger id="acessoPerfil">
+                  <SelectValue placeholder="Selecione o perfil" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PERFIS.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {p}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Sugerido pelo cadastro: {pessoa.perfil}
+              </p>
             </div>
 
             <div className="space-y-1">
