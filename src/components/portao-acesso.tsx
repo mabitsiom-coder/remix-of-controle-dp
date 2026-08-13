@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { getSupabase } from "@/lib/supabase-browser";
 import { loginUser, registrarPrimeiroAdmin, recarregarUsuarios } from "@/lib/auth-store";
 import { existeUsuario } from "@/lib/usuarios.functions";
 import { sincronizarComBanco, iniciarSincronizacao } from "@/lib/db-sync";
@@ -31,7 +31,7 @@ export function PortaoAcesso({ children }: { children: ReactNode }) {
     let ativo = true;
 
     (async () => {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await getSupabase().auth.getSession();
       if (!ativo) return;
 
       if (data.session) {

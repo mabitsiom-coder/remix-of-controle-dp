@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { getSupabase } from "@/lib/supabase-browser";
 
 /**
  * Sincroniza os dados operacionais do sistema (que ficam em cache no navegador)
@@ -51,9 +51,12 @@ async function enviar(entrada: Entrada) {
   const serializado = JSON.stringify(dados);
   if (snapshot.get(entrada.chave) === serializado) return;
 
-  const { error } = await supabase
+  const { error } = await getSupabase()
     .from("app_state")
-    .upsert({ chave: entrada.chave, dados, updated_by: usuarioId }, { onConflict: "chave" });
+    .upsert(
+      { chave: entrada.chave, dados: dados as never, updated_by: usuarioId },
+      { onConflict: "chave" },
+    );
 
   if (error) {
     console.error(`Falha ao salvar "${entrada.chave}" no banco:`, error.message);
@@ -77,11 +80,11 @@ function agendarEnvio(entrada: Entrada) {
 export async function sincronizarComBanco() {
   if (typeof window === "undefined") return;
 
-  const { data: sessao } = await supabase.auth.getSession();
+  const { data: sessao } = await getSupabase().auth.getSession();
   usuarioId = sessao.session?.user.id ?? null;
   if (!usuarioId) return;
 
-  const { data, error } = await supabase.from("app_state").select("chave,dados");
+  const { data, error } = await getSupabase().from("app_state").select("chave,dados");
   if (error) {
     console.error("Falha ao carregar dados do banco:", error.message);
     return;
@@ -123,7 +126,7 @@ export function iniciarSincronizacao() {
     });
   }
 
-  supabase
+  getSupabase()
     .channel("app_state_sync")
     .on(
       "postgres_changes",

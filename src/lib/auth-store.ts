@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-import { supabase } from "@/integrations/supabase/client";
+import { getSupabase } from "@/lib/supabase-browser";
 import {
   criarUsuario as criarUsuarioFn,
   atualizarUsuario as atualizarUsuarioFn,
@@ -72,7 +72,7 @@ export function getCurrentUser(): Usuario {
 
 /** Recarrega o usuário logado e a lista de usuários direto do banco. */
 export async function recarregarUsuarios(): Promise<{ atual: Usuario; lista: Usuario[] }> {
-  const { data: sessao } = await supabase.auth.getSession();
+  const { data: sessao } = await getSupabase().auth.getSession();
   const uid = sessao.session?.user.id;
 
   if (!uid) {
@@ -81,7 +81,7 @@ export async function recarregarUsuarios(): Promise<{ atual: Usuario; lista: Usu
     return { atual: usuarioVazio, lista: [] };
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("usuarios")
     .select("id,nome,email,perfil,departamento,status,created_at")
     .order("created_at", { ascending: true });
@@ -118,7 +118,7 @@ export async function recarregarUsuarios(): Promise<{ atual: Usuario; lista: Usu
 }
 
 export async function loginUser(email: string, senha: string): Promise<Usuario> {
-  const { error } = await supabase.auth.signInWithPassword({
+  const { error } = await getSupabase().auth.signInWithPassword({
     email: email.trim().toLowerCase(),
     password: senha,
   });
@@ -126,14 +126,14 @@ export async function loginUser(email: string, senha: string): Promise<Usuario> 
 
   const { atual } = await recarregarUsuarios();
   if (atual.status === "inativo") {
-    await supabase.auth.signOut();
+    await getSupabase().auth.signOut();
     throw new Error("Este usuário está inativo no sistema.");
   }
   return atual;
 }
 
 export async function logoutUser() {
-  await supabase.auth.signOut();
+  await getSupabase().auth.signOut();
   gravarCache(CACHE_CURRENT, usuarioVazio);
   gravarCache(CACHE_USERS, []);
 }
