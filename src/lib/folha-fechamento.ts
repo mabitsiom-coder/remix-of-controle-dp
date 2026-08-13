@@ -50,10 +50,13 @@ export type FolhaTarefa = {
   codigo: string;
   empresa: string;
   grupo: string;
+  carteira: string;
+  tipoEmpresa: "com-movimento" | "sem-movimento" | "domestico-pf";
   competencia: string;
   responsavel: string;
   status: StatusFolha;
   dataConclusao: string;
+  dataPublicacao: string;
   observacoes: string;
   tipoPonto: string;
   aprendizes: number;
@@ -64,14 +67,14 @@ export type FolhaTarefa = {
 export const competencias = ["07/2026", "08/2026", "09/2026"];
 
 const base = [
-  { codigo: "1522", empresa: "B Borges Lima (Pró-labore)", grupo: "Grupo Borges", responsavel: "Camila Rocha", empregados: 1, aprendizes: 0, tipoPonto: "—" },
-  { codigo: "788", empresa: "Inez S S Silva (Pró-labore)", grupo: "Grupo Silva", responsavel: "Camila Rocha", empregados: 1, aprendizes: 0, tipoPonto: "C/D" },
-  { codigo: "1041", empresa: "Metalúrgica Andrade Ltda", grupo: "Carteira Industrial A", responsavel: "Camila Rocha", empregados: 312, aprendizes: 8, tipoPonto: "Digital" },
-  { codigo: "1190", empresa: "Rede Bom Preço", grupo: "Varejo", responsavel: "Diego Menezes", empregados: 178, aprendizes: 5, tipoPonto: "Digital" },
-  { codigo: "1233", empresa: "Transportes Vale", grupo: "Logística", responsavel: "Tatiane Lopes", empregados: 96, aprendizes: 2, tipoPonto: "C/D" },
-  { codigo: "1345", empresa: "Clínica Vida Plena", grupo: "Saúde", responsavel: "Rafael Prado", empregados: 44, aprendizes: 1, tipoPonto: "Digital" },
-  { codigo: "1408", empresa: "Construtora Horizonte", grupo: "Construção", responsavel: "Juliana Reis", empregados: 231, aprendizes: 6, tipoPonto: "Manual" },
-  { codigo: "1512", empresa: "Padaria Estrela do Sul", grupo: "Varejo", responsavel: "Diego Menezes", empregados: 27, aprendizes: 1, tipoPonto: "Cartão" },
+  { codigo: "1522", empresa: "B Borges Lima (Pró-labore)", grupo: "Grupo Borges", carteira: "RH - G - 01", tipoEmpresa: "sem-movimento" as const, responsavel: "Camila Rocha", empregados: 1, aprendizes: 0, tipoPonto: "—" },
+  { codigo: "788", empresa: "Inez S S Silva (Pró-labore)", grupo: "Grupo Silva", carteira: "RH - G - 01", tipoEmpresa: "sem-movimento" as const, responsavel: "Camila Rocha", empregados: 1, aprendizes: 0, tipoPonto: "C/D" },
+  { codigo: "1041", empresa: "Metalúrgica Andrade Ltda", grupo: "Grupo Andrade", carteira: "RH - G - 06", tipoEmpresa: "com-movimento" as const, responsavel: "Camila Rocha", empregados: 312, aprendizes: 8, tipoPonto: "Digital" },
+  { codigo: "1190", empresa: "Rede Bom Preço", grupo: "Varejo", carteira: "RH - G - 05", tipoEmpresa: "com-movimento" as const, responsavel: "Diego Menezes", empregados: 178, aprendizes: 5, tipoPonto: "Digital" },
+  { codigo: "1233", empresa: "Transportes Vale", grupo: "Logística", carteira: "RH - G - 04", tipoEmpresa: "com-movimento" as const, responsavel: "Tatiane Lopes", empregados: 96, aprendizes: 2, tipoPonto: "C/D" },
+  { codigo: "1345", empresa: "Clínica Vida Plena", grupo: "Saúde", carteira: "RH - G - 03", tipoEmpresa: "com-movimento" as const, responsavel: "Rafael Prado", empregados: 44, aprendizes: 1, tipoPonto: "Digital" },
+  { codigo: "1408", empresa: "Construtora Horizonte", grupo: "Construção", carteira: "RH - G - 02", tipoEmpresa: "com-movimento" as const, responsavel: "Juliana Reis", empregados: 231, aprendizes: 6, tipoPonto: "Manual" },
+  { codigo: "1512", empresa: "Padaria Estrela do Sul", grupo: "Varejo", carteira: "RH - G - 05", tipoEmpresa: "com-movimento" as const, responsavel: "Diego Menezes", empregados: 27, aprendizes: 1, tipoPonto: "Cartão" },
 ];
 
 function etapasPor(preenchidas: number): Record<EtapaKey, EtapaStatus> {
@@ -101,15 +104,19 @@ export const folhaTarefasSeed: FolhaTarefa[] = competencias.flatMap((competencia
           : preenchidas >= 5
             ? "andamento"
             : "aguardando";
+    const dataConclusao = concluida ? `27/${competencia.slice(0, 2)}/2026` : "";
     return {
       id: `${b.codigo}-${competencia}`,
       codigo: b.codigo,
       empresa: b.empresa,
       grupo: b.grupo,
+      carteira: b.carteira,
+      tipoEmpresa: b.tipoEmpresa,
       competencia,
       responsavel: b.responsavel,
       status,
-      dataConclusao: concluida ? `27/${competencia.slice(0, 2)}/2026` : "",
+      dataConclusao,
+      dataPublicacao: dataConclusao,
       observacoes: "",
       tipoPonto: b.tipoPonto,
       aprendizes: b.aprendizes,
@@ -118,6 +125,32 @@ export const folhaTarefasSeed: FolhaTarefa[] = competencias.flatMap((competencia
     } satisfies FolhaTarefa;
   }),
 );
+
+const STORAGE_KEY = "dp_control_folha_tarefas_v3";
+
+export function getStoredFolhaTarefas(): FolhaTarefa[] {
+  if (typeof window === "undefined") return folhaTarefasSeed;
+  try {
+    const item = localStorage.getItem(STORAGE_KEY);
+    if (!item) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(folhaTarefasSeed));
+      return folhaTarefasSeed;
+    }
+    return JSON.parse(item);
+  } catch (error) {
+    console.error("Erro ao ler folha tarefas do localStorage:", error);
+    return folhaTarefasSeed;
+  }
+}
+
+export function saveFolhaTarefas(lista: FolhaTarefa[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+  } catch (error) {
+    console.error("Erro ao salvar folha tarefas no localStorage:", error);
+  }
+}
 
 export function progressoTarefa(t: FolhaTarefa) {
   const aplicaveis = etapasChecklist.filter((e) => t.etapas[e.key] !== "na");

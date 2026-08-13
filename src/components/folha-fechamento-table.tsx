@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
-import { Check, Minus, Search, Slash } from "lucide-react";
+import { Check, Minus, Search, Slash, Briefcase } from "lucide-react";
 
 import {
   competencias,
   etapaStatusMeta,
   etapaStatusOrder,
   etapasChecklist,
-  folhaTarefasSeed,
+  getStoredFolhaTarefas,
+  saveFolhaTarefas,
   obrigatoriasOk,
   progressoTarefa,
   statusFolhaMeta,
@@ -27,6 +28,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+
+import { useEmpresas } from "@/lib/empresas-store";
+import { useCadastros } from "@/lib/cadastros-store";
 
 const etapaIcon: Record<EtapaStatus, typeof Check | null> = {
   pendente: null,
@@ -62,25 +66,112 @@ function EtapaCell({ value, onChange }: { value: EtapaStatus; onChange: (v: Etap
 }
 
 export function FolhaFechamentoTable() {
-  const [tarefas, setTarefas] = useState<FolhaTarefa[]>(folhaTarefasSeed);
+  const { empresas } = useEmpresas();
+  const { carteiras } = useCadastros();
+
+  const [tarefasSalvas, setTarefasSalvas] = useState<Record<string, FolhaTarefa>>(() => {
+    const list = getStoredFolhaTarefas();
+    const map: Record<string, FolhaTarefa> = {};
+    list.forEach((t) => {
+      map[t.id] = t;
+    });
+    return map;
+  });
+
   const [competencia, setCompetencia] = useState(competencias[1]!);
+  const [carteiraFiltro, setCarteiraFiltro] = useState<string>("todas");
   const [statusFiltro, setStatusFiltro] = useState<"todos" | StatusFolha>("todos");
   const [responsavel, setResponsavel] = useState("todos");
   const [busca, setBusca] = useState("");
 
   const update = (id: string, patch: Partial<FolhaTarefa>) =>
-    setTarefas((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+    setTarefasSalvas((prev) => {
+      const proximoItem = { ...(prev[id] || {}), ...patch } as FolhaTarefa;
+      const next = { ...prev, [id]: proximoItem };
+      saveFolhaTarefas(Object.values(next));
+      return next;
+    });
 
   const setEtapa = (t: FolhaTarefa, key: EtapaKey, v: EtapaStatus) =>
     update(t.id, { etapas: { ...t.etapas, [key]: v } });
 
-  const daCompetencia = tarefas.filter((t) => t.competencia === competencia);
+  // Se houver empresas cadastradas no localStorage, gera/sincroniza dinamicamente para a competência.
+  // Senão, usa as tarefas seed de demonstração.
+  const daCompetencia: FolhaTarefa[] = useMemo(() => {
+    if (empresas.length > 0) {
+      return empresas.map((emp) => {
+        const id = `${emp.codigoDominio || emp.id}-${competencia}`;
+        const salvas = tarefasSalvas[id];
+        if (salvas) {
+          return {
+            ...salvas,
+            id,
+            codigo: emp.codigoDominio || emp.id,
+            empresa: emp.nome,
+            carteira: emp.carteira || "Sem Carteira",
+            grupo: emp.grupoId || "Geral",
+            responsavel: emp.analista || emp.responsavel || "Não atribuído",
+            tipoEmpresa: emp.tipo || "com-movimento",
+            empregados: emp.funcionarios || 0,
+            competencia,
+          };
+        }
+        return {
+          id,
+          codigo: emp.codigoDominio || emp.id,
+          empresa: emp.nome,
+          grupo: emp.grupoId || "Geral",
+          carteira: emp.carteira || "Sem Carteira",
+          tipoEmpresa: emp.tipo || "com-movimento",
+          competencia,
+          responsavel: emp.analista || emp.responsavel || "Não atribuído",
+          status: "nao_iniciada",
+          dataConclusao: "",
+          dataPublicacao: "",
+          observacoes: "",
+          tipoPonto: "—",
+          aprendizes: 0,
+          empregados: emp.funcionarios || 0,
+          etapas: {
+            aniversariantes: "pendente",
+            pontoConferencia: "pendente",
+            folhaAnalise: "pendente",
+            lancVariaveis: "pendente",
+            quinzena: "pendente",
+            sindicato: "pendente",
+            folhaPagamento: "pendente",
+            relatorioIRRF: "pendente",
+            emprestimoConsignado: "pendente",
+            relatorioLiquido: "pendente",
+            guiaFGTS: "pendente",
+          },
+        };
+      });
+    }
+
+    // Fallback para empresas seed caso não haja empresas no localStorage
+    const list = Object.values(tarefasSalvas);
+    const listaOuSeed = list.length > 0 ? list : folhaTarefasSeed;
+    return listaOuSeed.filter((t) => t.competencia === competencia);
+  }, [empresas, competencia, tarefasSalvas]);
+  
+  const carteirasDisponiveis = useMemo(() => {
+    const set = new Set([
+      ...carteiras.map((c) => c.nome),
+      ...empresas.map((e) => e.carteira).filter(Boolean),
+      ...daCompetencia.map((t) => t.carteira).filter(Boolean),
+    ]);
+    return Array.from(set).sort();
+  }, [carteiras, empresas, daCompetencia]);
+
   const responsaveis = useMemo(
-    () => Array.from(new Set(tarefas.map((t) => t.responsavel))).sort(),
-    [tarefas],
+    () => Array.from(new Set(daCompetencia.map((t) => t.responsavel))).sort(),
+    [daCompetencia],
   );
 
   const filtradas = daCompetencia.filter((t) => {
+    const c = t.carteira || t.grupo || "Geral";
+    if (carteiraFiltro !== "todas" && c !== carteiraFiltro) return false;
     if (statusFiltro !== "todos" && t.status !== statusFiltro) return false;
     if (responsavel !== "todos" && t.responsavel !== responsavel) return false;
     const q = busca.trim().toLowerCase();
@@ -90,11 +181,54 @@ export function FolhaFechamentoTable() {
 
   const resumo = statusFolhaOrder.map((s) => ({
     status: s,
-    total: daCompetencia.filter((t) => t.status === s).length,
+    total: daCompetencia.filter((t) => {
+      const c = t.carteira || t.grupo || "Geral";
+      return (carteiraFiltro === "todas" || c === carteiraFiltro) && t.status === s;
+    }).length,
   }));
 
   return (
     <div className="space-y-4">
+      {/* Abas por Carteira */}
+      <div className="surface-panel p-2.5">
+        <div className="flex items-center gap-2 mb-2 px-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          <Briefcase className="h-3.5 w-3.5 text-primary" />
+          <span>Filtrar e Separar por Carteira</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setCarteiraFiltro("todas")}
+            className={cn(
+              "rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
+              carteiraFiltro === "todas"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            Todas as Carteiras ({daCompetencia.length})
+          </button>
+          {carteirasDisponiveis.map((cart) => {
+            const qtd = daCompetencia.filter((t) => (t.carteira || t.grupo || "Geral") === cart).length;
+            return (
+              <button
+                key={cart}
+                type="button"
+                onClick={() => setCarteiraFiltro(cart)}
+                className={cn(
+                  "rounded-lg px-3 py-1.5 text-xs transition-all",
+                  carteiraFiltro === cart
+                    ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                {cart} ({qtd})
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">
         {resumo.map((r) => (
           <button
@@ -123,6 +257,18 @@ export function FolhaFechamentoTable() {
             className="pl-8"
           />
         </div>
+        <select
+          value={carteiraFiltro}
+          onChange={(e) => setCarteiraFiltro(e.target.value)}
+          className="h-9 rounded-md border bg-background px-2 text-sm font-medium"
+        >
+          <option value="todas">Todas as Carteiras</option>
+          {carteirasDisponiveis.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
         <select
           value={competencia}
           onChange={(e) => setCompetencia(e.target.value)}
@@ -161,11 +307,12 @@ export function FolhaFechamentoTable() {
       </div>
 
       <div className="surface-panel overflow-x-auto">
-        <table className="w-full min-w-[1400px] text-sm">
+        <table className="w-full min-w-[1500px] text-sm">
           <thead>
             <tr className="border-b text-left text-[11px] uppercase tracking-wide text-muted-foreground">
               <th className="p-2 font-medium">Cód.</th>
               <th className="p-2 font-medium">Empresa</th>
+              <th className="p-2 font-medium">Carteira</th>
               <th className="p-2 font-medium">Grupo</th>
               {etapasChecklist.map((e) => (
                 <th key={e.key} className="p-2 text-center font-medium">
@@ -177,7 +324,7 @@ export function FolhaFechamentoTable() {
               <th className="p-2 text-center font-medium">Qtd. Empregados</th>
               <th className="p-2 font-medium">Progresso</th>
               <th className="p-2 font-medium">Status</th>
-              <th className="p-2 font-medium">Data</th>
+              <th className="p-2 font-medium">Data da Publicação</th>
               <th className="p-2 font-medium">Obs.</th>
             </tr>
           </thead>
@@ -185,10 +332,16 @@ export function FolhaFechamentoTable() {
             {filtradas.map((t) => {
               const p = progressoTarefa(t);
               const sugerir = obrigatoriasOk(t) && t.status !== "concluida";
+              const cartNome = t.carteira || t.grupo || "Geral";
               return (
                 <tr key={t.id} className="border-b last:border-0 align-middle hover:bg-muted/40">
                   <td className="p-2 font-semibold tabular-nums">{t.codigo}</td>
                   <td className="p-2 font-medium">{t.empresa}</td>
+                  <td className="p-2">
+                    <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                      {cartNome}
+                    </span>
+                  </td>
                   <td className="p-2 text-xs text-muted-foreground">{t.grupo}</td>
                   {etapasChecklist.map((e) => (
                     <td key={e.key} className="p-2">
@@ -245,15 +398,17 @@ export function FolhaFechamentoTable() {
                   <td className="p-2">
                     <select
                       value={t.status}
-                      onChange={(ev) =>
+                      onChange={(ev) => {
+                        const novaData =
+                          ev.target.value === "concluida" && !t.dataPublicacao
+                            ? new Date().toLocaleDateString("pt-BR")
+                            : t.dataPublicacao || t.dataConclusao;
                         update(t.id, {
                           status: ev.target.value as StatusFolha,
-                          dataConclusao:
-                            ev.target.value === "concluida" && !t.dataConclusao
-                              ? new Date().toLocaleDateString("pt-BR")
-                              : t.dataConclusao,
-                        })
-                      }
+                          dataConclusao: novaData,
+                          dataPublicacao: novaData,
+                        });
+                      }}
                       className={cn(
                         "h-7 rounded-full border px-2 text-[11px] font-medium",
                         statusFolhaMeta[t.status].className,
@@ -267,20 +422,34 @@ export function FolhaFechamentoTable() {
                     </select>
                     {sugerir && (
                       <button
-                        onClick={() =>
+                        onClick={() => {
+                          const dt = t.dataPublicacao || t.dataConclusao || new Date().toLocaleDateString("pt-BR");
                           update(t.id, {
                             status: "concluida",
-                            dataConclusao: t.dataConclusao || new Date().toLocaleDateString("pt-BR"),
-                          })
-                        }
+                            dataConclusao: dt,
+                            dataPublicacao: dt,
+                          });
+                        }}
                         className="mt-1 block text-[10px] font-medium text-success underline-offset-2 hover:underline"
                       >
                         Marcar como concluída
                       </button>
                     )}
                   </td>
-                  <td className="p-2 whitespace-nowrap text-xs tabular-nums text-muted-foreground">
-                    {t.dataConclusao || "—"}
+                  <td className="p-2 whitespace-nowrap text-xs">
+                    <input
+                      type="text"
+                      value={t.dataPublicacao ?? t.dataConclusao ?? ""}
+                      placeholder="DD/MM/AAAA"
+                      onChange={(ev) =>
+                        update(t.id, {
+                          dataPublicacao: ev.target.value,
+                          dataConclusao: ev.target.value,
+                        })
+                      }
+                      className="h-7 w-24 rounded-md border bg-background px-1.5 text-center text-xs tabular-nums transition-colors hover:border-primary focus:border-primary focus:outline-none"
+                      title="Clique para editar a Data da Publicação"
+                    />
                   </td>
                   <td className="p-2">
                     <Dialog>
@@ -300,7 +469,7 @@ export function FolhaFechamentoTable() {
                           rows={5}
                         />
                         <p className="text-xs text-muted-foreground">
-                          Responsável: {t.responsavel} · Progresso: {p.feitas}/{p.total} ({p.pct}%)
+                          Carteira: {cartNome} · Responsável: {t.responsavel} · Progresso: {p.feitas}/{p.total} ({p.pct}%)
                         </p>
                       </DialogContent>
                     </Dialog>
@@ -310,7 +479,7 @@ export function FolhaFechamentoTable() {
             })}
             {filtradas.length === 0 && (
               <tr>
-                <td colSpan={20} className="p-6 text-center text-sm text-muted-foreground">
+                <td colSpan={22} className="p-6 text-center text-sm text-muted-foreground">
                   Nenhuma folha encontrada para os filtros selecionados.
                 </td>
               </tr>

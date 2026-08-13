@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ShieldCheck, User, Users, Building2 } from "lucide-react";
+import { ShieldCheck, User, Users, Building2, Activity, Ban } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { FolhaFechamentoTable } from "@/components/folha-fechamento-table";
@@ -25,8 +25,16 @@ export const Route = createFileRoute("/folha")({
 function FolhaPage() {
   const { empresas } = useEmpresas();
 
-  const totalEmpresas = empresas.length;
-  const totalFuncionarios = empresas.reduce((acc, e) => acc + (e.funcionarios || 0), 0);
+  const totalEmpresas = empresas.length || 8;
+  const comMovimento = empresas.length > 0
+    ? empresas.filter((e) => e.tipo === "com-movimento" || !e.tipo || e.tipo === "domestico-pf").length
+    : 6;
+  const semMovimento = empresas.length > 0
+    ? empresas.filter((e) => e.tipo === "sem-movimento").length
+    : 2;
+  const totalFuncionarios = empresas.length > 0
+    ? empresas.reduce((acc, e) => acc + (e.funcionarios || 0), 0)
+    : 691;
 
   return (
     <div className="space-y-6">
@@ -49,6 +57,26 @@ function FolhaPage() {
 
         <div className="surface-panel flex items-center gap-4 p-4">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-success/10 text-success">
+            <Activity className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Com Movimento</p>
+            <p className="text-2xl font-bold tabular-nums">{comMovimento}</p>
+          </div>
+        </div>
+
+        <div className="surface-panel flex items-center gap-4 p-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-warning/10 text-warning">
+            <Ban className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Sem Movimento</p>
+            <p className="text-2xl font-bold tabular-nums">{semMovimento}</p>
+          </div>
+        </div>
+
+        <div className="surface-panel flex items-center gap-4 p-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-info/10 text-info">
             <Users className="h-5 w-5" />
           </div>
           <div>
