@@ -291,27 +291,14 @@ export function FolhaFechamentoTable() {
             </option>
           ))}
         </select>
-        <select
-          value={responsavel}
-          onChange={(e) => setResponsavel(e.target.value)}
-          className="h-9 rounded-md border bg-background px-2 text-sm"
-        >
-          <option value="todos">Todos os responsáveis</option>
-          {responsaveis.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
       </div>
 
       <div className="surface-panel overflow-x-auto">
-        <table className="w-full min-w-[1500px] text-sm">
+        <table className="w-full min-w-[1400px] text-sm">
           <thead>
             <tr className="border-b text-left text-[11px] uppercase tracking-wide text-muted-foreground">
               <th className="p-2 font-medium">Cód.</th>
               <th className="p-2 font-medium">Empresa</th>
-              
               
               {etapasChecklist.map((e) => (
                 <th key={e.key} className="p-2 text-center font-medium">
@@ -322,7 +309,6 @@ export function FolhaFechamentoTable() {
               <th className="p-2 text-center font-medium">Qtd. Aprendiz</th>
               <th className="p-2 text-center font-medium">Qtd. Empregados</th>
               <th className="p-2 font-medium">Progresso</th>
-              <th className="p-2 font-medium">Status</th>
               <th className="p-2 font-medium">Data da Publicação</th>
               <th className="p-2 font-medium">Obs.</th>
             </tr>
@@ -330,8 +316,6 @@ export function FolhaFechamentoTable() {
           <tbody>
             {filtradas.map((t) => {
               const p = progressoTarefa(t);
-              const sugerir = obrigatoriasOk(t) && t.status !== "concluida";
-              const cartNome = t.carteira || t.grupo || "Geral";
               return (
                 <tr key={t.id} className="border-b last:border-0 align-middle hover:bg-muted/40">
                   <td className="p-2 font-semibold tabular-nums">{t.codigo}</td>
@@ -389,47 +373,6 @@ export function FolhaFechamentoTable() {
                       </p>
                     </div>
                   </td>
-                  <td className="p-2">
-                    <select
-                      value={t.status}
-                      onChange={(ev) => {
-                        const novaData =
-                          ev.target.value === "concluida" && !t.dataPublicacao
-                            ? new Date().toLocaleDateString("pt-BR")
-                            : t.dataPublicacao || t.dataConclusao;
-                        update(t.id, {
-                          status: ev.target.value as StatusFolha,
-                          dataConclusao: novaData,
-                          dataPublicacao: novaData,
-                        });
-                      }}
-                      className={cn(
-                        "h-7 rounded-full border px-2 text-[11px] font-medium",
-                        statusFolhaMeta[t.status]?.className,
-                      )}
-                    >
-                      {statusFolhaOrder.map((s) => (
-                        <option key={s} value={s} className="bg-background text-foreground">
-                          {statusFolhaMeta[s]?.label ?? s}
-                        </option>
-                      ))}
-                    </select>
-                    {sugerir && (
-                      <button
-                        onClick={() => {
-                          const dt = t.dataPublicacao || t.dataConclusao || new Date().toLocaleDateString("pt-BR");
-                          update(t.id, {
-                            status: "concluida",
-                            dataConclusao: dt,
-                            dataPublicacao: dt,
-                          });
-                        }}
-                        className="mt-1 block text-[10px] font-medium text-success underline-offset-2 hover:underline"
-                      >
-                        Marcar como concluída
-                      </button>
-                    )}
-                  </td>
                   <td className="p-2 whitespace-nowrap text-xs">
                     <input
                       type="text"
@@ -463,7 +406,7 @@ export function FolhaFechamentoTable() {
                           rows={5}
                         />
                         <p className="text-xs text-muted-foreground">
-                          Carteira: {cartNome} · Responsável: {t.responsavel} · Progresso: {p.feitas}/{p.total} ({p.pct}%)
+                          Carteira: {t.carteira || t.grupo || "Geral"} · Responsável: {t.responsavel} · Progresso: {p.feitas}/{p.total} ({p.pct}%)
                         </p>
                       </DialogContent>
                     </Dialog>
@@ -473,7 +416,7 @@ export function FolhaFechamentoTable() {
             })}
             {filtradas.length === 0 && (
               <tr>
-                <td colSpan={22} className="p-6 text-center text-sm text-muted-foreground">
+                <td colSpan={19} className="p-6 text-center text-sm text-muted-foreground">
                   Nenhuma folha encontrada para os filtros selecionados.
                 </td>
               </tr>
