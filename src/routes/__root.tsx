@@ -20,6 +20,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthModal } from "@/components/auth-modal";
 import { useAuth } from "@/lib/auth-store";
 import { resetDados } from "@/lib/reset-dados";
+import { PortaoAcesso } from "@/components/portao-acesso";
 
 function NotFoundComponent() {
   return (
@@ -136,6 +137,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <PortaoAcesso>
       <SidebarProvider>
         <div className="flex min-h-screen w-full bg-background">
           <AppSidebar />
@@ -169,8 +171,9 @@ function RootComponent() {
             </main>
           </div>
         </div>
-        <Toaster />
       </SidebarProvider>
+      </PortaoAcesso>
+      <Toaster />
     </QueryClientProvider>
   );
 }
