@@ -53,9 +53,9 @@ export function NovoReajusteSindicatoDialog({ trigger }: { trigger?: React.React
       ...prev,
       empresa: nomeEmpresa,
       codigo: emp?.codigoDominio || emp?.id || prev.codigo,
-      carteira: emp?.carteira || prev.carteira,
-      analista: emp?.analista || prev.analista,
-      supervisor: emp?.supervisor || prev.supervisor,
+      carteira: emp?.carteira || prev.carteira || "",
+      analista: emp?.analista || prev.analista || "",
+      supervisor: emp?.supervisor || prev.supervisor || "",
     }));
   };
 
