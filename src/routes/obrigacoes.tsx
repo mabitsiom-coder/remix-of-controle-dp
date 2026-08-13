@@ -142,7 +142,7 @@ function Obrigacoes() {
           };
         }
         return {
-          id: `dctf-${cod}`,
+          id: `dctf-${emp.id || cod}`,
           ord: index + 1,
           codigo: cod,
           empresa: emp.nome || "Empresa Sem Nome",
@@ -189,7 +189,7 @@ function Obrigacoes() {
           };
         }
         return {
-          id: `deb-${cod}`,
+          id: `deb-${emp.id || cod}`,
           ord: index + 1,
           codigo: cod,
           empresa: emp.nome || "Empresa Sem Nome",
@@ -232,7 +232,7 @@ function Obrigacoes() {
           };
         }
         return {
-          id: `fgts-${cod}`,
+          id: `fgts-${emp.id || cod}`,
           codigo: cod,
           empresa: emp.nome || "Empresa Sem Nome",
           cnpj: emp.cnpj || "",
