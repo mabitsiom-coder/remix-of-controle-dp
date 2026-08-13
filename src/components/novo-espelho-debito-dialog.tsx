@@ -56,9 +56,9 @@ export function NovoEspelhoDebitoDialog({ trigger }: { trigger?: React.ReactNode
       empresa: nomeEmpresa,
       codigo: emp?.codigoDominio || emp?.id || prev.codigo,
       cnpjCpf: emp?.cnpj || prev.cnpjCpf,
-      carteira: emp?.carteira || prev.carteira ?? "",
-      analista: emp?.analista || prev.analista ?? "",
-      supervisor: emp?.supervisor || prev.supervisor ?? "",
+      carteira: (emp?.carteira || prev.carteira) ?? "",
+      analista: (emp?.analista || prev.analista) ?? "",
+      supervisor: (emp?.supervisor || prev.supervisor) ?? "",
     }));
   };
 
