@@ -128,7 +128,7 @@ export function iniciarSincronizacao() {
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "app_state" },
-      (payload) => {
+      (payload: { new?: unknown }) => {
         const linha = payload.new as { chave?: string; dados?: unknown; updated_by?: string | null };
         if (!linha?.chave || !Array.isArray(linha.dados)) return;
         if (linha.updated_by && linha.updated_by === usuarioId) return;
