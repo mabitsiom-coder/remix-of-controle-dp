@@ -6,6 +6,7 @@ import {
   Star, BookOpen, HeartHandshake, UserCog,
 } from "lucide-react";
 import { toast } from "sonner";
+import { PERFIS_GESTAO, isGestao } from "@/lib/permissoes";
 import { AcessoRestrito } from "@/components/acesso-restrito";
 import { useAuth } from "@/lib/auth-store";
 
@@ -364,7 +365,7 @@ function CadastrosPage() {
   };
 
   const { currentUser } = useAuth();
-  const podeAcessar = currentUser.perfil === "Administrador" || currentUser.perfil === "Coordenador";
+  const podeAcessar = isGestao(currentUser.perfil);
 
   const nomesCarteiras = (ids: string[]) =>
     ids.map((id) => carteiras.find((c) => c.id === id)?.nome ?? "").filter(Boolean).join(", ");
@@ -413,7 +414,7 @@ function CadastrosPage() {
   const countByCargo = (key: string) => membros.filter((m) => m.cargo === key).length;
 
   if (!podeAcessar) {
-    return <AcessoRestrito perfisPermitidos={["Administrador", "Coordenador"]} />;
+    return <AcessoRestrito perfisPermitidos={PERFIS_GESTAO} />;
   }
 
   return (
