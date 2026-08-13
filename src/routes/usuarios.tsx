@@ -337,7 +337,7 @@ function NovoUsuarioDialog() {
       toast.error("Preencha o nome e e-mail do usuário.");
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailLimpo)) {
+    if (!/^[^\s@]+@[^\s@]+$/.test(emailLimpo)) {
       toast.error("Informe um e-mail válido.");
       return;
     }
@@ -481,7 +481,7 @@ function EditarUsuarioDialog({ usuario }: { usuario: Usuario }) {
       toast.error("Preencha o nome e e-mail do usuário.");
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailLimpo)) {
+    if (!/^[^\s@]+@[^\s@]+$/.test(emailLimpo)) {
       toast.error("Informe um e-mail válido.");
       return;
     }

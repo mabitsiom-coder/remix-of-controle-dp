@@ -42,7 +42,7 @@ function normalizar(valor: string) {
 }
 
 function emailValido(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
+  return /^[^\s@]+@[^\s@]+$/.test(email.trim());
 }
 
 /** Pessoas dos Cadastros do Sistema, com perfil e departamento derivados automaticamente. */
