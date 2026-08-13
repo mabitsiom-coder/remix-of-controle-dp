@@ -42,8 +42,8 @@ import {
 } from "@/components/ui/select";
 import { NovaObrigacaoDialog } from "@/components/nova-obrigacao-dialog";
 import { NovaDCTFWebDialog } from "@/components/nova-dctfweb-dialog";
-import { NovaEspelhoDebitoDialog } from "@/components/novo-espelho-debito-dialog";
-import { NovaFGTSTrimestralDialog } from "@/components/novo-fgts-trimestral-dialog";
+import { NovoEspelhoDebitoDialog } from "@/components/novo-espelho-debito-dialog";
+import { NovoFGTSTrimestralDialog } from "@/components/novo-fgts-trimestral-dialog";
 import { useObrigacoes, deleteObrigacao } from "@/lib/obrigacoes-store";
 import { useRegDCTFWeb, deleteDCTFWeb, updateDCTFWeb, type RegDCTFWeb } from "@/lib/dctfweb-store";
 import {
@@ -372,9 +372,9 @@ function Obrigacoes() {
             {filtroTipo === "DCTFWeb" ? (
               <NovaDCTFWebDialog />
             ) : filtroTipo === "Espelho de Débito" ? (
-              <NovaEspelhoDebitoDialog />
+              <NovoEspelhoDebitoDialog />
             ) : filtroTipo === "Pesquisa FGTS Trimestral" ? (
-              <NovaFGTSTrimestralDialog />
+              <NovoFGTSTrimestralDialog />
             ) : (
               <NovaObrigacaoDialog />
             )}
