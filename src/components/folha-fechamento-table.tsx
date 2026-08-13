@@ -239,7 +239,7 @@ export function FolhaFechamentoTable() {
             )}
           >
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              {statusFolhaMeta[r.status].label}
+              {statusFolhaMeta[r.status]?.label ?? r.status}
             </p>
             <p className="mt-1 text-2xl font-semibold tabular-nums">{r.total}</p>
           </button>
@@ -287,7 +287,7 @@ export function FolhaFechamentoTable() {
           <option value="todos">Todos os status</option>
           {statusFolhaOrder.map((s) => (
             <option key={s} value={s}>
-              {statusFolhaMeta[s].label}
+              {statusFolhaMeta[s]?.label ?? s}
             </option>
           ))}
         </select>
@@ -405,12 +405,12 @@ export function FolhaFechamentoTable() {
                       }}
                       className={cn(
                         "h-7 rounded-full border px-2 text-[11px] font-medium",
-                        statusFolhaMeta[t.status].className,
+                        statusFolhaMeta[t.status]?.className,
                       )}
                     >
                       {statusFolhaOrder.map((s) => (
                         <option key={s} value={s} className="bg-background text-foreground">
-                          {statusFolhaMeta[s].label}
+                          {statusFolhaMeta[s]?.label ?? s}
                         </option>
                       ))}
                     </select>
