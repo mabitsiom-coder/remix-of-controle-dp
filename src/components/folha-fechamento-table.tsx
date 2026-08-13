@@ -312,7 +312,7 @@ export function FolhaFechamentoTable() {
               <th className="p-2 font-medium">Cód.</th>
               <th className="p-2 font-medium">Empresa</th>
               
-              <th className="p-2 font-medium">Grupo</th>
+              
               {etapasChecklist.map((e) => (
                 <th key={e.key} className="p-2 text-center font-medium">
                   <span className="block max-w-16 leading-tight">{e.label}</span>
@@ -336,7 +336,7 @@ export function FolhaFechamentoTable() {
                 <tr key={t.id} className="border-b last:border-0 align-middle hover:bg-muted/40">
                   <td className="p-2 font-semibold tabular-nums">{t.codigo}</td>
                   <td className="p-2 font-medium">{t.empresa}</td>
-                  <td className="p-2 text-xs text-muted-foreground">{t.grupo}</td>
+                  
                   {etapasChecklist.map((e) => (
                     <td key={e.key} className="p-2">
                       <EtapaCell value={t.etapas[e.key]} onChange={(v) => setEtapa(t, e.key, v)} />
