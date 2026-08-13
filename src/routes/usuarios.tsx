@@ -476,10 +476,19 @@ function EditarUsuarioDialog({ usuario }: { usuario: Usuario }) {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    const emailLimpo = email.trim().toLowerCase();
+    if (!nome.trim() || !emailLimpo) {
+      toast.error("Preencha o nome e e-mail do usuário.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailLimpo)) {
+      toast.error("Informe um e-mail válido.");
+      return;
+    }
     try {
       await updateUsuario(usuario.id, {
         nome: nome.trim(),
-        email: email.trim(),
+        email: emailLimpo,
         senha: senha.trim(),
         perfil,
         departamento: departamento.trim(),
