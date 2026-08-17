@@ -70,7 +70,13 @@ function EtapaCell({ value, onChange }: { value: EtapaStatus; onChange: (v: Etap
   );
 }
 
-export function FolhaFechamentoTable() {
+export function FolhaFechamentoTable({
+  carteiraFiltro: carteiraProp,
+  onCarteiraChange,
+}: {
+  carteiraFiltro?: string;
+  onCarteiraChange?: (v: string) => void;
+} = {}) {
   const { empresas } = useEmpresas();
   const { carteiras } = useCadastros();
 
@@ -84,10 +90,16 @@ export function FolhaFechamentoTable() {
   });
 
   const [competencia, setCompetencia] = useState(competencias[1]!);
-  const [carteiraFiltro, setCarteiraFiltro] = useState<string>("todas");
+  const [carteiraLocal, setCarteiraLocal] = useState<string>("todas");
+  const carteiraFiltro = carteiraProp ?? carteiraLocal;
+  const setCarteiraFiltro = (v: string) => {
+    setCarteiraLocal(v);
+    onCarteiraChange?.(v);
+  };
   const [statusFiltro, setStatusFiltro] = useState<"todos" | StatusFolha>("todos");
   const [responsavel, setResponsavel] = useState("todos");
   const [busca, setBusca] = useState("");
+
 
   const update = (id: string, patch: Partial<FolhaTarefa>) =>
     setTarefasSalvas((prev) => {
