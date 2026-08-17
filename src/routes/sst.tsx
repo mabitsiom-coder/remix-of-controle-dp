@@ -123,18 +123,22 @@ function SST() {
     [carteiras, empresas],
   );
 
-  // Estatísticas gerais
-  const totalEmpresas = registrosCompletos.length;
-  const sstNaMabit = registrosCompletos.filter((r) => r.sstNaMabit === "SIM").length;
-  const examesVencidos = registrosCompletos.filter((r) => r.examesVencidos === "SIM").length;
-  const comProgramas = registrosCompletos.filter((r) => r.possuiProgramas === "SIM").length;
+  // Estatísticas dinâmicas — calculadas DEPOIS de filtradosPorCarteira (definido abaixo)
+  // Serão referenciadas nos KPI cards usando filtradosPorCarteira
 
-  // Filtragem por busca e carteira
-  const filtrados = registrosCompletos.filter((r) => {
+  // Registros filtrados apenas por carteira (alimenta os KPI cards e o painel de info)
+  const filtradosPorCarteira = useMemo(
+    () => registrosCompletos.filter((r) => pertenceACarteira(r.carteira, carteiraFiltro)),
+    [registrosCompletos, carteiraFiltro],
+  );
+
+  // Filtragem combinada: carteira + busca (alimenta a tabela)
+  const filtrados = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    
-    // Se o usuário digitou uma busca, procurar globalmente em TODAS as carteiras
-    if (q) {
+    if (!q) return filtradosPorCarteira;
+
+    // Com busca ativa, pesquisar apenas dentro da carteira selecionada
+    return filtradosPorCarteira.filter((r) => {
       const cod = String(r.codigo ?? "").toLowerCase();
       const emp = String(r.empresa ?? "").toLowerCase();
       const ana = String(r.analista ?? "").toLowerCase();
@@ -150,39 +154,37 @@ function SST() {
         obsA.includes(q) ||
         obsC.includes(q)
       );
-    }
+    });
+  }, [filtradosPorCarteira, busca]);
 
-    // Se a busca estiver vazia, respeitar a aba de carteira selecionada
-    if (!pertenceACarteira(r.carteira, carteiraFiltro)) return false;
-    return true;
-  });
+  // KPI cards — sempre refletem a carteira ativa
+  const totalEmpresas = filtradosPorCarteira.length;
+  const sstNaMabit = filtradosPorCarteira.filter((r) => r.sstNaMabit === "SIM").length;
+  const examesVencidos = filtradosPorCarteira.filter((r) => r.examesVencidos === "SIM").length;
+  const comProgramas = filtradosPorCarteira.filter((r) => r.possuiProgramas === "SIM").length;
 
   // Dados da carteira selecionada em destaque
   const informacoesCarteira = useMemo(() => {
+    const supUnicos = Array.from(new Set(filtradosPorCarteira.map((r) => r.supervisor).filter(Boolean)));
+    const anaUnicos = Array.from(new Set(filtradosPorCarteira.map((r) => r.analista).filter(Boolean)));
+    const totalVidas = filtradosPorCarteira.reduce((sum, r) => sum + (r.qtdFunc || 0), 0);
     if (carteiraFiltro === "todas") {
-      const supUnicos = Array.from(new Set(registrosCompletos.map((r) => r.supervisor).filter(Boolean)));
-      const anaUnicos = Array.from(new Set(registrosCompletos.map((r) => r.analista).filter(Boolean)));
-      const totalVidas = registrosCompletos.reduce((sum, r) => sum + (r.qtdFunc || 0), 0);
       return {
         nome: "Todas as Carteiras",
         supervisores: supUnicos,
         analistas: anaUnicos,
-        totalEmpresas: registrosCompletos.length,
+        totalEmpresas: filtradosPorCarteira.length,
         totalVidas,
       };
     }
-    const daCarteira = registrosCompletos.filter((r) => pertenceACarteira(r.carteira, carteiraFiltro));
-    const supUnicos = Array.from(new Set(daCarteira.map((r) => r.supervisor).filter(Boolean)));
-    const anaUnicos = Array.from(new Set(daCarteira.map((r) => r.analista).filter(Boolean)));
-    const totalVidas = daCarteira.reduce((sum, r) => sum + (r.qtdFunc || 0), 0);
     return {
       nome: carteiraFiltro,
       supervisores: supUnicos.length > 0 ? supUnicos : ["ADRIELLE"],
       analistas: anaUnicos.length > 0 ? anaUnicos : ["SIMEANE"],
-      totalEmpresas: daCarteira.length,
+      totalEmpresas: filtradosPorCarteira.length,
       totalVidas,
     };
-  }, [carteiraFiltro, registrosCompletos]);
+  }, [carteiraFiltro, filtradosPorCarteira]);
 
   return (
     <div className="space-y-6">
