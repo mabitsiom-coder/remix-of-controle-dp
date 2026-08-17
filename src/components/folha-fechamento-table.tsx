@@ -70,13 +70,7 @@ function EtapaCell({ value, onChange }: { value: EtapaStatus; onChange: (v: Etap
   );
 }
 
-export function FolhaFechamentoTable({
-  carteiraFiltro: carteiraProp,
-  onCarteiraChange,
-}: {
-  carteiraFiltro?: string;
-  onCarteiraChange?: (v: string) => void;
-} = {}) {
+export function FolhaFechamentoTable() {
   const { empresas } = useEmpresas();
   const { carteiras } = useCadastros();
 
@@ -90,16 +84,10 @@ export function FolhaFechamentoTable({
   });
 
   const [competencia, setCompetencia] = useState(competencias[1]!);
-  const [carteiraLocal, setCarteiraLocal] = useState<string>("todas");
-  const carteiraFiltro = carteiraProp ?? carteiraLocal;
-  const setCarteiraFiltro = (v: string) => {
-    setCarteiraLocal(v);
-    onCarteiraChange?.(v);
-  };
+  const [carteiraFiltro, setCarteiraFiltro] = useState<string>("todas");
   const [statusFiltro, setStatusFiltro] = useState<"todos" | StatusFolha>("todos");
   const [responsavel, setResponsavel] = useState("todos");
   const [busca, setBusca] = useState("");
-
 
   const update = (id: string, patch: Partial<FolhaTarefa>) =>
     setTarefasSalvas((prev) => {
@@ -181,30 +169,26 @@ export function FolhaFechamentoTable({
     [daCompetencia],
   );
 
-  // Ordem lógica: Carteira → Competência → Status → Pesquisa
-  const daCarteira = useMemo(
-    () => daCompetencia.filter((t) => pertenceACarteira(t.carteira, carteiraFiltro)),
-    [daCompetencia, carteiraFiltro],
-  );
-
-  const filtradas = daCarteira.filter((t) => {
-    if (statusFiltro !== "todos" && t.status !== statusFiltro) return false;
-    if (responsavel !== "todos" && t.responsavel !== responsavel) return false;
+  const filtradas = daCompetencia.filter((t) => {
     const q = busca.trim().toLowerCase();
     if (q) {
       const cod = String(t.codigo ?? "").toLowerCase();
       const emp = String(t.empresa ?? "").toLowerCase();
       const resp = String(t.responsavel ?? "").toLowerCase();
-      if (!cod.includes(q) && !emp.includes(q) && !resp.includes(q)) return false;
+      return cod.includes(q) || emp.includes(q) || resp.includes(q);
     }
+    if (!pertenceACarteira(t.carteira, carteiraFiltro)) return false;
+    if (statusFiltro !== "todos" && t.status !== statusFiltro) return false;
+    if (responsavel !== "todos" && t.responsavel !== responsavel) return false;
     return true;
   });
 
   const resumo = statusFolhaOrder.map((s) => ({
     status: s,
-    total: daCarteira.filter((t) => t.status === s).length,
+    total: daCompetencia.filter((t) => {
+      return pertenceACarteira(t.carteira, carteiraFiltro) && t.status === s;
+    }).length,
   }));
-
 
   return (
     <div className="space-y-4">

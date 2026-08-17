@@ -1,13 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
 import { ShieldCheck, User, Users, Building2, Activity, Ban } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { FolhaFechamentoTable } from "@/components/folha-fechamento-table";
 import { etapasFolha, folhas } from "@/lib/mock-data";
 import { useEmpresas } from "@/lib/empresas-store";
-import { empresasDaCarteira } from "@/lib/carteiras-core";
-
 
 
 export const Route = createFileRoute("/folha")({
@@ -27,19 +24,17 @@ export const Route = createFileRoute("/folha")({
 
 function FolhaPage() {
   const { empresas } = useEmpresas();
-  const [carteiraFiltro, setCarteiraFiltro] = useState<string>("todas");
 
-  const empresasFiltradas = useMemo(
-    () => empresasDaCarteira(empresas, carteiraFiltro),
-    [empresas, carteiraFiltro],
-  );
-
-  const totalEmpresas = empresasFiltradas.length;
-  const comMovimento = empresasFiltradas.filter(
-    (e) => e.tipo === "com-movimento" || !e.tipo || e.tipo === "domestico-pf",
-  ).length;
-  const semMovimento = empresasFiltradas.filter((e) => e.tipo === "sem-movimento").length;
-  const totalFuncionarios = empresasFiltradas.reduce((acc, e) => acc + (e.funcionarios || 0), 0);
+  const totalEmpresas = empresas.length || 8;
+  const comMovimento = empresas.length > 0
+    ? empresas.filter((e) => e.tipo === "com-movimento" || !e.tipo || e.tipo === "domestico-pf").length
+    : 6;
+  const semMovimento = empresas.length > 0
+    ? empresas.filter((e) => e.tipo === "sem-movimento").length
+    : 2;
+  const totalFuncionarios = empresas.length > 0
+    ? empresas.reduce((acc, e) => acc + (e.funcionarios || 0), 0)
+    : 691;
 
   return (
     <div className="space-y-6">
@@ -47,7 +42,6 @@ function FolhaPage() {
         title="Folha de Pagamento"
         description="Tarefas de fechamento por empresa e competência · pipeline operacional"
       />
-
 
       {/* Cards de KPI */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -94,7 +88,7 @@ function FolhaPage() {
 
       <section className="space-y-4">
         <h2 className="text-sm font-semibold">Controle de fechamento por competência</h2>
-        <FolhaFechamentoTable carteiraFiltro={carteiraFiltro} onCarteiraChange={setCarteiraFiltro} />
+        <FolhaFechamentoTable />
       </section>
 
       <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
