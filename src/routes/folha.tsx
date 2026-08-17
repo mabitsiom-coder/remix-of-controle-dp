@@ -24,17 +24,19 @@ export const Route = createFileRoute("/folha")({
 
 function FolhaPage() {
   const { empresas } = useEmpresas();
+  const [carteiraFiltro, setCarteiraFiltro] = useState<string>("todas");
 
-  const totalEmpresas = empresas.length || 8;
-  const comMovimento = empresas.length > 0
-    ? empresas.filter((e) => e.tipo === "com-movimento" || !e.tipo || e.tipo === "domestico-pf").length
-    : 6;
-  const semMovimento = empresas.length > 0
-    ? empresas.filter((e) => e.tipo === "sem-movimento").length
-    : 2;
-  const totalFuncionarios = empresas.length > 0
-    ? empresas.reduce((acc, e) => acc + (e.funcionarios || 0), 0)
-    : 691;
+  const empresasFiltradas = useMemo(
+    () => empresasDaCarteira(empresas, carteiraFiltro),
+    [empresas, carteiraFiltro],
+  );
+
+  const totalEmpresas = empresasFiltradas.length;
+  const comMovimento = empresasFiltradas.filter(
+    (e) => e.tipo === "com-movimento" || !e.tipo || e.tipo === "domestico-pf",
+  ).length;
+  const semMovimento = empresasFiltradas.filter((e) => e.tipo === "sem-movimento").length;
+  const totalFuncionarios = empresasFiltradas.reduce((acc, e) => acc + (e.funcionarios || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -42,6 +44,7 @@ function FolhaPage() {
         title="Folha de Pagamento"
         description="Tarefas de fechamento por empresa e competência · pipeline operacional"
       />
+
 
       {/* Cards de KPI */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
