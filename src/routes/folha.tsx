@@ -94,7 +94,7 @@ function FolhaPage() {
 
       <section className="space-y-4">
         <h2 className="text-sm font-semibold">Controle de fechamento por competência</h2>
-        <FolhaFechamentoTable />
+        <FolhaFechamentoTable carteiraFiltro={carteiraFiltro} onCarteiraChange={setCarteiraFiltro} />
       </section>
 
       <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
