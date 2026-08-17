@@ -417,8 +417,8 @@ function SST() {
             </tr>
           </thead>
           <tbody>
-            {filtrados.map((r) => (
-              <tr key={r.id} className="border-b last:border-0 hover:bg-muted/40 align-middle">
+            {filtrados.map((r, idx) => (
+              <tr key={`${r.id}-${r.codigo}-${idx}`} className="border-b last:border-0 hover:bg-muted/40 align-middle">
                 <td className="p-2 font-semibold text-center tabular-nums border-r">{r.codigo || "—"}</td>
                 <td className="p-2 font-bold text-foreground border-r">{r.empresa}</td>
                 <td className="p-2 text-center font-bold border-r">
