@@ -320,7 +320,7 @@ export function FolhaFechamentoTable() {
             </tr>
           </thead>
           <tbody>
-            {filtradas.map((t) => {
+            {filtradas.map((t, idx) => {
               const p = progressoTarefa(t);
               return (
                 <tr key={t.id} className="border-b last:border-0 align-middle hover:bg-muted/40">
