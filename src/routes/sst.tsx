@@ -45,6 +45,7 @@ import {
   carteiraDaEmpresa,
   listarNomesCarteiras,
   pertenceACarteira,
+  normalizarCarteira,
 } from "@/lib/carteiras-core";
 import { cn } from "@/lib/utils";
 
@@ -127,10 +128,11 @@ function SST() {
   // Serão referenciadas nos KPI cards usando filtradosPorCarteira
 
   // Registros filtrados apenas por carteira (alimenta os KPI cards e o painel de info)
-  const filtradosPorCarteira = useMemo(
-    () => registrosCompletos.filter((r) => pertenceACarteira(r.carteira, carteiraFiltro)),
-    [registrosCompletos, carteiraFiltro],
-  );
+  const filtradosPorCarteira = useMemo(() => {
+    if (!carteiraFiltro || carteiraFiltro === "todas") return registrosCompletos;
+    const filtroNorm = normalizarCarteira(carteiraFiltro);
+    return registrosCompletos.filter((r) => normalizarCarteira(r.carteira) === filtroNorm);
+  }, [registrosCompletos, carteiraFiltro]);
 
   // Filtragem combinada: carteira + busca (alimenta a tabela)
   const filtrados = useMemo(() => {
@@ -325,15 +327,18 @@ function SST() {
             Todas as Carteiras ({registrosCompletos.length})
           </button>
           {carteirasDisponiveis.map((cart) => {
-            const qtd = registrosCompletos.filter((r) => pertenceACarteira(r.carteira, cart)).length;
+            // cart já vem normalizado de listarNomesCarteiras
+            const cartNorm = normalizarCarteira(cart);
+            const qtd = registrosCompletos.filter((r) => normalizarCarteira(r.carteira) === cartNorm).length;
+            const isAtiva = normalizarCarteira(carteiraFiltro) === cartNorm;
             return (
               <button
                 key={cart}
                 type="button"
-                onClick={() => setCarteiraFiltro(cart ?? "")}
+                onClick={() => setCarteiraFiltro(cart)}
                 className={cn(
                   "rounded-lg px-3 py-1.5 text-xs transition-all",
-                  carteiraFiltro === cart
+                  isAtiva
                     ? "bg-primary text-primary-foreground font-semibold shadow-sm"
                     : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
@@ -368,7 +373,7 @@ function SST() {
         </div>
         <select
           value={carteiraFiltro}
-          onChange={(e) => setCarteiraFiltro(e.target.value)}
+          onChange={(e) => setCarteiraFiltro(normalizarCarteira(e.target.value) === normalizarCarteira("todas") ? "todas" : normalizarCarteira(e.target.value))}
           className="h-9 rounded-md border bg-background px-2 text-sm font-medium"
         >
           <option value="todas">Todas as Carteiras</option>

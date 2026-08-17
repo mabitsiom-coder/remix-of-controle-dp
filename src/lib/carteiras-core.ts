@@ -11,10 +11,22 @@ import type { Empresa } from "./mock-data";
 export const SEM_CARTEIRA = "Sem Carteira";
 export const TODAS_CARTEIRAS = "todas";
 
-/** Normaliza o nome de uma carteira (usado em comparações). */
+/** Normaliza o nome de uma carteira para comparações robustas.
+ *  Trata variações de hífen (-, –, —, ‐), espaços ao redor deles
+ *  e múltiplos espaços consecutivos, de modo que:
+ *    "RH - G - 01", "RH-G-01", "RH – G – 01" → "RH-G-01"
+ */
 export function normalizarCarteira(valor?: string | null): string {
   const limpo = (valor ?? "").trim();
-  return limpo.length > 0 ? limpo : SEM_CARTEIRA;
+  if (!limpo) return SEM_CARTEIRA;
+  return limpo
+    // Normaliza qualquer variante de hífen/traço para hífen simples
+    .replace(/[\u2013\u2014\u2010\u2212]/g, "-")
+    // Remove espaços ao redor dos hífens
+    .replace(/\s*-\s*/g, "-")
+    // Colapsa múltiplos espaços
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /** Carteira oficial de uma empresa — sempre vem do cadastro da empresa. */
@@ -46,19 +58,21 @@ export function empresaDoRegistro(
   return undefined;
 }
 
-/** Lista de nomes de carteiras: cadastro de carteiras + carteiras usadas pelas empresas ativas. */
+/** Lista de nomes de carteiras: cadastro de carteiras + carteiras usadas pelas empresas ativas.
+ *  Os nomes são normalizados para garantir consistência nas abas de filtro. */
 export function listarNomesCarteiras(
   empresas: Empresa[],
   carteiras: { nome: string }[] = [],
 ): string[] {
   const set = new Set<string>();
   for (const c of carteiras) {
-    const nome = (c?.nome ?? "").trim();
-    if (nome) set.add(nome);
+    const nome = normalizarCarteira(c?.nome);
+    if (nome && nome !== SEM_CARTEIRA) set.add(nome);
   }
   for (const e of empresas) {
     if (!e) continue;
-    set.add(carteiraDaEmpresa(e));
+    const nome = carteiraDaEmpresa(e);
+    if (nome && nome !== SEM_CARTEIRA) set.add(nome);
   }
   return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
