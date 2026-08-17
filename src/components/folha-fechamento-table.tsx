@@ -170,16 +170,18 @@ export function FolhaFechamentoTable() {
   );
 
   const filtradas = daCompetencia.filter((t) => {
+    // O filtro de carteira é sempre aplicado primeiro
+    if (!pertenceACarteira(t.carteira, carteiraFiltro)) return false;
+    if (statusFiltro !== "todos" && t.status !== statusFiltro) return false;
+    if (responsavel !== "todos" && t.responsavel !== responsavel) return false;
+
     const q = busca.trim().toLowerCase();
     if (q) {
       const cod = String(t.codigo ?? "").toLowerCase();
       const emp = String(t.empresa ?? "").toLowerCase();
       const resp = String(t.responsavel ?? "").toLowerCase();
-      return cod.includes(q) || emp.includes(q) || resp.includes(q);
+      if (!cod.includes(q) && !emp.includes(q) && !resp.includes(q)) return false;
     }
-    if (!pertenceACarteira(t.carteira, carteiraFiltro)) return false;
-    if (statusFiltro !== "todos" && t.status !== statusFiltro) return false;
-    if (responsavel !== "todos" && t.responsavel !== responsavel) return false;
     return true;
   });
 
@@ -318,10 +320,10 @@ export function FolhaFechamentoTable() {
             </tr>
           </thead>
           <tbody>
-            {filtradas.map((t) => {
+            {filtradas.map((t, idx) => {
               const p = progressoTarefa(t);
               return (
-                <tr key={t.id} className="border-b last:border-0 align-middle hover:bg-muted/40">
+                <tr key={`${t.id}-${idx}`} className="border-b last:border-0 align-middle hover:bg-muted/40">
                   <td className="p-2 font-semibold tabular-nums">{t.codigo}</td>
                   <td className="p-2 font-medium">{t.empresa}</td>
                   
