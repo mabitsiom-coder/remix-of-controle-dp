@@ -92,7 +92,7 @@ function SST() {
           };
         }
         return {
-          id: `sst-${cod}`,
+          id: `sst-${emp.id || cod}`,
           codigo: cod,
           empresa: emp.nome,
           carteira: carteiraDaEmpresa(emp),
