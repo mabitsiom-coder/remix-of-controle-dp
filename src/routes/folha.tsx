@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { ShieldCheck, User, Users, Building2, Activity, Ban } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { FolhaFechamentoTable } from "@/components/folha-fechamento-table";
 import { etapasFolha, folhas } from "@/lib/mock-data";
 import { useEmpresas } from "@/lib/empresas-store";
+import { empresasDaCarteira } from "@/lib/carteiras-core";
+
 
 
 export const Route = createFileRoute("/folha")({
