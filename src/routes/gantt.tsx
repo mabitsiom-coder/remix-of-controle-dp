@@ -31,9 +31,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 import { reunioesIniciais, type Reuniao } from "@/lib/mock-data";
 import { NovaTarefaDialog } from "@/components/nova-tarefa-dialog";
 import { useTarefas } from "@/lib/tarefas-store";
+import type { Tarefa } from "@/lib/mock-data";
 import { barrasDoMes, diasNoMes, evolucaoDoMes, NOMES_MES } from "@/lib/rotinas-view";
 
 export const Route = createFileRoute("/gantt")({
