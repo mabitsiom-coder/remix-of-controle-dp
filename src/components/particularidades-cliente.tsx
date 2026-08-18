@@ -59,18 +59,18 @@ type LinhaParticularidade = {
   informacoes: string;
   folhaPagamento: string;
   observacao: string;
-  atualizadoPor?: string;
-  atualizadoEm?: string;
+  atualizadoPor?: string | undefined;
+  atualizadoEm?: string | undefined;
 };
 
 type EditableCellProps = {
   value: string;
-  placeholder?: string;
-  multiline?: boolean;
+  placeholder?: string | undefined;
+  multiline?: boolean | undefined;
   onSave: (val: string) => void;
-  saving?: boolean;
-  tooltipText?: string;
-  onExpand?: () => void;
+  saving?: boolean | undefined;
+  tooltipText?: string | undefined;
+  onExpand?: (() => void) | undefined;
 };
 
 function InlineEditableCell({

@@ -8,20 +8,20 @@ export type { Tarefa, PeriodicidadeRotina };
 
 export type NovaTarefaForm = {
   titulo: string;
-  empresa?: string;
-  responsavel?: string;
-  departamento?: string;
+  empresa?: string | undefined;
+  responsavel?: string | undefined;
+  departamento?: string | undefined;
   prioridade: Prioridade;
   prazo: string;
   horasPrevistas: number;
   status: "backlog" | "fazendo" | "revisao" | "concluida";
-  checklistItens?: string;
-  periodicidade?: PeriodicidadeRotina;
-  descricao?: string;
-  dataInicio?: string;
-  categoria?: string;
-  carteira?: string;
-  observacoes?: string;
+  checklistItens?: string | undefined;
+  periodicidade?: PeriodicidadeRotina | undefined;
+  descricao?: string | undefined;
+  dataInicio?: string | undefined;
+  categoria?: string | undefined;
+  carteira?: string | undefined;
+  observacoes?: string | undefined;
 };
 
 function getStored(): Tarefa[] {
