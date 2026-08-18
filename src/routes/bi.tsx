@@ -289,11 +289,21 @@ function BIGerencial() {
                   <SelectItem value={TODAS_CARTEIRAS} className="text-xs font-bold text-primary">
                     ★ Todas as Carteiras (Consolidado)
                   </SelectItem>
-                  {nomesCarteiras.map((c) => (
-                    <SelectItem key={c} value={c} className="text-xs font-medium">
-                      {c}
-                    </SelectItem>
-                  ))}
+                  {nomesCarteiras.map((c) => {
+                    const catObj = carteiras.find(
+                      (x) => normalizarCarteira(x.nome) === normalizarCarteira(c)
+                    );
+                    return (
+                      <SelectItem key={c} value={c} className="text-xs">
+                        <span className="font-semibold">{c}</span>
+                        {catObj?.categoria && (
+                          <span className="ml-2 rounded border bg-muted/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                            {catObj.categoria}
+                          </span>
+                        )}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -316,10 +326,10 @@ function BIGerencial() {
           </div>
 
           {/* Divisor Elegante */}
-          <div className="w-full max-w-4xl border-t border-border/60" />
+          <div className="w-full max-w-5xl border-t border-border/60" />
 
-          {/* Cards de Identificação dos Responsáveis e da Carteira em Destaque Central */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 w-full max-w-5xl">
+          {/* Cards de Identificação dos Responsáveis, Categoria e Carteira em Destaque Central */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 w-full max-w-6xl">
             {/* 1. Carteira Ativa */}
             <div className="flex flex-col items-center justify-center rounded-xl border bg-background/80 p-3.5 text-center shadow-2xs">
               <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1">
@@ -330,7 +340,20 @@ function BIGerencial() {
               </p>
             </div>
 
-            {/* 2. Analista Responsável */}
+            {/* 2. Categoria da Carteira Dinâmica */}
+            <div className="flex flex-col items-center justify-center rounded-xl border bg-background/80 p-3.5 text-center shadow-2xs">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1">
+                <Tag className="h-3.5 w-3.5 text-primary" /> Categoria / Segmento
+              </span>
+              <span
+                className="inline-flex items-center justify-center text-center rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-extrabold text-primary max-w-full truncate"
+                title={metricas.carteiraCategoria}
+              >
+                {metricas.carteiraCategoria}
+              </span>
+            </div>
+
+            {/* 3. Analista Responsável */}
             <div className="flex flex-col items-center justify-center rounded-xl border bg-background/80 p-3.5 text-center shadow-2xs">
               <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1">
                 <UserCheck className="h-3.5 w-3.5 text-primary" /> Analista(s) Responsável(is)
@@ -339,7 +362,7 @@ function BIGerencial() {
                 {metricas.analistas.map((a, i) => (
                   <span
                     key={i}
-                    className="inline-flex items-center rounded-lg bg-primary/10 px-2.5 py-0.5 text-xs font-extrabold text-primary"
+                    className="inline-flex items-center rounded-lg bg-muted px-2 py-0.5 text-xs font-extrabold text-foreground"
                   >
                     {a}
                   </span>
@@ -347,7 +370,7 @@ function BIGerencial() {
               </div>
             </div>
 
-            {/* 3. Supervisor Responsável */}
+            {/* 4. Supervisor Responsável */}
             <div className="flex flex-col items-center justify-center rounded-xl border bg-background/80 p-3.5 text-center shadow-2xs">
               <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1">
                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> Supervisor Responsável
@@ -357,7 +380,7 @@ function BIGerencial() {
               </p>
             </div>
 
-            {/* 4. Período / Competência */}
+            {/* 5. Período / Competência */}
             <div className="flex flex-col items-center justify-center rounded-xl border bg-background/80 p-3.5 text-center shadow-2xs">
               <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1">
                 <Calendar className="h-3.5 w-3.5 text-primary" /> Competência Ativa
@@ -746,6 +769,14 @@ function BIGerencial() {
                       Carteira <ArrowUpDown className="h-3 w-3" />
                     </div>
                   </th>
+                  <th
+                    className="p-3 text-left cursor-pointer hover:text-foreground"
+                    onClick={() => handleSort("carteiraCategoria")}
+                  >
+                    <div className="flex items-center gap-1">
+                      Categoria / Segmento <ArrowUpDown className="h-3 w-3" />
+                    </div>
+                  </th>
                   <th className="p-3 text-left">Analista(s)</th>
                   <th className="p-3 text-left">Supervisor</th>
                   <th
@@ -817,6 +848,14 @@ function BIGerencial() {
                     <td className="p-3 font-semibold text-foreground flex items-center gap-1.5">
                       <span className="h-2 w-2 rounded-full bg-primary/60" />
                       {r.carteiraNome}
+                    </td>
+                    <td className="p-3">
+                      <span
+                        className="inline-flex items-center rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 text-[10px] font-semibold text-primary max-w-[170px] truncate"
+                        title={r.carteiraCategoria}
+                      >
+                        {r.carteiraCategoria}
+                      </span>
                     </td>
                     <td className="p-3 text-muted-foreground max-w-[180px] truncate" title={r.analistasStr}>
                       {r.analistasStr}
