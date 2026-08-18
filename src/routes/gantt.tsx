@@ -386,21 +386,43 @@ function PainelGantt() {
                 ))}
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div
-                        className="absolute top-1/2 h-5 -translate-y-1/2 overflow-hidden rounded-md bg-muted"
-                        style={{
-                          left: `${((t.inicio - 1) / DIAS) * 100}%`,
-                          width: `${((t.fim - t.inicio + 1) / DIAS) * 100}%`,
-                        }}
-                      >
-                        <div className={`h-full ${corStatus[t.status]} opacity-40`} />
-                        <div
-                          className={`absolute inset-y-0 left-0 ${corStatus[t.status]}`}
-                          style={{ width: `${t.progresso}%` }}
-                        />
-                      </div>
-                    </TooltipTrigger>
+                    <DropdownMenu>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label={`Alterar status de ${t.titulo}`}
+                            className="absolute top-1/2 h-5 -translate-y-1/2 cursor-pointer overflow-hidden rounded-md bg-muted ring-offset-background transition hover:ring-2 hover:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            style={{
+                              left: `${((t.inicio - 1) / DIAS) * 100}%`,
+                              width: `${((t.fim - t.inicio + 1) / DIAS) * 100}%`,
+                            }}
+                          >
+                            <div className={`h-full ${corStatus[t.status]} opacity-40`} />
+                            <div
+                              className={`absolute inset-y-0 left-0 ${corStatus[t.status]}`}
+                              style={{ width: `${t.progresso}%` }}
+                            />
+                          </button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <DropdownMenuContent align="start" className="w-48">
+                        <DropdownMenuLabel className="truncate">{t.titulo}</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {STATUS_ROTINA.map((s) => {
+                          const atual = tarefas.find((x) => x.id === t.id)?.status;
+                          return (
+                            <DropdownMenuItem
+                              key={s.value}
+                              onSelect={() => mudarStatus(t.id, t.titulo, s.value)}
+                            >
+                              <span className="flex-1">{s.label}</span>
+                              {atual === s.value && <span className="text-xs text-primary">atual</span>}
+                            </DropdownMenuItem>
+                          );
+                        })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <TooltipContent>
                       <p className="text-xs font-medium">{t.titulo}</p>
                       <p className="text-xs text-muted-foreground">
