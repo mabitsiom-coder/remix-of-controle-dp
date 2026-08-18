@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import {
   Trash2,
   Search,
@@ -44,10 +44,86 @@ import { useCadastros } from "@/lib/cadastros-store";
 import {
   carteiraDaEmpresa,
   listarNomesCarteiras,
-  pertenceACarteira,
   normalizarCarteira,
 } from "@/lib/carteiras-core";
 import { cn } from "@/lib/utils";
+
+// ─── Componente de célula com select inline ───────────────────────────────────
+function InlineSelect({
+  value,
+  options,
+  onChange,
+  colorMap,
+}: {
+  value: string;
+  options: { label: string; value: string }[];
+  onChange: (v: string) => void;
+  colorMap?: Record<string, string>;
+}) {
+  const color = colorMap?.[value] ?? "";
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={cn(
+        "w-full rounded-md border border-transparent bg-transparent px-1 py-0.5 text-center text-xs font-bold",
+        "cursor-pointer transition-all hover:border-border hover:bg-muted/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40",
+        color,
+      )}
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+// ─── Componente de célula com input de texto inline ──────────────────────────
+function InlineInput({
+  value,
+  onBlurSave,
+  placeholder,
+  type = "text",
+}: {
+  value: string;
+  onBlurSave: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+}) {
+  const [local, setLocal] = useState(value);
+  const prevRef = useRef(value);
+
+  // Sync when row changes
+  if (prevRef.current !== value) {
+    prevRef.current = value;
+    setLocal(value);
+  }
+
+  return (
+    <input
+      type={type}
+      value={local}
+      onChange={(e) => setLocal(e.target.value)}
+      onBlur={() => {
+        if (local !== value) onBlurSave(local);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        if (e.key === "Escape") {
+          setLocal(value);
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      placeholder={placeholder ?? "—"}
+      className={cn(
+        "w-full min-w-[60px] rounded-md border border-transparent bg-transparent px-1 py-0.5 text-center text-xs",
+        "transition-all hover:border-border hover:bg-muted/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/40 focus:bg-background",
+      )}
+    />
+  );
+}
 
 export const Route = createFileRoute("/sst")({
   head: () => ({
@@ -417,52 +493,154 @@ function SST() {
             </tr>
           </thead>
           <tbody>
-            {filtrados.map((r, idx) => (
-              <tr key={`${r.id}-${r.codigo}-${idx}`} className="border-b last:border-0 hover:bg-muted/40 align-middle">
+            {filtrados.map((r, idx) => {
+              const save = (field: keyof RegSST, value: unknown) => {
+                updateRegSST(r.id, { [field]: value } as Partial<RegSST>);
+                toast.success(`Campo atualizado!`, { duration: 1500 });
+              };
+
+              return (
+              <tr key={`${r.id}-${r.codigo}-${idx}`} className="border-b last:border-0 hover:bg-muted/30 align-middle group">
                 <td className="p-2 font-semibold text-center tabular-nums border-r">{r.codigo || "—"}</td>
                 <td className="p-2 font-bold text-foreground border-r">{r.empresa}</td>
-                <td className="p-2 text-center font-bold border-r">
-                  <span className={r.sstNaMabit === "SIM" ? "text-success" : "text-destructive"}>
-                    {r.sstNaMabit}
-                  </span>
-                </td>
-                <td className="p-2 text-center tabular-nums border-r">{r.grauDeRisco || "—"}</td>
-                <td className="p-2 text-center tabular-nums border-r">{r.qtdFunc || 0}</td>
-                <td className="p-2 text-center tabular-nums border-r">{r.inicioContrato || "—"}</td>
-                <td className="p-2 text-center font-bold border-r">
-                  <span className={r.examesVencidos === "SIM" ? "text-destructive font-extrabold" : "text-foreground"}>
-                    {r.examesVencidos}
-                  </span>
-                </td>
-                <td className="p-2 text-center font-bold border-r">{r.possuiProgramas}</td>
-                
-                {/* Programas */}
-                <td className="p-2 text-center border-r tabular-nums">{r.ltcat || "—"}</td>
-                <td className="p-2 text-center border-r tabular-nums font-medium text-destructive">
-                  {r.pcmso || "—"}
-                </td>
-                <td className="p-2 text-center border-r tabular-nums">{r.pgr || "—"}</td>
-                <td className="p-2 text-center border-r tabular-nums">{r.ltip || "—"}</td>
-                <td className="p-2 text-center border-r tabular-nums">{r.dir || "—"}</td>
-                <td className="p-2 text-center border-r">
-                  {r.linkProgramas ? (
-                    <a
-                      href={r.linkProgramas}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 font-semibold text-primary underline-offset-2 hover:underline"
-                    >
-                      Acessar Programas <ExternalLink className="h-3 w-3" />
-                    </a>
-                  ) : (
-                    "—"
-                  )}
+
+                {/* SST na Mábit — Select inline */}
+                <td className="p-1 text-center border-r">
+                  <InlineSelect
+                    value={r.sstNaMabit || "SIM"}
+                    options={[
+                      { value: "SIM", label: "SIM" },
+                      { value: "NÃO", label: "NÃO" },
+                    ]}
+                    colorMap={{ SIM: "text-success", "NÃO": "text-destructive" }}
+                    onChange={(v) => save("sstNaMabit", v)}
+                  />
                 </td>
 
-                <td className="p-2 border-r font-medium text-destructive whitespace-nowrap">
-                  {r.obsAnalista || "—"}
+                {/* Grau de Risco — Select inline */}
+                <td className="p-1 text-center tabular-nums border-r">
+                  <InlineSelect
+                    value={r.grauDeRisco || "1"}
+                    options={[
+                      { value: "1", label: "1" },
+                      { value: "2", label: "2" },
+                      { value: "3", label: "3" },
+                      { value: "4", label: "4" },
+                    ]}
+                    colorMap={{
+                      "1": "text-success",
+                      "2": "text-warning",
+                      "3": "text-orange-500",
+                      "4": "text-destructive",
+                    }}
+                    onChange={(v) => save("grauDeRisco", v)}
+                  />
                 </td>
-                <td className="p-2 border-r font-medium whitespace-nowrap">{r.obsCS || "—"}</td>
+
+                {/* Qtd Func — input inline */}
+                <td className="p-1 text-center tabular-nums border-r">
+                  <InlineInput
+                    value={String(r.qtdFunc ?? 0)}
+                    type="number"
+                    onBlurSave={(v) => save("qtdFunc", Number(v))}
+                  />
+                </td>
+
+                {/* Início Contrato — input inline */}
+                <td className="p-1 text-center tabular-nums border-r">
+                  <InlineInput
+                    value={r.inicioContrato || ""}
+                    placeholder="—"
+                    onBlurSave={(v) => save("inicioContrato", v)}
+                  />
+                </td>
+
+                {/* Exames Vencidos — Select inline */}
+                <td className="p-1 text-center border-r">
+                  <InlineSelect
+                    value={r.examesVencidos || "NÃO"}
+                    options={[
+                      { value: "NÃO", label: "NÃO" },
+                      { value: "SIM", label: "SIM" },
+                      { value: "—", label: "—" },
+                    ]}
+                    colorMap={{ SIM: "text-destructive font-extrabold", "NÃO": "text-foreground" }}
+                    onChange={(v) => save("examesVencidos", v)}
+                  />
+                </td>
+
+                {/* Possui Programas — Select inline */}
+                <td className="p-1 text-center border-r">
+                  <InlineSelect
+                    value={r.possuiProgramas || "SIM"}
+                    options={[
+                      { value: "SIM", label: "SIM" },
+                      { value: "NÃO", label: "NÃO" },
+                      { value: "—", label: "—" },
+                    ]}
+                    colorMap={{ SIM: "text-success", "NÃO": "text-destructive" }}
+                    onChange={(v) => save("possuiProgramas", v)}
+                  />
+                </td>
+
+                {/* Programas — inputs inline */}
+                <td className="p-1 text-center border-r tabular-nums">
+                  <InlineInput value={r.ltcat || ""} placeholder="—" onBlurSave={(v) => save("ltcat", v)} />
+                </td>
+                <td className="p-1 text-center border-r tabular-nums">
+                  <InlineInput value={r.pcmso || ""} placeholder="—" onBlurSave={(v) => save("pcmso", v)} />
+                </td>
+                <td className="p-1 text-center border-r tabular-nums">
+                  <InlineInput value={r.pgr || ""} placeholder="—" onBlurSave={(v) => save("pgr", v)} />
+                </td>
+                <td className="p-1 text-center border-r tabular-nums">
+                  <InlineInput value={r.ltip || ""} placeholder="—" onBlurSave={(v) => save("ltip", v)} />
+                </td>
+                <td className="p-1 text-center border-r tabular-nums">
+                  <InlineInput value={r.dir || ""} placeholder="—" onBlurSave={(v) => save("dir", v)} />
+                </td>
+
+                {/* Link Programas */}
+                <td className="p-1 text-center border-r">
+                  <div className="flex items-center gap-1">
+                    <InlineInput
+                      value={r.linkProgramas || ""}
+                      placeholder="URL..."
+                      onBlurSave={(v) => save("linkProgramas", v)}
+                    />
+                    {r.linkProgramas && (
+                      <a
+                        href={r.linkProgramas}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 text-primary hover:text-primary/80"
+                        title="Abrir link"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                </td>
+
+                {/* Obs Analista — input inline */}
+                <td className="p-1 border-r">
+                  <InlineInput
+                    value={r.obsAnalista || ""}
+                    placeholder="Observação..."
+                    onBlurSave={(v) => save("obsAnalista", v)}
+                  />
+                </td>
+
+                {/* Obs CS — input inline */}
+                <td className="p-1 border-r">
+                  <InlineInput
+                    value={r.obsCS || ""}
+                    placeholder="Observação..."
+                    onBlurSave={(v) => save("obsCS", v)}
+                  />
+                </td>
+
+                {/* Ações */}
                 <td className="p-2 text-center">
                   <div className="flex items-center justify-center gap-1">
                     <Button
@@ -470,7 +648,7 @@ function SST() {
                       size="icon"
                       className="h-7 w-7 text-muted-foreground hover:text-primary"
                       onClick={() => setEditingItem(r)}
-                      title="Editar registro"
+                      title="Editar em modal completo"
                     >
                       <Edit2 className="h-3.5 w-3.5" />
                     </Button>
@@ -486,7 +664,8 @@ function SST() {
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
             {filtrados.length === 0 && (
               <tr>
                 <td colSpan={17} className="p-8 text-center text-sm text-muted-foreground">
