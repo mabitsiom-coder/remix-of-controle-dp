@@ -5,7 +5,7 @@
  * dos mesmos registros (`dp_control_tarefas_v1`). Nenhuma dessas telas deve
  * manter listas próprias de eventos ou de barras de cronograma.
  */
-import type { Tarefa } from "./mock-data";
+import type { Tarefa, PeriodicidadeRotina } from "./mock-data";
 
 export const CATEGORIAS_ROTINA = [
   "Folha",
@@ -20,6 +20,14 @@ export const CATEGORIAS_ROTINA = [
   "Interno",
 ] as const;
 
+export const PERIODICIDADES: PeriodicidadeRotina[] = [
+  "Diária",
+  "Mensal",
+  "Trimestral",
+  "Semestral",
+  "Anual",
+];
+
 export type StatusCronograma = "planejada" | "andamento" | "atrasada" | "concluida";
 
 export type EventoRotina = {
@@ -30,6 +38,8 @@ export type EventoRotina = {
   responsavel: string;
   categoria: string;
   status: StatusCronograma;
+  periodicidade?: PeriodicidadeRotina;
+  isRecorrente?: boolean;
   tarefa: Tarefa;
 };
 
@@ -42,6 +52,8 @@ export type BarraGantt = {
   fim: number;
   progresso: number;
   status: StatusCronograma;
+  periodicidade?: PeriodicidadeRotina;
+  isRecorrente?: boolean;
 };
 
 /** Aceita "YYYY-MM-DD" e "DD/MM/YYYY". */
@@ -98,54 +110,130 @@ export function dataDaRotina(t: Tarefa): Date | null {
   return parseData(t.prazo) ?? parseData(t.dataInicio);
 }
 
-export function eventosDoMes(tarefas: Tarefa[], ano: number, mes: number): EventoRotina[] {
-  const eventos: EventoRotina[] = [];
-  for (const t of tarefas) {
-    const d = dataDaRotina(t);
-    if (!d || d.getFullYear() !== ano || d.getMonth() !== mes) continue;
-    eventos.push({
-      id: t.id,
-      dia: d.getDate(),
-      titulo: t.titulo,
-      empresa: t.empresa || "Geral",
-      responsavel: t.responsavel || "—",
-      categoria: categoriaDaRotina(t),
-      status: statusCronograma(t),
-      tarefa: t,
-    });
-  }
-  return eventos.sort((a, b) => a.dia - b.dia);
-}
-
 export function diasNoMes(ano: number, mes: number): number {
   return new Date(ano, mes + 1, 0).getDate();
+}
+
+/**
+ * Calcula se a rotina deve ocorrer no mês/ano consultados com base na sua periodicidade e data-base.
+ * Retorna uma lista de dias do mês em que a rotina deve aparecer.
+ */
+export function calcularDiasOcorrencia(t: Tarefa, ano: number, mes: number): number[] {
+  const d = dataDaRotina(t);
+  if (!d) return [];
+
+  const anoBase = d.getFullYear();
+  const mesBase = d.getMonth();
+  const diaBase = d.getDate();
+  const totalDiasMes = diasNoMes(ano, mes);
+
+  // Sem periodicidade definida: apenas na data exata
+  if (!t.periodicidade) {
+    if (anoBase === ano && mesBase === mes) {
+      return [Math.min(diaBase, totalDiasMes)];
+    }
+    return [];
+  }
+
+  const diffMeses = (ano - anoBase) * 12 + (mes - mesBase);
+
+  // Não ocorre antes da data-base definida
+  if (diffMeses < 0) return [];
+
+  switch (t.periodicidade) {
+    case "Diária": {
+      const inicio = diffMeses === 0 ? diaBase : 1;
+      const dias: number[] = [];
+      for (let dia = inicio; dia <= totalDiasMes; dia++) {
+        dias.push(dia);
+      }
+      return dias;
+    }
+
+    case "Mensal": {
+      const dia = Math.min(diaBase, totalDiasMes);
+      return [dia];
+    }
+
+    case "Trimestral": {
+      if (diffMeses % 3 === 0) {
+        const dia = Math.min(diaBase, totalDiasMes);
+        return [dia];
+      }
+      return [];
+    }
+
+    case "Semestral": {
+      if (diffMeses % 6 === 0) {
+        const dia = Math.min(diaBase, totalDiasMes);
+        return [dia];
+      }
+      return [];
+    }
+
+    case "Anual": {
+      if (mes === mesBase) {
+        const dia = Math.min(diaBase, totalDiasMes);
+        return [dia];
+      }
+      return [];
+    }
+
+    default:
+      if (anoBase === ano && mesBase === mes) {
+        return [Math.min(diaBase, totalDiasMes)];
+      }
+      return [];
+  }
+}
+
+export function eventosDoMes(tarefas: Tarefa[], ano: number, mes: number): EventoRotina[] {
+  const eventos: EventoRotina[] = [];
+
+  for (const t of tarefas) {
+    const dias = calcularDiasOcorrencia(t, ano, mes);
+    for (const dia of dias) {
+      eventos.push({
+        id: `${t.id}-d${dia}`,
+        dia,
+        titulo: t.titulo,
+        empresa: t.empresa || "Geral",
+        responsavel: t.responsavel || "—",
+        categoria: categoriaDaRotina(t),
+        status: statusCronograma(t),
+        periodicidade: t.periodicidade,
+        isRecorrente: !!t.periodicidade,
+        tarefa: t,
+      });
+    }
+  }
+
+  return eventos.sort((a, b) => a.dia - b.dia);
 }
 
 /** Barras do Gantt para o mês: recortadas ao intervalo do mês. */
 export function barrasDoMes(tarefas: Tarefa[], ano: number, mes: number): BarraGantt[] {
   const total = diasNoMes(ano, mes);
-  const primeiro = new Date(ano, mes, 1).getTime();
-  const ultimo = new Date(ano, mes, total).getTime();
   const barras: BarraGantt[] = [];
 
   for (const t of tarefas) {
-    const fimData = dataDaRotina(t);
-    if (!fimData) continue;
-    const inicioData = parseData(t.dataInicio) ?? fimData;
-    if (fimData.getTime() < primeiro || inicioData.getTime() > ultimo) continue;
+    const dias = calcularDiasOcorrencia(t, ano, mes);
+    if (dias.length === 0) continue;
 
-    const inicio = inicioData.getTime() < primeiro ? 1 : inicioData.getDate();
-    const fim = fimData.getTime() > ultimo ? total : fimData.getDate();
+    const inicio = Math.min(...dias);
+    const fim = Math.max(...dias);
 
     barras.push({
       id: t.id,
       titulo: t.titulo,
       empresa: t.empresa || "Geral",
       responsavel: t.responsavel || "—",
-      inicio: Math.min(inicio, fim),
-      fim: Math.max(inicio, fim),
+      inicio: Math.max(1, inicio),
+      fim: Math.min(total, fim),
       progresso: progressoDaRotina(t),
       status: statusCronograma(t),
+      periodicidade: t.periodicidade,
+      isRecorrente: !!t.periodicidade,
     });
   }
 

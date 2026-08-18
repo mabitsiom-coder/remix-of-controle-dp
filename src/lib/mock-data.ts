@@ -119,18 +119,21 @@ export type Folha = {
 
 export const folhas: Folha[] = [];
 
+export type PeriodicidadeRotina = "Diária" | "Mensal" | "Trimestral" | "Semestral" | "Anual";
+
 export type Tarefa = {
   id: string;
   titulo: string;
-  empresa: string;
-  responsavel: string;
-  departamento: string;
+  empresa?: string;
+  responsavel?: string;
+  departamento?: string;
   prioridade: Prioridade;
   prazo: string;
   horasPrevistas: number;
   horasGastas: number;
   checklist: { item: string; feito: boolean; obrigatorio: boolean }[];
   status: "backlog" | "fazendo" | "revisao" | "concluida";
+  periodicidade?: PeriodicidadeRotina;
   /** Campos compartilhados entre Rotinas, Calendário e Painel de Gantt. */
   descricao?: string;
   carteira?: string;

@@ -1,24 +1,27 @@
 import { useState, useEffect } from "react";
-import type { Tarefa, Prioridade } from "./mock-data";
+import type { Tarefa, Prioridade, PeriodicidadeRotina } from "./mock-data";
 
 const STORAGE_KEY = "dp_control_tarefas_v1";
 const EVENT_NAME = "tarefas-updated";
 
-export type { Tarefa };
+export type { Tarefa, PeriodicidadeRotina };
 
 export type NovaTarefaForm = {
   titulo: string;
-  empresa: string;
-  responsavel: string;
-  departamento: string;
+  empresa?: string;
+  responsavel?: string;
+  departamento?: string;
   prioridade: Prioridade;
   prazo: string;
   horasPrevistas: number;
   status: "backlog" | "fazendo" | "revisao" | "concluida";
-  checklistItens: string;
+  checklistItens?: string;
+  periodicidade?: PeriodicidadeRotina;
+  descricao?: string;
   dataInicio?: string;
   categoria?: string;
   carteira?: string;
+  observacoes?: string;
 };
 
 function getStored(): Tarefa[] {
@@ -47,7 +50,7 @@ export function getStoredTarefas(): Tarefa[] {
 
 export function createTarefa(dados: NovaTarefaForm): Tarefa {
   const id = `tarefa-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
-  const checklist = dados.checklistItens
+  const checklist = (dados.checklistItens ?? "")
     .split("\n")
     .map((s) => s.trim())
     .filter(Boolean)
@@ -56,9 +59,9 @@ export function createTarefa(dados: NovaTarefaForm): Tarefa {
   const nova: Tarefa = {
     id,
     titulo: dados.titulo,
-    empresa: dados.empresa,
-    responsavel: dados.responsavel,
-    departamento: dados.departamento,
+    empresa: dados.empresa || "",
+    responsavel: dados.responsavel || "",
+    departamento: dados.departamento || "DP",
     prioridade: dados.prioridade,
     prazo: dados.prazo,
     horasPrevistas: Number(dados.horasPrevistas) || 1,
@@ -68,6 +71,9 @@ export function createTarefa(dados: NovaTarefaForm): Tarefa {
         ? checklist
         : [{ item: "Executar tarefa", feito: false, obrigatorio: true }],
     status: dados.status,
+    ...(dados.periodicidade ? { periodicidade: dados.periodicidade } : {}),
+    ...(dados.descricao ? { descricao: dados.descricao } : {}),
+    ...(dados.observacoes ? { observacoes: dados.observacoes } : {}),
     ...(dados.dataInicio ? { dataInicio: dados.dataInicio } : {}),
     ...(dados.categoria ? { categoria: dados.categoria } : {}),
     ...(dados.carteira ? { carteira: dados.carteira } : {}),
@@ -76,6 +82,45 @@ export function createTarefa(dados: NovaTarefaForm): Tarefa {
   const atuais = getStored();
   save([nova, ...atuais]);
   return nova;
+}
+
+export function createBatchTarefas(lista: NovaTarefaForm[]): Tarefa[] {
+  if (!lista || lista.length === 0) return [];
+  const novas: Tarefa[] = lista.map((dados, idx) => {
+    const id = `tarefa-${Date.now().toString(36)}-${idx}-${Math.random().toString(36).slice(2, 7)}`;
+    const checklist = (dados.checklistItens ?? "")
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((item) => ({ item, feito: false, obrigatorio: false }));
+
+    return {
+      id,
+      titulo: dados.titulo,
+      empresa: dados.empresa || "",
+      responsavel: dados.responsavel || "",
+      departamento: dados.departamento || "DP",
+      prioridade: dados.prioridade || "media",
+      prazo: dados.prazo,
+      horasPrevistas: Number(dados.horasPrevistas) || 1,
+      horasGastas: 0,
+      checklist:
+        checklist.length > 0
+          ? checklist
+          : [{ item: "Executar tarefa", feito: false, obrigatorio: true }],
+      status: dados.status || "backlog",
+      ...(dados.periodicidade ? { periodicidade: dados.periodicidade } : {}),
+      ...(dados.descricao ? { descricao: dados.descricao } : {}),
+      ...(dados.observacoes ? { observacoes: dados.observacoes } : {}),
+      ...(dados.dataInicio ? { dataInicio: dados.dataInicio } : {}),
+      ...(dados.categoria ? { categoria: dados.categoria } : {}),
+      ...(dados.carteira ? { carteira: dados.carteira } : {}),
+    };
+  });
+
+  const atuais = getStored();
+  save([...novas, ...atuais]);
+  return novas;
 }
 
 export function updateTarefa(
@@ -124,6 +169,7 @@ export function useTarefas() {
   return {
     tarefas,
     createTarefa,
+    createBatchTarefas,
     updateTarefa,
     deleteTarefa,
     toggleChecklistItem,

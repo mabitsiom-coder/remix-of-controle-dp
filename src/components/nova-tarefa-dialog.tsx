@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, ClipboardList, CheckCircle2 } from "lucide-react";
+import { Plus, ClipboardList, CheckCircle2, Repeat } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -23,15 +23,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createTarefa, type NovaTarefaForm } from "@/lib/tarefas-store";
-import { useEmpresas } from "@/lib/empresas-store";
-import { useCadastros } from "@/lib/cadastros-store";
-import { CATEGORIAS_ROTINA } from "@/lib/rotinas-view";
+import { CATEGORIAS_ROTINA, PERIODICIDADES } from "@/lib/rotinas-view";
+import type { PeriodicidadeRotina } from "@/lib/mock-data";
 
 const EMPTY_FORM: NovaTarefaForm = {
   titulo: "",
-  empresa: "",
-  responsavel: "",
-  departamento: "DP",
+  descricao: "",
+  periodicidade: "Mensal",
   prioridade: "media",
   prazo: "",
   horasPrevistas: 2,
@@ -39,6 +37,7 @@ const EMPTY_FORM: NovaTarefaForm = {
   checklistItens: "",
   dataInicio: "",
   categoria: "Folha",
+  observacoes: "",
 };
 
 export function NovaTarefaDialog({
@@ -56,9 +55,6 @@ export function NovaTarefaDialog({
     status: defaultStatus ?? "backlog",
   });
 
-  const { empresas } = useEmpresas();
-  const { analistas } = useCadastros();
-
   const set = (field: keyof NovaTarefaForm, value: string | number) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
@@ -67,6 +63,11 @@ export function NovaTarefaDialog({
 
     if (!form.titulo.trim()) {
       toast.error("Informe o título da rotina.");
+      return;
+    }
+
+    if (!form.prazo) {
+      toast.error("Informe a data-base / prazo da rotina.");
       return;
     }
 
@@ -94,14 +95,14 @@ export function NovaTarefaDialog({
 
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto sm:rounded-xl p-6">
         <DialogHeader>
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <ClipboardList className="h-5 w-5" />
             </div>
             <div>
-              <DialogTitle className="text-lg font-semibold">Nova Rotina</DialogTitle>
+              <DialogTitle className="text-lg font-semibold">Nova Rotina Geral</DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Preencha os dados da rotina. O checklist é opcional.
+                Cadastre rotinas compartilhadas com todos os analistas no calendário.
               </DialogDescription>
             </div>
           </div>
@@ -111,69 +112,95 @@ export function NovaTarefaDialog({
           {/* Título */}
           <div className="space-y-1.5">
             <Label htmlFor="nt-titulo" className="text-xs font-medium">
-              Título <span className="text-destructive">*</span>
+              Título da Rotina <span className="text-destructive">*</span>
             </Label>
             <Input
               id="nt-titulo"
-              placeholder="Ex: Processar folha de pagamento — Agosto/2026"
+              placeholder="Ex: Fechamento Mensal da Folha de Pagamento"
               value={form.titulo}
               onChange={(e) => set("titulo", e.target.value)}
               required
             />
           </div>
 
+          {/* Descrição resumida */}
+          <div className="space-y-1.5">
+            <Label htmlFor="nt-desc" className="text-xs font-medium">
+              Descrição (opcional)
+            </Label>
+            <Input
+              id="nt-desc"
+              placeholder="Ex: Realizar conferência e fechamento mensal das folhas"
+              value={form.descricao ?? ""}
+              onChange={(e) => set("descricao", e.target.value)}
+            />
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
-            {/* Empresa */}
+            {/* Periodicidade */}
             <div className="space-y-1.5">
-              <Label htmlFor="nt-empresa" className="text-xs font-medium">Empresa</Label>
-              <Select value={form.empresa} onValueChange={(v) => set("empresa", v)}>
-                <SelectTrigger id="nt-empresa">
-                  <SelectValue placeholder="Selecione ou deixe em branco" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="geral">— Geral (sem empresa) —</SelectItem>
-                  {empresas.map((e) => (
-                    <SelectItem key={e.id} value={e.nome}>
-                      {e.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Responsável */}
-            <div className="space-y-1.5">
-              <Label htmlFor="nt-responsavel" className="text-xs font-medium">Responsável</Label>
-              <Select value={form.responsavel} onValueChange={(v) => set("responsavel", v)}>
-                <SelectTrigger id="nt-responsavel">
-                  <SelectValue placeholder="Selecione o analista" />
-                </SelectTrigger>
-                <SelectContent>
-                  {analistas.map((a) => (
-                    <SelectItem key={a.id} value={a.nome}>
-                      {a.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Departamento */}
-            <div className="space-y-1.5">
-              <Label htmlFor="nt-depto" className="text-xs font-medium">Departamento</Label>
-              <Select value={form.departamento} onValueChange={(v) => set("departamento", v)}>
-                <SelectTrigger id="nt-depto">
+              <Label htmlFor="nt-periodicidade" className="text-xs font-medium flex items-center gap-1">
+                <Repeat className="h-3 w-3 text-primary" /> Periodicidade <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={form.periodicidade ?? "Mensal"}
+                onValueChange={(v) => set("periodicidade", v as PeriodicidadeRotina)}
+              >
+                <SelectTrigger id="nt-periodicidade">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="DP">DP (Departamento Pessoal)</SelectItem>
-                  <SelectItem value="Contábil">Contábil</SelectItem>
-                  <SelectItem value="Fiscal">Fiscal</SelectItem>
-                  <SelectItem value="SST">SST</SelectItem>
-                  <SelectItem value="Jurídico">Jurídico</SelectItem>
-                  <SelectItem value="Interno">Interno</SelectItem>
+                  {PERIODICIDADES.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {p}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Categoria */}
+            <div className="space-y-1.5">
+              <Label htmlFor="nt-categoria" className="text-xs font-medium">Categoria</Label>
+              <Select value={form.categoria ?? "Folha"} onValueChange={(v) => set("categoria", v)}>
+                <SelectTrigger id="nt-categoria">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIAS_ROTINA.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Data-base / Prazo */}
+            <div className="space-y-1.5">
+              <Label htmlFor="nt-prazo" className="text-xs font-medium">
+                Data-base / Prazo <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="nt-prazo"
+                type="date"
+                value={form.prazo}
+                onChange={(e) => set("prazo", e.target.value)}
+                required
+              />
+            </div>
+
+            {/* Data de início */}
+            <div className="space-y-1.5">
+              <Label htmlFor="nt-inicio" className="text-xs font-medium">
+                Data de Início (Gantt)
+              </Label>
+              <Input
+                id="nt-inicio"
+                type="date"
+                value={form.dataInicio ?? ""}
+                onChange={(e) => set("dataInicio", e.target.value)}
+              />
             </div>
 
             {/* Prioridade */}
@@ -214,47 +241,6 @@ export function NovaTarefaDialog({
               </Select>
             </div>
 
-            {/* Prazo */}
-            <div className="space-y-1.5">
-              <Label htmlFor="nt-prazo" className="text-xs font-medium">Prazo</Label>
-              <Input
-                id="nt-prazo"
-                type="date"
-                value={form.prazo}
-                onChange={(e) => set("prazo", e.target.value)}
-              />
-            </div>
-
-            {/* Data de início */}
-            <div className="space-y-1.5">
-              <Label htmlFor="nt-inicio" className="text-xs font-medium">
-                Data de Início (Calendário / Gantt)
-              </Label>
-              <Input
-                id="nt-inicio"
-                type="date"
-                value={form.dataInicio ?? ""}
-                onChange={(e) => set("dataInicio", e.target.value)}
-              />
-            </div>
-
-            {/* Categoria */}
-            <div className="space-y-1.5">
-              <Label htmlFor="nt-categoria" className="text-xs font-medium">Categoria</Label>
-              <Select value={form.categoria ?? "Folha"} onValueChange={(v) => set("categoria", v)}>
-                <SelectTrigger id="nt-categoria">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIAS_ROTINA.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* Horas previstas */}
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="nt-horas" className="text-xs font-medium">Horas Previstas</Label>
@@ -272,14 +258,28 @@ export function NovaTarefaDialog({
           {/* Checklist */}
           <div className="space-y-1.5">
             <Label htmlFor="nt-checklist" className="text-xs font-medium">
-              Checklist (um item por linha — opcional)
+              Checklist Operacional (um item por linha — opcional)
             </Label>
             <Textarea
               id="nt-checklist"
-              rows={4}
-              placeholder={"Ex:\nVerificar ponto eletrônico\nCalcular horas extras\nGerar FGTS"}
+              rows={3}
+              placeholder={"Ex:\nVerificar fechamento de ponto\nCalcular horas extras e adicionais\nGerar guias FGTS / DCTFWeb"}
               value={form.checklistItens}
               onChange={(e) => set("checklistItens", e.target.value)}
+            />
+          </div>
+
+          {/* Observações */}
+          <div className="space-y-1.5">
+            <Label htmlFor="nt-obs" className="text-xs font-medium">
+              Observações adicionais
+            </Label>
+            <Textarea
+              id="nt-obs"
+              rows={2}
+              placeholder="Instruções ou observações para a equipe"
+              value={form.observacoes ?? ""}
+              onChange={(e) => set("observacoes", e.target.value)}
             />
           </div>
 
