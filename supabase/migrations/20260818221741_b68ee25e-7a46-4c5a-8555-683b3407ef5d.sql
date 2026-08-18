@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.registra_historico_folha_etapa() FROM PUBLIC, anon, authenticated;
