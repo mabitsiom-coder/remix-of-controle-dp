@@ -35,6 +35,147 @@ export type Database = {
         }
         Relationships: []
       }
+      folha_competencia: {
+        Row: {
+          aprendizes: number
+          atualizado_por: string | null
+          carteira: string
+          codigo_dominio: string
+          competencia: string
+          created_at: string
+          data_publicacao: string
+          empregados: number
+          empresa_codigo: string
+          empresa_nome: string
+          id: string
+          observacoes: string
+          responsavel: string
+          status: string
+          tipo_ponto: string
+          updated_at: string
+        }
+        Insert: {
+          aprendizes?: number
+          atualizado_por?: string | null
+          carteira?: string
+          codigo_dominio?: string
+          competencia: string
+          created_at?: string
+          data_publicacao?: string
+          empregados?: number
+          empresa_codigo: string
+          empresa_nome?: string
+          id?: string
+          observacoes?: string
+          responsavel?: string
+          status?: string
+          tipo_ponto?: string
+          updated_at?: string
+        }
+        Update: {
+          aprendizes?: number
+          atualizado_por?: string | null
+          carteira?: string
+          codigo_dominio?: string
+          competencia?: string
+          created_at?: string
+          data_publicacao?: string
+          empregados?: number
+          empresa_codigo?: string
+          empresa_nome?: string
+          id?: string
+          observacoes?: string
+          responsavel?: string
+          status?: string
+          tipo_ponto?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      folha_etapas: {
+        Row: {
+          atualizado_por: string | null
+          codigo_dominio: string
+          competencia: string
+          concluida: boolean
+          created_at: string
+          data_conclusao: string | null
+          empresa_codigo: string
+          empresa_nome: string
+          etapa: string
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          atualizado_por?: string | null
+          codigo_dominio?: string
+          competencia: string
+          concluida?: boolean
+          created_at?: string
+          data_conclusao?: string | null
+          empresa_codigo: string
+          empresa_nome?: string
+          etapa: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          atualizado_por?: string | null
+          codigo_dominio?: string
+          competencia?: string
+          concluida?: boolean
+          created_at?: string
+          data_conclusao?: string | null
+          empresa_codigo?: string
+          empresa_nome?: string
+          etapa?: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      folha_etapas_historico: {
+        Row: {
+          alterado_em: string
+          alterado_por: string | null
+          codigo_dominio: string
+          competencia: string
+          empresa_codigo: string
+          empresa_nome: string
+          etapa: string
+          id: string
+          status_anterior: string | null
+          status_novo: string
+        }
+        Insert: {
+          alterado_em?: string
+          alterado_por?: string | null
+          codigo_dominio?: string
+          competencia: string
+          empresa_codigo: string
+          empresa_nome?: string
+          etapa: string
+          id?: string
+          status_anterior?: string | null
+          status_novo: string
+        }
+        Update: {
+          alterado_em?: string
+          alterado_por?: string | null
+          codigo_dominio?: string
+          competencia?: string
+          empresa_codigo?: string
+          empresa_nome?: string
+          etapa?: string
+          id?: string
+          status_anterior?: string | null
+          status_novo?: string
+        }
+        Relationships: []
+      }
       usuarios: {
         Row: {
           created_at: string

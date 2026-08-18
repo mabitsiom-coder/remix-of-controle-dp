@@ -1,4 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+
+import { useFolhaTarefasSalvas } from "@/lib/folha-db";
+import { useEmpresas } from "@/lib/empresas-store";
+import { competencias, statusFolhaMeta, statusFolhaOrder } from "@/lib/folha-fechamento";
+
 import {
   Area,
   AreaChart,
@@ -80,11 +86,35 @@ function Dashboard() {
     .sort((a, b) => b.diasSemRevisao - a.diasSemRevisao)
     .slice(0, 5);
 
+  const { folhaTarefas } = useFolhaTarefasSalvas();
+  const { empresas: empresasAtivas } = useEmpresas();
+  const [competencia, setCompetencia] = useState(competencias[1]!);
+
+  // Andamento real da Folha de Pagamento (fonte: registros salvos por competência)
+  const folhaDaCompetencia = folhaTarefas.filter((t) => t.competencia === competencia);
+  const resumoFolha = statusFolhaOrder.map((s) => {
+    const total = folhaDaCompetencia.filter((t) => t.status === s).length;
+    return {
+      status: s,
+      label: statusFolhaMeta[s]?.label ?? s,
+      total:
+        s === "nao_iniciada"
+          ? Math.max(0, empresasAtivas.length - folhaDaCompetencia.length) + total
+          : total,
+    };
+  });
+  const etapasConcluidas = folhaDaCompetencia.reduce(
+    (acc, t) => acc + Object.values(t.etapas).filter((v) => v === "concluido").length,
+    0,
+  );
+  const etapasPrevistas = Math.max(1, empresasAtivas.length * 11);
+  const pctFolha = Math.round((etapasConcluidas / etapasPrevistas) * 100);
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Dashboard Executivo"
-        description="Competência 07/2026 · atualizado agora há pouco"
+        description="Indicadores operacionais e andamento real da Folha de Pagamento"
       />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -92,6 +122,38 @@ function Dashboard() {
           <KpiCard key={k.label} {...k} />
         ))}
       </div>
+
+      <Panel
+        title="Andamento da Folha de Pagamento"
+        subtitle="Calculado sobre as marcações salvas na competência selecionada"
+      >
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <select
+            value={competencia}
+            onChange={(e) => setCompetencia(e.target.value)}
+            className="h-9 rounded-md border bg-background px-2 text-sm"
+          >
+            {competencias.map((c) => (
+              <option key={c} value={c}>
+                Competência {c}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-muted-foreground">
+            {etapasConcluidas} etapas concluídas de {etapasPrevistas} previstas · {pctFolha}%
+          </span>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">
+          {resumoFolha.map((r) => (
+            <div key={r.status} className="rounded-lg border p-3">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{r.label}</p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums">{r.total}</p>
+            </div>
+          ))}
+        </div>
+      </Panel>
+
+
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">

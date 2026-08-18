@@ -13,6 +13,8 @@ import {
   ChevronRight,
   Building2,
   BarChart2,
+  Loader2,
+  CloudCheck,
 } from "lucide-react";
 
 import {
@@ -20,18 +22,22 @@ import {
   etapaStatusMeta,
   etapaStatusOrder,
   etapasChecklist,
-  getStoredFolhaTarefas,
-  saveFolhaTarefas,
   progressoTarefa,
   statusFolhaMeta,
   statusFolhaOrder,
   tiposPonto,
-  calcularStatusAutomatico,
-  type EtapaKey,
   type EtapaStatus,
   type FolhaTarefa,
   type StatusFolha,
 } from "@/lib/folha-fechamento";
+import {
+  chaveFolha,
+  etapasVazias,
+  registroParaTarefa,
+  useFolhaCompetencia,
+  type RegistroFolha,
+} from "@/lib/folha-db";
+
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -257,97 +263,44 @@ export function FolhaFechamentoTable() {
   const { empresas } = useEmpresas();
   const { carteiras } = useCadastros();
 
-  const [tarefasSalvas, setTarefasSalvas] = useState<Record<string, FolhaTarefa>>(() => {
-    const list = getStoredFolhaTarefas();
-    const map: Record<string, FolhaTarefa> = {};
-    list.forEach((t) => {
-      map[t.id] = t;
-    });
-    return map;
-  });
-
   const [competencia, setCompetencia] = useState(competencias[1]!);
   const [carteiraFiltro, setCarteiraFiltro] = useState<string>("todas");
   const [statusFiltro, setStatusFiltro] = useState<"todos" | StatusFolha>("todos");
   const [responsavel, setResponsavel] = useState("todos");
   const [busca, setBusca] = useState("");
-  const [empresaSelecionada, setEmpresaSelecionada] = useState<FolhaTarefa | null>(null);
+  const [empresaSelecionadaId, setEmpresaSelecionadaId] = useState<string | null>(null);
 
-  // Atualiza tarefa, recalcula status automaticamente e persiste
-  const update = (id: string, patch: Partial<FolhaTarefa>) =>
-    setTarefasSalvas((prev) => {
-      const base = prev[id] || ({} as FolhaTarefa);
-      const merged = { ...base, ...patch } as FolhaTarefa;
+  const { registros, carregando, estado, erro, pendentes, setEtapa, setMeta } =
+    useFolhaCompetencia(competencia);
 
-      // Recalcula status automaticamente quando as etapas mudam
-      if (patch.etapas) {
-        merged.status = calcularStatusAutomatico(merged.etapas);
-      }
+  // Protege dados: aguarda a gravação antes de trocar de competência/carteira.
+  const trocarCompetencia = (valor: string) => {
+    if (pendentes > 0) return;
+    setCompetencia(valor);
+  };
 
-      const next = { ...prev, [id]: merged };
-      saveFolhaTarefas(Object.values(next));
-      return next;
+  // Linhas da competência: empresas ativas + andamento salvo no banco
+  const daCompetencia: RegistroFolha[] = useMemo(() => {
+    return empresas.map((emp) => {
+      const chave = chaveFolha(emp.id, competencia);
+      const salvo = registros.get(chave);
+      return {
+        empresaId: emp.id,
+        codigoDominio: emp.codigoDominio || emp.id,
+        empresaNome: emp.nome,
+        competencia,
+        carteira: carteiraDaEmpresa(emp),
+        responsavel: emp.analista || emp.responsavel || "Não atribuído",
+        status: salvo?.status ?? "nao_iniciada",
+        tipoPonto: salvo?.tipoPonto ?? "—",
+        aprendizes: salvo?.aprendizes ?? 0,
+        empregados: salvo?.empregados ?? emp.funcionarios ?? 0,
+        dataPublicacao: salvo?.dataPublicacao ?? "",
+        observacoes: salvo?.observacoes ?? "",
+        etapas: salvo?.etapas ?? etapasVazias(),
+      } satisfies RegistroFolha;
     });
-
-  const setEtapa = (t: FolhaTarefa, key: EtapaKey, v: EtapaStatus) =>
-    update(t.id, { etapas: { ...t.etapas, [key]: v } });
-
-  // Gera registros dinamicamente por competência
-  const daCompetencia: FolhaTarefa[] = useMemo(() => {
-    if (empresas.length > 0) {
-      return empresas.map((emp) => {
-        const id = `${emp.codigoDominio || emp.id}-${competencia}`;
-        const salvas = tarefasSalvas[id];
-        if (salvas) {
-          return {
-            ...salvas,
-            id,
-            codigo: emp.codigoDominio || emp.id,
-            empresa: emp.nome,
-            carteira: carteiraDaEmpresa(emp),
-            grupo: emp.grupoId || "Geral",
-            responsavel: emp.analista || emp.responsavel || "Não atribuído",
-            tipoEmpresa: emp.tipo || "com-movimento",
-            empregados: emp.funcionarios || 0,
-            competencia,
-          };
-        }
-        return {
-          id,
-          codigo: emp.codigoDominio || emp.id,
-          empresa: emp.nome,
-          grupo: emp.grupoId || "Geral",
-          carteira: carteiraDaEmpresa(emp),
-          tipoEmpresa: emp.tipo || "com-movimento",
-          competencia,
-          responsavel: emp.analista || emp.responsavel || "Não atribuído",
-          status: "nao_iniciada",
-          dataConclusao: "",
-          dataPublicacao: "",
-          observacoes: "",
-          tipoPonto: "—",
-          aprendizes: 0,
-          empregados: emp.funcionarios || 0,
-          etapas: {
-            aniversariantes: "pendente",
-            pontoConferencia: "pendente",
-            folhaAnalise: "pendente",
-            lancVariaveis: "pendente",
-            quinzena: "pendente",
-            sindicato: "pendente",
-            folhaPagamento: "pendente",
-            relatorioIRRF: "pendente",
-            emprestimoConsignado: "pendente",
-            relatorioLiquido: "pendente",
-            guiaFGTS: "pendente",
-          },
-        };
-      });
-    }
-
-    const list: FolhaTarefa[] = Object.values(tarefasSalvas);
-    return list.filter((t) => t.competencia === competencia);
-  }, [empresas, competencia, tarefasSalvas]);
+  }, [empresas, competencia, registros]);
 
   const carteirasDisponiveis = useMemo(
     () => listarNomesCarteiras(empresas, carteiras),
@@ -361,34 +314,47 @@ export function FolhaFechamentoTable() {
 
     const q = busca.trim().toLowerCase();
     if (q) {
-      const cod = String(t.codigo ?? "").toLowerCase();
-      const emp = String(t.empresa ?? "").toLowerCase();
+      const cod = String(t.codigoDominio ?? "").toLowerCase();
+      const emp = String(t.empresaNome ?? "").toLowerCase();
       const resp = String(t.responsavel ?? "").toLowerCase();
       if (!cod.includes(q) && !emp.includes(q) && !resp.includes(q)) return false;
     }
     return true;
   });
 
-  // Resumo dos cards — atualiza automaticamente quando as etapas mudam
+  // Cards de status — calculados a partir do que está salvo no banco
   const resumo = statusFolhaOrder.map((s) => ({
     status: s,
-    total: daCompetencia.filter((t) => {
-      return pertenceACarteira(t.carteira, carteiraFiltro) && t.status === s;
-    }).length,
+    total: daCompetencia.filter(
+      (t) => pertenceACarteira(t.carteira, carteiraFiltro) && t.status === s,
+    ).length,
   }));
+
+  const selecionada = empresaSelecionadaId
+    ? daCompetencia.find((t) => t.empresaId === empresaSelecionadaId)
+    : undefined;
+
+  const feedback =
+    estado === "salvando" || pendentes > 0
+      ? { label: "Salvando...", className: "text-warning border-warning/40 bg-warning/10" }
+      : estado === "erro"
+        ? { label: erro ? `Erro ao salvar: ${erro}` : "Erro ao salvar", className: "text-destructive border-destructive/40 bg-destructive/10" }
+        : estado === "salvo"
+          ? { label: "Salvo", className: "text-success border-success/40 bg-success/10" }
+          : null;
 
   return (
     <>
       {/* Overlay + painel lateral da empresa */}
-      {empresaSelecionada && (
+      {selecionada && (
         <>
           <div
             className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
-            onClick={() => setEmpresaSelecionada(null)}
+            onClick={() => setEmpresaSelecionadaId(null)}
           />
           <SituacaoEmpresaPanel
-            tarefa={empresaSelecionada}
-            onClose={() => setEmpresaSelecionada(null)}
+            tarefa={registroParaTarefa(selecionada)}
+            onClose={() => setEmpresaSelecionadaId(null)}
           />
         </>
       )}
@@ -434,7 +400,7 @@ export function FolhaFechamentoTable() {
           </div>
         </div>
 
-        {/* Cards de resumo de status — atualizam em tempo real com os checkboxes */}
+        {/* Cards de resumo de status — calculados sobre os dados salvos */}
         <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-5">
           {resumo.map((r) => (
             <button
@@ -478,8 +444,10 @@ export function FolhaFechamentoTable() {
           </select>
           <select
             value={competencia}
-            onChange={(e) => setCompetencia(e.target.value)}
-            className="h-9 rounded-md border bg-background px-2 text-sm"
+            onChange={(e) => trocarCompetencia(e.target.value)}
+            disabled={pendentes > 0}
+            title={pendentes > 0 ? "Aguarde a gravação das alterações" : undefined}
+            className="h-9 rounded-md border bg-background px-2 text-sm disabled:opacity-60"
           >
             {competencias.map((c) => (
               <option key={c} value={c}>
@@ -499,6 +467,23 @@ export function FolhaFechamentoTable() {
               </option>
             ))}
           </select>
+
+          {/* Feedback discreto do salvamento automático */}
+          <span
+            className={cn(
+              "flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[11px] font-semibold",
+              feedback?.className ?? "text-muted-foreground border-border bg-muted/40",
+            )}
+          >
+            {estado === "salvando" || pendentes > 0 ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : estado === "erro" ? (
+              <AlertTriangle className="h-3.5 w-3.5" />
+            ) : (
+              <CloudCheck className="h-3.5 w-3.5" />
+            )}
+            {feedback?.label ?? (carregando ? "Carregando andamento..." : "Salvamento automático")}
+          </span>
         </div>
 
         {/* Tabela principal */}
@@ -528,29 +513,34 @@ export function FolhaFechamentoTable() {
               </tr>
             </thead>
             <tbody>
-              {filtradas.map((t, idx) => {
-                const p = progressoTarefa(t);
-                // Estado mais recente (atualizado via checkbox)
-                const tAtual = tarefasSalvas[t.id] ? { ...t, ...tarefasSalvas[t.id] } : t;
+              {filtradas.map((t) => {
+                const p = progressoTarefa(registroParaTarefa(t));
 
                 return (
-                  <tr key={`${t.id}-${idx}`} className="border-b last:border-0 align-middle hover:bg-muted/40 group">
-                    <td className="p-2 font-semibold tabular-nums text-muted-foreground">{t.codigo}</td>
+                  <tr
+                    key={`${t.empresaId}-${t.competencia}`}
+                    className="border-b last:border-0 align-middle hover:bg-muted/40 group"
+                  >
+                    <td className="p-2 font-semibold tabular-nums text-muted-foreground">
+                      {t.codigoDominio}
+                    </td>
 
                     {/* Nome da empresa — clicável */}
                     <td className="p-2">
                       <button
                         type="button"
-                        onClick={() => setEmpresaSelecionada(tAtual)}
+                        onClick={() => setEmpresaSelecionadaId(t.empresaId)}
                         className="flex items-center gap-1 font-medium text-left text-foreground hover:text-primary transition-colors group/btn"
                         title="Ver situação das obrigações"
                       >
-                        <span className="underline-offset-2 group-hover/btn:underline">{t.empresa}</span>
+                        <span className="underline-offset-2 group-hover/btn:underline">
+                          {t.empresaNome}
+                        </span>
                         <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 group-hover/btn:opacity-100 transition-opacity" />
                       </button>
                     </td>
 
-                    {/* Checkboxes das etapas — salvam e recalculam status ao clicar */}
+                    {/* Checkboxes das etapas — salvos no banco por empresa + competência */}
                     {etapasChecklist.map((e) => (
                       <td key={e.key} className="p-2">
                         <EtapaCell
@@ -563,7 +553,7 @@ export function FolhaFechamentoTable() {
                     <td className="p-2 text-center">
                       <select
                         value={t.tipoPonto}
-                        onChange={(ev) => update(t.id, { tipoPonto: ev.target.value })}
+                        onChange={(ev) => setMeta(t, { tipoPonto: ev.target.value })}
                         className="h-7 rounded-md border bg-background px-1 text-xs"
                       >
                         {tiposPonto.map((tp) => (
@@ -578,7 +568,7 @@ export function FolhaFechamentoTable() {
                         type="number"
                         min={0}
                         value={t.aprendizes}
-                        onChange={(ev) => update(t.id, { aprendizes: Number(ev.target.value) })}
+                        onChange={(ev) => setMeta(t, { aprendizes: Number(ev.target.value) })}
                         className="h-7 w-14 rounded-md border bg-background px-1 text-center text-xs tabular-nums"
                       />
                     </td>
@@ -587,7 +577,7 @@ export function FolhaFechamentoTable() {
                         type="number"
                         min={0}
                         value={t.empregados}
-                        onChange={(ev) => update(t.id, { empregados: Number(ev.target.value) })}
+                        onChange={(ev) => setMeta(t, { empregados: Number(ev.target.value) })}
                         className="h-7 w-16 rounded-md border bg-background px-1 text-center text-xs tabular-nums"
                       />
                     </td>
@@ -610,14 +600,9 @@ export function FolhaFechamentoTable() {
                     <td className="p-2 whitespace-nowrap text-xs">
                       <input
                         type="text"
-                        value={t.dataPublicacao ?? t.dataConclusao ?? ""}
+                        value={t.dataPublicacao}
                         placeholder="DD/MM/AAAA"
-                        onChange={(ev) =>
-                          update(t.id, {
-                            dataPublicacao: ev.target.value,
-                            dataConclusao: ev.target.value,
-                          })
-                        }
+                        onChange={(ev) => setMeta(t, { dataPublicacao: ev.target.value })}
                         className="h-7 w-24 rounded-md border bg-background px-1.5 text-center text-xs tabular-nums transition-colors hover:border-primary focus:border-primary focus:outline-none"
                         title="Clique para editar a Data da Publicação"
                       />
@@ -630,17 +615,17 @@ export function FolhaFechamentoTable() {
                         <DialogContent>
                           <DialogHeader>
                             <DialogTitle>
-                              {t.codigo} — {t.empresa} · {t.competencia}
+                              {t.codigoDominio} — {t.empresaNome} · {t.competencia}
                             </DialogTitle>
                           </DialogHeader>
                           <Textarea
                             value={t.observacoes}
-                            onChange={(ev) => update(t.id, { observacoes: ev.target.value })}
+                            onChange={(ev) => setMeta(t, { observacoes: ev.target.value })}
                             placeholder="Observações da competência"
                             rows={5}
                           />
                           <p className="text-xs text-muted-foreground">
-                            Carteira: {t.carteira || t.grupo || "Geral"} · Responsável: {t.responsavel} · Progresso:{" "}
+                            Carteira: {t.carteira || "Geral"} · Responsável: {t.responsavel} · Progresso:{" "}
                             {p.feitas}/{p.total} ({p.pct}%)
                           </p>
                         </DialogContent>
@@ -652,7 +637,9 @@ export function FolhaFechamentoTable() {
               {filtradas.length === 0 && (
                 <tr>
                   <td colSpan={19} className="p-6 text-center text-sm text-muted-foreground">
-                    Nenhuma folha encontrada para os filtros selecionados.
+                    {carregando
+                      ? "Carregando andamento da competência..."
+                      : "Nenhuma folha encontrada para os filtros selecionados."}
                   </td>
                 </tr>
               )}
@@ -668,9 +655,13 @@ export function FolhaFechamentoTable() {
               {etapaStatusMeta[s].label}
             </span>
           ))}
-          <span>Clique na caixa para marcar/desmarcar · Status atualizado automaticamente.</span>
+          <span>
+            Cada marcação é salva no banco por empresa e competência · o status e os cards são
+            recalculados automaticamente.
+          </span>
         </div>
       </div>
     </>
   );
 }
+

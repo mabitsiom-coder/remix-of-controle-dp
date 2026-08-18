@@ -48,7 +48,7 @@ import {
 import { useEmpresas } from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
 import { useTarefas, type Tarefa } from "@/lib/tarefas-store";
-import { getStoredFolhaTarefas } from "@/lib/folha-fechamento";
+import { useFolhaTarefasSalvas } from "@/lib/folha-db";
 import { listarNomesCarteiras, TODAS_CARTEIRAS, normalizarCarteira } from "@/lib/carteiras-core";
 import {
   calcularMetricasCarteira,
@@ -129,7 +129,7 @@ function BIGerencial() {
   const { empresas } = useEmpresas();
   const { carteiras, analistas, supervisores } = useCadastros();
   const { tarefas } = useTarefas();
-  const folhaTarefas = useMemo(() => getStoredFolhaTarefas(), []);
+  const { folhaTarefas } = useFolhaTarefasSalvas();
 
   // Lista de carteiras ativas
   const nomesCarteiras = useMemo(() => {
