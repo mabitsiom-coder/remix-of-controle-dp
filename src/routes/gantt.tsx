@@ -95,9 +95,21 @@ function PainelGantt() {
   const OFFSET = new Date(ano, mes, 1).getDay();
 
   // Mesma fonte de dados de Rotinas e do Calendário
-  const { tarefas } = useTarefas();
+  const { tarefas, updateTarefa } = useTarefas();
   const tarefasGantt = useMemo(() => barrasDoMes(tarefas, ano, mes), [tarefas, ano, mes]);
   const evolucaoConclusao = useMemo(() => evolucaoDoMes(tarefas, ano, mes), [tarefas, ano, mes]);
+
+  const mudarStatus = (id: string, titulo: string, novo: Tarefa["status"]) => {
+    const patch: Partial<Tarefa> =
+      novo === "concluida"
+        ? { status: novo, progresso: 100 }
+        : novo === "backlog"
+          ? { status: novo, progresso: 0 }
+          : { status: novo };
+    const ok = updateTarefa(id, patch);
+    if (ok) toast.success(`"${titulo}" → ${STATUS_ROTINA.find((s) => s.value === novo)?.label}`);
+    else toast.error("Não foi possível atualizar a rotina.");
+  };
 
   const kpis = useMemo(() => {
     const c = (st: string) => tarefasGantt.filter((t) => t.status === st).length;
