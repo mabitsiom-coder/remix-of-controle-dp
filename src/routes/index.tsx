@@ -1,4 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+
+import { useFolhaTarefasSalvas } from "@/lib/folha-db";
+import { useEmpresas } from "@/lib/empresas-store";
+import { competencias, statusFolhaMeta, statusFolhaOrder } from "@/lib/folha-fechamento";
+
 import {
   Area,
   AreaChart,
