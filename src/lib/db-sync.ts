@@ -24,6 +24,12 @@ const MAPA: Entrada[] = [
     storage: "dp_control_particularidades_v1",
     evento: "particularidades-updated",
   },
+  { chave: "reunioes", storage: "dp_control_reunioes_v1", evento: "reunioes-updated" },
+  {
+    chave: "folha_tarefas",
+    storage: "dp_control_folha_tarefas_v3",
+    evento: "folha-tarefas-updated",
+  },
 ];
 
 const snapshot = new Map<string, string>();

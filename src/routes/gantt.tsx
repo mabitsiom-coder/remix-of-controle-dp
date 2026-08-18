@@ -40,7 +40,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { reunioesIniciais, type Reuniao } from "@/lib/mock-data";
+import { type Reuniao } from "@/lib/mock-data";
+import { useReunioes } from "@/lib/reunioes-store";
 import { NovaTarefaDialog } from "@/components/nova-tarefa-dialog";
 import { useTarefas } from "@/lib/tarefas-store";
 import type { Tarefa } from "@/lib/mock-data";
@@ -91,7 +92,7 @@ const STATUS_ROTINA: { value: Tarefa["status"]; label: string }[] = [
 ];
 
 function PainelGantt() {
-  const [reunioes, setReunioes] = useState<Reuniao[]>(reunioesIniciais);
+  const { reunioes, addReuniao } = useReunioes();
   const [aberto, setAberto] = useState(false);
   const [form, setForm] = useState({ titulo: "", dia: "1", hora: "09:00", participantes: "" });
 
@@ -125,16 +126,14 @@ function PainelGantt() {
 
   const adicionarReuniao = () => {
     if (!form.titulo.trim()) return;
-    setReunioes((r) => [
-      ...r,
-      {
-        id: `r${Date.now()}`,
-        titulo: form.titulo.trim(),
-        dia: Math.min(DIAS, Math.max(1, Number(form.dia) || 1)),
-        hora: form.hora,
-        participantes: form.participantes.trim() || "Equipe DP",
-      },
-    ]);
+    const nova: Reuniao = {
+      id: `r${Date.now()}`,
+      titulo: form.titulo.trim(),
+      dia: Math.min(DIAS, Math.max(1, Number(form.dia) || 1)),
+      hora: form.hora,
+      participantes: form.participantes.trim() || "Equipe DP",
+    };
+    addReuniao(nova);
     setForm({ titulo: "", dia: "1", hora: "09:00", participantes: "" });
     setAberto(false);
   };
