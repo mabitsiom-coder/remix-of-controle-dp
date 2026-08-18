@@ -83,6 +83,13 @@ const rotuloStatus: Record<string, string> = {
   concluida: "Concluída",
 };
 
+const STATUS_ROTINA: { value: Tarefa["status"]; label: string }[] = [
+  { value: "backlog", label: "Backlog" },
+  { value: "fazendo", label: "Em andamento" },
+  { value: "revisao", label: "Em revisão" },
+  { value: "concluida", label: "Concluída" },
+];
+
 function PainelGantt() {
   const [reunioes, setReunioes] = useState<Reuniao[]>(reunioesIniciais);
   const [aberto, setAberto] = useState(false);
