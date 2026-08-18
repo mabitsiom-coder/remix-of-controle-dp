@@ -124,23 +124,23 @@ export type PeriodicidadeRotina = "Diária" | "Mensal" | "Trimestral" | "Semestr
 export type Tarefa = {
   id: string;
   titulo: string;
-  empresa?: string;
-  responsavel?: string;
-  departamento?: string;
+  empresa?: string | undefined;
+  responsavel?: string | undefined;
+  departamento?: string | undefined;
   prioridade: Prioridade;
   prazo: string;
   horasPrevistas: number;
   horasGastas: number;
   checklist: { item: string; feito: boolean; obrigatorio: boolean }[];
   status: "backlog" | "fazendo" | "revisao" | "concluida";
-  periodicidade?: PeriodicidadeRotina;
+  periodicidade?: PeriodicidadeRotina | undefined;
   /** Campos compartilhados entre Rotinas, Calendário e Painel de Gantt. */
-  descricao?: string;
-  carteira?: string;
-  dataInicio?: string;
-  categoria?: string;
-  progresso?: number;
-  observacoes?: string;
+  descricao?: string | undefined;
+  carteira?: string | undefined;
+  dataInicio?: string | undefined;
+  categoria?: string | undefined;
+  progresso?: number | undefined;
+  observacoes?: string | undefined;
 };
 
 export const tarefas: Tarefa[] = [];

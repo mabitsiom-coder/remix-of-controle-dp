@@ -34,12 +34,12 @@ type LinhaPlanilha = {
   rotina: string;
   descricao: string;
   periodicidadeBruta: string;
-  periodicidadeValida?: PeriodicidadeRotina;
+  periodicidadeValida?: PeriodicidadeRotina | undefined;
   dataBaseBruta: string;
-  dataBaseFormatada?: string; // YYYY-MM-DD
+  dataBaseFormatada?: string | undefined; // YYYY-MM-DD
   observacao: string;
   status: "valido" | "erro" | "duplicado";
-  motivo?: string;
+  motivo?: string | undefined;
 };
 
 // Normalizador tolerante para periodicidade
@@ -189,7 +189,7 @@ export function ImportarRotinasDialog({
     try {
       const buffer = await file.arrayBuffer();
       const wb = XLSX.read(buffer, { type: "array", cellDates: true });
-      const firstSheet = wb.Sheets[wb.SheetNames[0]];
+      const firstSheet = wb.Sheets[wb.SheetNames[0] ?? ""];
 
       if (!firstSheet) {
         toast.error("A planilha está vazia.");

@@ -31,9 +31,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 import { reunioesIniciais, type Reuniao } from "@/lib/mock-data";
 import { NovaTarefaDialog } from "@/components/nova-tarefa-dialog";
 import { useTarefas } from "@/lib/tarefas-store";
+import type { Tarefa } from "@/lib/mock-data";
 import { barrasDoMes, diasNoMes, evolucaoDoMes, NOMES_MES } from "@/lib/rotinas-view";
 
 export const Route = createFileRoute("/gantt")({
@@ -73,6 +83,13 @@ const rotuloStatus: Record<string, string> = {
   concluida: "Concluída",
 };
 
+const STATUS_ROTINA: { value: Tarefa["status"]; label: string }[] = [
+  { value: "backlog", label: "Backlog" },
+  { value: "fazendo", label: "Em andamento" },
+  { value: "revisao", label: "Em revisão" },
+  { value: "concluida", label: "Concluída" },
+];
+
 function PainelGantt() {
   const [reunioes, setReunioes] = useState<Reuniao[]>(reunioesIniciais);
   const [aberto, setAberto] = useState(false);
@@ -85,9 +102,21 @@ function PainelGantt() {
   const OFFSET = new Date(ano, mes, 1).getDay();
 
   // Mesma fonte de dados de Rotinas e do Calendário
-  const { tarefas } = useTarefas();
+  const { tarefas, updateTarefa } = useTarefas();
   const tarefasGantt = useMemo(() => barrasDoMes(tarefas, ano, mes), [tarefas, ano, mes]);
   const evolucaoConclusao = useMemo(() => evolucaoDoMes(tarefas, ano, mes), [tarefas, ano, mes]);
+
+  const mudarStatus = (id: string, titulo: string, novo: Tarefa["status"]) => {
+    const patch: Partial<Tarefa> =
+      novo === "concluida"
+        ? { status: novo, progresso: 100 }
+        : novo === "backlog"
+          ? { status: novo, progresso: 0 }
+          : { status: novo };
+    const ok = updateTarefa(id, patch);
+    if (ok) toast.success(`"${titulo}" → ${STATUS_ROTINA.find((s) => s.value === novo)?.label}`);
+    else toast.error("Não foi possível atualizar a rotina.");
+  };
 
   const kpis = useMemo(() => {
     const c = (st: string) => tarefasGantt.filter((t) => t.status === st).length;
@@ -332,17 +361,34 @@ function PainelGantt() {
           {tarefasGantt.map((t) => (
             <div key={t.id} className="flex border-b last:border-0 hover:bg-muted/30">
               <div className="w-72 shrink-0 border-r p-2.5">
-                <div className="flex items-start gap-2">
-                  <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${corStatus[t.status]}`} />
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-medium" title={t.titulo}>
-                      {t.titulo}
-                    </p>
-                    <p className="truncate text-[11px] text-muted-foreground">
-                      {t.empresa} · {t.responsavel}
-                    </p>
-                  </div>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button type="button" className="flex w-full items-start gap-2 text-left">
+                      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${corStatus[t.status]}`} />
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-medium" title={t.titulo}>
+                          {t.titulo}
+                        </p>
+                        <p className="truncate text-[11px] text-muted-foreground">
+                          {t.empresa} · {t.responsavel}
+                        </p>
+                      </div>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48">
+                    <DropdownMenuLabel className="truncate">Alterar status</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {STATUS_ROTINA.map((s) => {
+                      const atual = tarefas.find((x) => x.id === t.id)?.status;
+                      return (
+                        <DropdownMenuItem key={s.value} onSelect={() => mudarStatus(t.id, t.titulo, s.value)}>
+                          <span className="flex-1">{s.label}</span>
+                          {atual === s.value && <span className="text-xs text-primary">atual</span>}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               <div className="relative flex flex-1">
                 {Array.from({ length: DIAS }, (_, i) => i + 1).map((dia) => (
@@ -357,21 +403,43 @@ function PainelGantt() {
                 ))}
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div
-                        className="absolute top-1/2 h-5 -translate-y-1/2 overflow-hidden rounded-md bg-muted"
-                        style={{
-                          left: `${((t.inicio - 1) / DIAS) * 100}%`,
-                          width: `${((t.fim - t.inicio + 1) / DIAS) * 100}%`,
-                        }}
-                      >
-                        <div className={`h-full ${corStatus[t.status]} opacity-40`} />
-                        <div
-                          className={`absolute inset-y-0 left-0 ${corStatus[t.status]}`}
-                          style={{ width: `${t.progresso}%` }}
-                        />
-                      </div>
-                    </TooltipTrigger>
+                    <DropdownMenu>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label={`Alterar status de ${t.titulo}`}
+                            className="absolute top-1/2 h-5 -translate-y-1/2 cursor-pointer overflow-hidden rounded-md bg-muted ring-offset-background transition hover:ring-2 hover:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            style={{
+                              left: `${((t.inicio - 1) / DIAS) * 100}%`,
+                              width: `${((t.fim - t.inicio + 1) / DIAS) * 100}%`,
+                            }}
+                          >
+                            <div className={`h-full ${corStatus[t.status]} opacity-40`} />
+                            <div
+                              className={`absolute inset-y-0 left-0 ${corStatus[t.status]}`}
+                              style={{ width: `${t.progresso}%` }}
+                            />
+                          </button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <DropdownMenuContent align="start" className="w-48">
+                        <DropdownMenuLabel className="truncate">{t.titulo}</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {STATUS_ROTINA.map((s) => {
+                          const atual = tarefas.find((x) => x.id === t.id)?.status;
+                          return (
+                            <DropdownMenuItem
+                              key={s.value}
+                              onSelect={() => mudarStatus(t.id, t.titulo, s.value)}
+                            >
+                              <span className="flex-1">{s.label}</span>
+                              {atual === s.value && <span className="text-xs text-primary">atual</span>}
+                            </DropdownMenuItem>
+                          );
+                        })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <TooltipContent>
                       <p className="text-xs font-medium">{t.titulo}</p>
                       <p className="text-xs text-muted-foreground">

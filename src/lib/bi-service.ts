@@ -65,8 +65,8 @@ export type ResumoPorCarteira = {
 export function parseCompetencia(comp: string): { mes: number; ano: number } {
   const match = /^(\d{1,2})\/(\d{4})$/.exec((comp || "").trim());
   if (match) {
-    const mesNum = parseInt(match[1], 10) - 1;
-    const anoNum = parseInt(match[2], 10);
+    const mesNum = parseInt(match[1] ?? "1", 10) - 1;
+    const anoNum = parseInt(match[2] ?? "2026", 10);
     return { mes: Math.max(0, Math.min(11, mesNum)), ano: anoNum };
   }
   const hoje = new Date();
@@ -212,7 +212,9 @@ export function calcularMetricasCarteira({
       tarefasConcluidas++;
     } else {
       // Se não concluída e competência anterior ou vencimento passado
-      const [mesComp, anoComp] = competencia.split("/").map(Number);
+      const [mesCompRaw, anoCompRaw] = competencia.split("/").map(Number);
+      const mesComp = mesCompRaw ?? 1;
+      const anoComp = anoCompRaw ?? new Date().getFullYear();
       const dataRefVenc = new Date(anoComp, mesComp, 5); // dia 5 do mês seguinte
       const diasAtraso = Math.max(0, Math.floor((hojeMid - dataRefVenc.getTime()) / (1000 * 60 * 60 * 24)));
 

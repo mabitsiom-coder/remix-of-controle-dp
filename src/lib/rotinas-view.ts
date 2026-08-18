@@ -38,8 +38,8 @@ export type EventoRotina = {
   responsavel: string;
   categoria: string;
   status: StatusCronograma;
-  periodicidade?: PeriodicidadeRotina;
-  isRecorrente?: boolean;
+  periodicidade?: PeriodicidadeRotina | undefined;
+  isRecorrente?: boolean | undefined;
   tarefa: Tarefa;
 };
 
@@ -52,8 +52,8 @@ export type BarraGantt = {
   fim: number;
   progresso: number;
   status: StatusCronograma;
-  periodicidade?: PeriodicidadeRotina;
-  isRecorrente?: boolean;
+  periodicidade?: PeriodicidadeRotina | undefined;
+  isRecorrente?: boolean | undefined;
 };
 
 /** Aceita "YYYY-MM-DD" e "DD/MM/YYYY". */
