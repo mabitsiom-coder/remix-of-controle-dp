@@ -361,17 +361,34 @@ function PainelGantt() {
           {tarefasGantt.map((t) => (
             <div key={t.id} className="flex border-b last:border-0 hover:bg-muted/30">
               <div className="w-72 shrink-0 border-r p-2.5">
-                <div className="flex items-start gap-2">
-                  <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${corStatus[t.status]}`} />
-                  <div className="min-w-0">
-                    <p className="truncate text-xs font-medium" title={t.titulo}>
-                      {t.titulo}
-                    </p>
-                    <p className="truncate text-[11px] text-muted-foreground">
-                      {t.empresa} · {t.responsavel}
-                    </p>
-                  </div>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button type="button" className="flex w-full items-start gap-2 text-left">
+                      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${corStatus[t.status]}`} />
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-medium" title={t.titulo}>
+                          {t.titulo}
+                        </p>
+                        <p className="truncate text-[11px] text-muted-foreground">
+                          {t.empresa} · {t.responsavel}
+                        </p>
+                      </div>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48">
+                    <DropdownMenuLabel className="truncate">Alterar status</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {STATUS_ROTINA.map((s) => {
+                      const atual = tarefas.find((x) => x.id === t.id)?.status;
+                      return (
+                        <DropdownMenuItem key={s.value} onSelect={() => mudarStatus(t.id, t.titulo, s.value)}>
+                          <span className="flex-1">{s.label}</span>
+                          {atual === s.value && <span className="text-xs text-primary">atual</span>}
+                        </DropdownMenuItem>
+                      );
+                    })}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               <div className="relative flex flex-1">
                 {Array.from({ length: DIAS }, (_, i) => i + 1).map((dia) => (
