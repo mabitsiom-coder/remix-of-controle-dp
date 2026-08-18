@@ -147,6 +147,7 @@ export function saveFolhaTarefas(lista: FolhaTarefa[]) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+    window.dispatchEvent(new CustomEvent("folha-tarefas-updated"));
   } catch (error) {
     console.error("Erro ao salvar folha tarefas no localStorage:", error);
   }
