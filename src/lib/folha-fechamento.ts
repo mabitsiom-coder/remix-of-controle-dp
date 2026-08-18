@@ -164,3 +164,26 @@ export function obrigatoriasOk(t: FolhaTarefa) {
     .filter((e) => e.obrigatorio)
     .every((e) => t.etapas[e.key] === "concluido" || t.etapas[e.key] === "na");
 }
+
+/** Recalcula o StatusFolha automaticamente com base nas etapas */
+export function calcularStatusAutomatico(etapas: Record<EtapaKey, EtapaStatus>): StatusFolha {
+  const obrigatorias = etapasChecklist.filter((e) => e.obrigatorio);
+  const todas = etapasChecklist;
+
+  const todasConcluidas = todas.every((e) => etapas[e.key] === "concluido" || etapas[e.key] === "na");
+  if (todasConcluidas) return "concluida";
+
+  const obrigatoriasFeitas = obrigatorias.every(
+    (e) => etapas[e.key] === "concluido" || etapas[e.key] === "na",
+  );
+  const ultimasEm = obrigatorias.filter((e) => etapas[e.key] === "concluido").length;
+  if (obrigatoriasFeitas) return "conferencia";
+
+  const algumaConcluida = todas.some((e) => etapas[e.key] === "concluido");
+  const algumaAndamento = todas.some((e) => etapas[e.key] === "andamento");
+
+  if (ultimasEm >= Math.ceil(obrigatorias.length / 2)) return "andamento";
+  if (algumaConcluida || algumaAndamento) return "aguardando";
+
+  return "nao_iniciada";
+}
