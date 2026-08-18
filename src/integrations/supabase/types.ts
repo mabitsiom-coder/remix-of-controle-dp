@@ -40,6 +40,7 @@ export type Database = {
           aprendizes: number
           atualizado_por: string | null
           carteira: string
+          codigo_dominio: string
           competencia: string
           created_at: string
           data_publicacao: string
@@ -57,6 +58,7 @@ export type Database = {
           aprendizes?: number
           atualizado_por?: string | null
           carteira?: string
+          codigo_dominio?: string
           competencia: string
           created_at?: string
           data_publicacao?: string
@@ -74,6 +76,7 @@ export type Database = {
           aprendizes?: number
           atualizado_por?: string | null
           carteira?: string
+          codigo_dominio?: string
           competencia?: string
           created_at?: string
           data_publicacao?: string
@@ -92,6 +95,7 @@ export type Database = {
       folha_etapas: {
         Row: {
           atualizado_por: string | null
+          codigo_dominio: string
           competencia: string
           concluida: boolean
           created_at: string
@@ -105,6 +109,7 @@ export type Database = {
         }
         Insert: {
           atualizado_por?: string | null
+          codigo_dominio?: string
           competencia: string
           concluida?: boolean
           created_at?: string
@@ -118,6 +123,7 @@ export type Database = {
         }
         Update: {
           atualizado_por?: string | null
+          codigo_dominio?: string
           competencia?: string
           concluida?: boolean
           created_at?: string
@@ -135,6 +141,7 @@ export type Database = {
         Row: {
           alterado_em: string
           alterado_por: string | null
+          codigo_dominio: string
           competencia: string
           empresa_codigo: string
           empresa_nome: string
@@ -146,6 +153,7 @@ export type Database = {
         Insert: {
           alterado_em?: string
           alterado_por?: string | null
+          codigo_dominio?: string
           competencia: string
           empresa_codigo: string
           empresa_nome?: string
@@ -157,6 +165,7 @@ export type Database = {
         Update: {
           alterado_em?: string
           alterado_por?: string | null
+          codigo_dominio?: string
           competencia?: string
           empresa_codigo?: string
           empresa_nome?: string
