@@ -13,6 +13,8 @@ import {
   ChevronRight,
   Building2,
   BarChart2,
+  Loader2,
+  CloudCheck,
 } from "lucide-react";
 
 import {
@@ -20,18 +22,22 @@ import {
   etapaStatusMeta,
   etapaStatusOrder,
   etapasChecklist,
-  getStoredFolhaTarefas,
-  saveFolhaTarefas,
   progressoTarefa,
   statusFolhaMeta,
   statusFolhaOrder,
   tiposPonto,
-  calcularStatusAutomatico,
-  type EtapaKey,
   type EtapaStatus,
   type FolhaTarefa,
   type StatusFolha,
 } from "@/lib/folha-fechamento";
+import {
+  chaveFolha,
+  etapasVazias,
+  registroParaTarefa,
+  useFolhaCompetencia,
+  type RegistroFolha,
+} from "@/lib/folha-db";
+
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
