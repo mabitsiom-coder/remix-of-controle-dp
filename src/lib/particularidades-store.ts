@@ -1,4 +1,13 @@
 import { useState, useEffect } from "react";
+import { getTodasEmpresas, saveEmpresas } from "./empresas-store";
+
+export type HistoricoParticularidade = {
+  campo: string;
+  anterior: any;
+  novo: any;
+  usuario: string;
+  dataHora: string;
+};
 
 /**
  * Particularidades do Cliente — informações vinculadas à EMPRESA (empresaId).
@@ -12,11 +21,20 @@ export type RegParticularidade = {
   informacoes: string;
   folhaPagamento: string;
   observacao: string;
+  atualizadoPor?: string;
   atualizadoEm?: string;
+  historico?: HistoricoParticularidade[];
 };
 
 const STORAGE_KEY = "dp_control_particularidades_v1";
 const EVENT_NAME = "particularidades-updated";
+
+function dataHoraAtual() {
+  const d = new Date();
+  const data = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  const hora = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${data} às ${hora}`;
+}
 
 export function getStoredParticularidades(): RegParticularidade[] {
   if (typeof window === "undefined") return [];
@@ -43,32 +61,80 @@ function save(lista: RegParticularidade[]) {
 /** Cria ou atualiza a particularidade de uma empresa (upsert por empresaId). */
 export function salvarParticularidade(
   empresaId: string,
-  dados: Partial<Omit<RegParticularidade, "id" | "empresaId">>,
+  dados: Partial<Omit<RegParticularidade, "id" | "empresaId" | "atualizadoEm" | "atualizadoPor" | "historico">>,
+  usuario = "Sistema",
 ): RegParticularidade {
   const lista = getStoredParticularidades();
   const atual = lista.find((r) => r.empresaId === empresaId);
-  const hoje = new Date();
-  const atualizadoEm = `${String(hoje.getDate()).padStart(2, "0")}/${String(
-    hoje.getMonth() + 1,
-  ).padStart(2, "0")}/${hoje.getFullYear()}`;
+  const agora = dataHoraAtual();
+
+  const novoHistorico: HistoricoParticularidade[] = [...(atual?.historico || [])];
 
   if (atual) {
-    const atualizado: RegParticularidade = { ...atual, ...dados, atualizadoEm };
-    save(lista.map((r) => (r.empresaId === empresaId ? atualizado : r)));
-    return atualizado;
+    for (const [campo, novoValor] of Object.entries(dados)) {
+      const valorAnterior = (atual as any)[campo];
+      if (valorAnterior !== novoValor) {
+        novoHistorico.unshift({
+          campo,
+          anterior: valorAnterior || "",
+          novo: novoValor || "",
+          usuario,
+          dataHora: agora,
+        });
+      }
+    }
   }
 
-  const novo: RegParticularidade = {
-    id: `part-${empresaId}`,
-    empresaId,
-    grupos: dados.grupos ?? "",
-    informacoes: dados.informacoes ?? "",
-    folhaPagamento: dados.folhaPagamento ?? "",
-    observacao: dados.observacao ?? "",
-    atualizadoEm,
-  };
-  save([novo, ...lista]);
-  return novo;
+  if (novoHistorico.length > 50) {
+    novoHistorico.length = 50;
+  }
+
+  let resultado: RegParticularidade;
+
+  if (atual) {
+    resultado = {
+      ...atual,
+      ...dados,
+      atualizadoPor: usuario,
+      atualizadoEm: agora,
+      historico: novoHistorico,
+    };
+    save(lista.map((r) => (r.empresaId === empresaId ? resultado : r)));
+  } else {
+    resultado = {
+      id: `part-${empresaId}`,
+      empresaId,
+      grupos: dados.grupos ?? "",
+      informacoes: dados.informacoes ?? "",
+      folhaPagamento: dados.folhaPagamento ?? "",
+      observacao: dados.observacao ?? "",
+      atualizadoPor: usuario,
+      atualizadoEm: agora,
+      historico: novoHistorico,
+    };
+    save([resultado, ...lista]);
+  }
+
+  // Sincronizar dados relevantes com a ficha da empresa em empresas-store
+  try {
+    const todas = getTodasEmpresas();
+    const emp = todas.find((e) => e.id === empresaId);
+    if (emp) {
+      const atualizada = {
+        ...emp,
+        particularidades: {
+          ...emp.particularidades,
+          ...(dados.folhaPagamento !== undefined ? { fechamento: dados.folhaPagamento } : {}),
+          ...(dados.observacao !== undefined ? { observacoes: dados.observacao } : {}),
+        },
+      };
+      saveEmpresas(todas.map((e) => (e.id === empresaId ? atualizada : e)));
+    }
+  } catch (err) {
+    console.error("Erro ao sincronizar particularidades com empresas:", err);
+  }
+
+  return resultado;
 }
 
 export function useParticularidades() {

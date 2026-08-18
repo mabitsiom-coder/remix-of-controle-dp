@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   FileDown,
   Trash2,
@@ -17,6 +17,12 @@ import {
   FileCheck,
   Receipt,
   FileSpreadsheet,
+  Clock,
+  Sparkles,
+  Loader2,
+  ShieldCheck,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,6 +38,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -47,7 +59,14 @@ import { NovoFGTSTrimestralDialog } from "@/components/novo-fgts-trimestral-dial
 import { ParticularidadesCliente } from "@/components/particularidades-cliente";
 import { NovoReajusteSindicatoDialog } from "@/components/novo-reajuste-sindicato-dialog";
 import { useObrigacoes, deleteObrigacao } from "@/lib/obrigacoes-store";
-import { useRegDCTFWeb, deleteDCTFWeb, updateDCTFWeb, type RegDCTFWeb } from "@/lib/dctfweb-store";
+import {
+  useRegDCTFWeb,
+  deleteDCTFWeb,
+  updateDCTFWeb,
+  upsertDCTFWeb,
+  type RegDCTFWeb,
+} from "@/lib/dctfweb-store";
+import { useAuth } from "@/lib/auth-store";
 import {
   useRegEspelhoDebito,
   deleteEspelhoDebito,

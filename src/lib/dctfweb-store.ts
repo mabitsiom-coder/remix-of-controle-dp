@@ -1,5 +1,13 @@
 import { useState, useEffect } from "react";
 
+export type HistoricoAlteracao = {
+  campo: string;
+  anterior: any;
+  novo: any;
+  usuario: string;
+  dataHora: string;
+};
+
 export type RegDCTFWeb = {
   id: string;
   ord: number;
@@ -15,15 +23,29 @@ export type RegDCTFWeb = {
   transmissaoPublicacao: string;
   reciboDocSalvo: string;
   conferidoAnalista: "CONFERIDO" | "PENDENTE" | "—";
+  conferidoAnalistaPor?: string;
+  conferidoAnalistaEm?: string;
   revisadoSupervisao: "REVISADO" | "PENDENTE" | "—";
+  revisadoSupervisaoPor?: string;
+  revisadoSupervisaoEm?: string;
   observacao: string;
   carteira?: string;
   analista?: string;
   supervisor?: string;
+  atualizadoPor?: string;
+  atualizadoEm?: string;
+  historico?: HistoricoAlteracao[];
 };
 
 const STORAGE_KEY = "dp_control_dctfweb_matrix_v1";
 const EVENT_NAME = "dctfweb-matrix-updated";
+
+function dataHoraAtual() {
+  const d = new Date();
+  const data = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  const hora = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${data} às ${hora}`;
+}
 
 export const dctfwebSeed: RegDCTFWeb[] = [
   {
@@ -41,6 +63,8 @@ export const dctfwebSeed: RegDCTFWeb[] = [
     transmissaoPublicacao: "PUBLICADO NA MTZ",
     reciboDocSalvo: "PUBLICADO NA MTZ",
     conferidoAnalista: "CONFERIDO",
+    conferidoAnalistaPor: "SIMEANE",
+    conferidoAnalistaEm: "14/07/2026 às 11:20",
     revisadoSupervisao: "PENDENTE",
     observacao: "",
     carteira: "RH - G - 06",
@@ -62,6 +86,8 @@ export const dctfwebSeed: RegDCTFWeb[] = [
     transmissaoPublicacao: "14/07/2026",
     reciboDocSalvo: "14/07/2026",
     conferidoAnalista: "CONFERIDO",
+    conferidoAnalistaPor: "SIMEANE",
+    conferidoAnalistaEm: "14/07/2026 às 11:35",
     revisadoSupervisao: "PENDENTE",
     observacao: "",
     carteira: "RH - G - 06",
@@ -83,6 +109,8 @@ export const dctfwebSeed: RegDCTFWeb[] = [
     transmissaoPublicacao: "10/07/2026",
     reciboDocSalvo: "18/07/2026",
     conferidoAnalista: "CONFERIDO",
+    conferidoAnalistaPor: "ARIANY",
+    conferidoAnalistaEm: "18/07/2026 às 14:10",
     revisadoSupervisao: "PENDENTE",
     observacao: "",
     carteira: "RH - G - 04",
@@ -115,18 +143,111 @@ export function saveDCTFWeb(lista: RegDCTFWeb[]) {
   }
 }
 
-export function createDCTFWeb(dados: Omit<RegDCTFWeb, "id">): RegDCTFWeb {
+export function createDCTFWeb(dados: Omit<RegDCTFWeb, "id">, usuario = "Sistema"): RegDCTFWeb {
   const id = `dctf-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
-  const novo: RegDCTFWeb = { ...dados, id };
+  const agora = dataHoraAtual();
+  const novo: RegDCTFWeb = {
+    ...dados,
+    id,
+    atualizadoPor: usuario,
+    atualizadoEm: agora,
+  };
   const atuais = getStoredDCTFWeb();
   saveDCTFWeb([novo, ...atuais]);
   return novo;
 }
 
-export function updateDCTFWeb(id: string, patch: Partial<RegDCTFWeb>) {
+export function updateDCTFWeb(
+  id: string,
+  patch: Partial<RegDCTFWeb>,
+  usuario = "Sistema"
+): RegDCTFWeb | undefined {
   const atuais = getStoredDCTFWeb();
-  const next = atuais.map((item) => (item.id === id ? { ...item, ...patch } : item));
+  const atual = atuais.find((item) => item.id === id || item.codigo === id);
+  if (!atual) return undefined;
+
+  const agora = dataHoraAtual();
+  const novoHistorico: HistoricoAlteracao[] = [...(atual.historico || [])];
+
+  for (const [campo, novoValor] of Object.entries(patch)) {
+    const valorAnterior = (atual as any)[campo];
+    if (valorAnterior !== novoValor && campo !== "historico" && campo !== "atualizadoEm" && campo !== "atualizadoPor") {
+      novoHistorico.unshift({
+        campo,
+        anterior: valorAnterior ?? "",
+        novo: novoValor ?? "",
+        usuario,
+        dataHora: agora,
+      });
+    }
+  }
+
+  // Limitar histórico a 50 itens
+  if (novoHistorico.length > 50) {
+    novoHistorico.length = 50;
+  }
+
+  const atualizado: RegDCTFWeb = {
+    ...atual,
+    ...patch,
+    atualizadoPor: usuario,
+    atualizadoEm: agora,
+    historico: novoHistorico,
+  };
+
+  const next = atuais.map((item) => (item.id === atual.id ? atualizado : item));
   saveDCTFWeb(next);
+  return atualizado;
+}
+
+export function upsertDCTFWeb(
+  id: string,
+  patch: Partial<RegDCTFWeb>,
+  fallback?: Partial<RegDCTFWeb>,
+  usuario = "Sistema"
+): RegDCTFWeb {
+  const atuais = getStoredDCTFWeb();
+  const atual = atuais.find((item) => item.id === id || (item.codigo && item.codigo === id));
+
+  if (atual) {
+    return updateDCTFWeb(atual.id, patch, usuario)!;
+  }
+
+  const agora = dataHoraAtual();
+  const novo: RegDCTFWeb = {
+    id,
+    ord: 1,
+    codigo: "",
+    empresa: "",
+    cnpj: "",
+    tipo: "C/M",
+    reinf: "SIM",
+    eSocial: "SIM",
+    nfCprb: "❌",
+    nfRetInss: "❌",
+    nfRetCsrf: "❌",
+    transmissaoPublicacao: "PUBLICADO NA MTZ",
+    reciboDocSalvo: "PUBLICADO NA MTZ",
+    conferidoAnalista: "PENDENTE",
+    revisadoSupervisao: "PENDENTE",
+    observacao: "",
+    ...fallback,
+    ...patch,
+    atualizadoPor: usuario,
+    atualizadoEm: agora,
+    historico: [
+      {
+        campo: Object.keys(patch).join(", "),
+        anterior: "Inicial",
+        novo: JSON.stringify(patch),
+        usuario,
+        dataHora: agora,
+      },
+    ],
+  };
+
+  saveDCTFWeb([novo, ...atuais]);
+  return novo;
 }
 
 export function deleteDCTFWeb(id: string) {
@@ -147,5 +268,5 @@ export function useRegDCTFWeb() {
     };
   }, []);
 
-  return { registros, createDCTFWeb, updateDCTFWeb, deleteDCTFWeb };
+  return { registros, createDCTFWeb, updateDCTFWeb, upsertDCTFWeb, deleteDCTFWeb };
 }
