@@ -21,6 +21,10 @@ import {
   AlertTriangle,
   User,
   Tag,
+  CalendarDays,
+  Sun,
+  Layers,
+  ArrowRight,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
@@ -44,21 +48,23 @@ import type { Tarefa } from "@/lib/mock-data";
 export const Route = createFileRoute("/tarefas")({
   head: () => ({
     meta: [
-      { title: "Rotinas e Checklist Diário — Departamento Pessoal" },
+      { title: "Rotinas — Departamento Pessoal" },
       {
         name: "description",
         content:
-          "Lista de tarefas diárias, checklist interativo, kanban e cronograma com importação em planilha Excel.",
+          "Gestão de rotinas diárias e mensais do Departamento Pessoal com checklists marcáveis, kanban e importação Excel.",
       },
-      { property: "og:title", content: "Rotinas e Checklist Diário — Departamento Pessoal" },
+      { property: "og:title", content: "Rotinas — Departamento Pessoal" },
       {
         property: "og:description",
-        content: "Checklist de tarefas diárias e rotinas operacionais do DP.",
+        content: "Submenus de rotinas diárias e mensais com checklists interativos.",
       },
     ],
   }),
   component: Tarefas,
 });
+
+type SubmenuRotinas = "diaria" | "mensal" | "todas";
 
 const colunas = [
   { id: "backlog" as const, nome: "Backlog" },
@@ -67,7 +73,7 @@ const colunas = [
   { id: "concluida" as const, nome: "Concluída" },
 ];
 
-const visoes = ["Checklist Diário", "Kanban", "Lista", "Cronograma"] as const;
+const visoes = ["Checklist", "Kanban", "Lista", "Cronograma"] as const;
 
 const PRIORIDADE_COR: Record<string, string> = {
   baixa: "bg-emerald-500/80",
@@ -237,14 +243,15 @@ function TarefaCard({
 }
 
 function Tarefas() {
-  const [visao, setVisao] = useState<(typeof visoes)[number]>("Checklist Diário");
+  // Submenu ativo: 'diaria' | 'mensal' | 'todas'
+  const [submenu, setSubmenu] = useState<SubmenuRotinas>("diaria");
+  const [visao, setVisao] = useState<(typeof visoes)[number]>("Checklist");
   const [rotinaSelecionada, setRotinaSelecionada] = useState<Tarefa | null>(null);
   const [detalhesAberto, setDetalhesAberto] = useState(false);
   const { tarefas } = useTarefas();
 
-  // Filtros para o Checklist Diário
+  // Filtros
   const [busca, setBusca] = useState("");
-  const [filtroPeriod, setFiltroPeriod] = useState<string>("todas");
   const [filtroCat, setFiltroCat] = useState<string>("todas");
   const [filtroStatus, setFiltroStatus] = useState<string>("todas");
   const [novoItemTexto, setNovoItemTexto] = useState<{ [tarefaId: string]: string }>({});
@@ -258,6 +265,60 @@ function Tarefas() {
     setDetalhesAberto(true);
   };
 
+  // Contagens para os cards de submenu
+  const contagensSubmenu = useMemo(() => {
+    const rotinasDiarias = tarefas.filter(
+      (t) => t.periodicidade === "Diária" || (!t.periodicidade && t.categoria === "Folha")
+    );
+    const rotinasMensais = tarefas.filter((t) => t.periodicidade === "Mensal");
+
+    const itensDiariosTotal = rotinasDiarias.reduce(
+      (acc, t) => acc + (t.checklist?.length || 0),
+      0
+    );
+    const itensDiariosFeitos = rotinasDiarias.reduce(
+      (acc, t) => acc + (t.checklist?.filter((c) => c.feito).length || 0),
+      0
+    );
+
+    const itensMensaisTotal = rotinasMensais.reduce(
+      (acc, t) => acc + (t.checklist?.length || 0),
+      0
+    );
+    const itensMensaisFeitos = rotinasMensais.reduce(
+      (acc, t) => acc + (t.checklist?.filter((c) => c.feito).length || 0),
+      0
+    );
+
+    return {
+      diariasQtd: rotinasDiarias.length,
+      diariasConcluidas: rotinasDiarias.filter((t) => t.status === "concluida").length,
+      diariasPct:
+        itensDiariosTotal > 0
+          ? Math.round((itensDiariosFeitos / itensDiariosTotal) * 100)
+          : rotinasDiarias.length > 0
+          ? Math.round(
+              (rotinasDiarias.filter((t) => t.status === "concluida").length /
+                rotinasDiarias.length) *
+                100
+            )
+          : 0,
+      mensaisQtd: rotinasMensais.length,
+      mensaisConcluidas: rotinasMensais.filter((t) => t.status === "concluida").length,
+      mensaisPct:
+        itensMensaisTotal > 0
+          ? Math.round((itensMensaisFeitos / itensMensaisTotal) * 100)
+          : rotinasMensais.length > 0
+          ? Math.round(
+              (rotinasMensais.filter((t) => t.status === "concluida").length /
+                rotinasMensais.length) *
+                100
+            )
+          : 0,
+      totalQtd: tarefas.length,
+    };
+  }, [tarefas]);
+
   // Categorias presentes
   const categoriasDisponiveis = useMemo(() => {
     const set = new Set<string>();
@@ -267,34 +328,41 @@ function Tarefas() {
     return Array.from(set);
   }, [tarefas]);
 
-  // Filtragem para o Checklist Diário
+  // Filtragem estrita baseada no Submenu selecionado + filtros adicionais
   const tarefasFiltradas = useMemo(() => {
     return tarefas.filter((t) => {
+      // Filtro de Submenu
+      if (submenu === "diaria") {
+        const isDiaria = t.periodicidade === "Diária" || (!t.periodicidade && t.categoria === "Folha");
+        if (!isDiaria) return false;
+      } else if (submenu === "mensal") {
+        const isMensal = t.periodicidade === "Mensal";
+        if (!isMensal) return false;
+      }
+
+      // Filtro de Busca
       const matchBusca =
         !busca ||
         t.titulo.toLowerCase().includes(busca.toLowerCase()) ||
         (t.descricao && t.descricao.toLowerCase().includes(busca.toLowerCase())) ||
         (t.responsavel && t.responsavel.toLowerCase().includes(busca.toLowerCase()));
 
-      const matchPeriod =
-        filtroPeriod === "todas" ||
-        (filtroPeriod === "diaria" && (t.periodicidade === "Diária" || !t.periodicidade)) ||
-        t.periodicidade?.toLowerCase() === filtroPeriod.toLowerCase();
-
+      // Filtro de Categoria
       const matchCat =
         filtroCat === "todas" || t.categoria?.toLowerCase() === filtroCat.toLowerCase();
 
+      // Filtro de Status
       const matchStatus =
         filtroStatus === "todas" ||
         (filtroStatus === "pendente" && t.status !== "concluida") ||
         (filtroStatus === "concluida" && t.status === "concluida");
 
-      return matchBusca && matchPeriod && matchCat && matchStatus;
+      return matchBusca && matchCat && matchStatus;
     });
-  }, [tarefas, busca, filtroPeriod, filtroCat, filtroStatus]);
+  }, [tarefas, submenu, busca, filtroCat, filtroStatus]);
 
-  // Cálculos de progresso do Checklist Diário
-  const totaisChecklist = useMemo(() => {
+  // Cálculos de progresso da visualização atual
+  const totaisVisualizacao = useMemo(() => {
     let totalItens = 0;
     let itensFeitos = 0;
     let tarefasConcluidas = 0;
@@ -356,8 +424,20 @@ function Tarefas() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Rotinas & Checklist Diário"
-        description="Acompanhamento diário de rotinas operacionais com marcação de checklists e importação em planilha Excel"
+        title={
+          submenu === "diaria"
+            ? "Rotinas Diárias"
+            : submenu === "mensal"
+            ? "Rotinas Mensais"
+            : "Todas as Rotinas"
+        }
+        description={
+          submenu === "diaria"
+            ? "Acompanhamento exclusivo das rotinas e checklists executados diariamente pelo DP"
+            : submenu === "mensal"
+            ? "Acompanhamento exclusivo das rotinas e fechamentos executados mensalmente pelo DP"
+            : "Visão consolidada de todas as rotinas diárias, mensais e periódicas do setor"
+        }
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1 rounded-lg border p-1 bg-background">
@@ -386,150 +466,297 @@ function Tarefas() {
               Modelo XLSX
             </Button>
             <ImportarRotinasDialog />
-            <NovaTarefaDialog />
+            <NovaTarefaDialog
+              defaultStatus="backlog"
+            />
           </div>
         }
       />
 
       {/* ========================================================================= */}
-      {/* ---- VISAO 1: CHECKLIST DIARIO INTERATIVO ---- */}
+      {/* ---- CARDS DE SUBMENU: DIÁRIA / MENSAL / TODAS ---- */}
       {/* ========================================================================= */}
-      {visao === "Checklist Diário" && (
-        <div className="space-y-4">
-          {/* Card de Progresso Geral do Checklist */}
-          <div className="surface-panel rounded-2xl border-2 border-primary/20 bg-gradient-to-r from-card via-card to-primary/5 p-5 shadow-sm">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        {/* Card Submenu: Diária */}
+        <button
+          type="button"
+          onClick={() => setSubmenu("diaria")}
+          className={`surface-panel relative flex flex-col justify-between p-4 rounded-xl border-2 text-left transition-all cursor-pointer ${
+            submenu === "diaria"
+              ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-md"
+              : "border-border hover:border-primary/40 hover:bg-muted/30"
+          }`}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <span
+                className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                  submenu === "diaria"
+                    ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                    : "bg-primary/10 text-primary"
+                }`}
+              >
+                <Sun className="h-5 w-5" />
+              </span>
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <ListChecks className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <h2 className="text-base font-bold text-foreground">
-                      Painel do Checklist Diário
-                    </h2>
-                    <p className="text-xs text-muted-foreground">
-                      Marque as tarefas e etapas diárias conforme for executando
-                    </p>
-                  </div>
+                <h3 className="text-sm font-bold text-foreground">Rotinas Diárias</h3>
+                <p className="text-[11px] text-muted-foreground">
+                  Checklist e tarefas do dia a dia
+                </p>
+              </div>
+            </div>
+            {submenu === "diaria" && (
+              <span className="rounded-full bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 border border-primary/20">
+                Ativo
+              </span>
+            )}
+          </div>
+
+          <div className="mt-4 pt-3 border-t flex items-end justify-between">
+            <div>
+              <span className="text-2xl font-black tabular-nums text-foreground">
+                {contagensSubmenu.diariasQtd}
+              </span>
+              <span className="text-xs text-muted-foreground ml-1.5">rotinas</span>
+            </div>
+            <div className="text-right">
+              <span
+                className={`text-sm font-bold tabular-nums ${
+                  contagensSubmenu.diariasPct === 100
+                    ? "text-emerald-600"
+                    : contagensSubmenu.diariasPct >= 50
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {contagensSubmenu.diariasPct}%
+              </span>
+              <p className="text-[10px] text-muted-foreground">concluído</p>
+            </div>
+          </div>
+        </button>
+
+        {/* Card Submenu: Mensal */}
+        <button
+          type="button"
+          onClick={() => setSubmenu("mensal")}
+          className={`surface-panel relative flex flex-col justify-between p-4 rounded-xl border-2 text-left transition-all cursor-pointer ${
+            submenu === "mensal"
+              ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-md"
+              : "border-border hover:border-primary/40 hover:bg-muted/30"
+          }`}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <span
+                className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                  submenu === "mensal"
+                    ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                    : "bg-primary/10 text-primary"
+                }`}
+              >
+                <CalendarDays className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="text-sm font-bold text-foreground">Rotinas Mensais</h3>
+                <p className="text-[11px] text-muted-foreground">
+                  Fechamentos e obrigações do mês
+                </p>
+              </div>
+            </div>
+            {submenu === "mensal" && (
+              <span className="rounded-full bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 border border-primary/20">
+                Ativo
+              </span>
+            )}
+          </div>
+
+          <div className="mt-4 pt-3 border-t flex items-end justify-between">
+            <div>
+              <span className="text-2xl font-black tabular-nums text-foreground">
+                {contagensSubmenu.mensaisQtd}
+              </span>
+              <span className="text-xs text-muted-foreground ml-1.5">rotinas</span>
+            </div>
+            <div className="text-right">
+              <span
+                className={`text-sm font-bold tabular-nums ${
+                  contagensSubmenu.mensaisPct === 100
+                    ? "text-emerald-600"
+                    : contagensSubmenu.mensaisPct >= 50
+                    ? "text-primary"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {contagensSubmenu.mensaisPct}%
+              </span>
+              <p className="text-[10px] text-muted-foreground">concluído</p>
+            </div>
+          </div>
+        </button>
+
+        {/* Card Submenu: Todas as Rotinas */}
+        <button
+          type="button"
+          onClick={() => setSubmenu("todas")}
+          className={`surface-panel relative flex flex-col justify-between p-4 rounded-xl border-2 text-left transition-all cursor-pointer ${
+            submenu === "todas"
+              ? "border-primary bg-primary/5 ring-2 ring-primary/20 shadow-md"
+              : "border-border hover:border-primary/40 hover:bg-muted/30"
+          }`}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <span
+                className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                  submenu === "todas"
+                    ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                    : "bg-primary/10 text-primary"
+                }`}
+              >
+                <Layers className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="text-sm font-bold text-foreground">Todas as Rotinas</h3>
+                <p className="text-[11px] text-muted-foreground">
+                  Visão consolidada do setor
+                </p>
+              </div>
+            </div>
+            {submenu === "todas" && (
+              <span className="rounded-full bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 border border-primary/20">
+                Ativo
+              </span>
+            )}
+          </div>
+
+          <div className="mt-4 pt-3 border-t flex items-end justify-between">
+            <div>
+              <span className="text-2xl font-black tabular-nums text-foreground">
+                {contagensSubmenu.totalQtd}
+              </span>
+              <span className="text-xs text-muted-foreground ml-1.5">rotinas no total</span>
+            </div>
+            <div className="text-right flex items-center gap-1 text-xs font-semibold text-primary">
+              <span>Explorar</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </div>
+          </div>
+        </button>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* ---- BARRA DE FILTROS & BUSCA ---- */}
+      {/* ========================================================================= */}
+      <div className="surface-panel flex flex-wrap items-center gap-3 p-3 text-xs">
+        <div className="relative min-w-[200px] flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder={`Buscar em rotinas ${submenu === "diaria" ? "diárias" : submenu === "mensal" ? "mensais" : "gerais"}...`}
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="h-8 pl-8 text-xs"
+          />
+        </div>
+
+        {categoriasDisponiveis.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-muted-foreground">Categoria:</span>
+            <select
+              value={filtroCat}
+              onChange={(e) => setFiltroCat(e.target.value)}
+              className="h-8 rounded-md border bg-background px-2 text-xs"
+            >
+              <option value="todas">Todas as categorias</option>
+              {categoriasDisponiveis.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-muted-foreground">Status:</span>
+          <select
+            value={filtroStatus}
+            onChange={(e) => setFiltroStatus(e.target.value)}
+            className="h-8 rounded-md border bg-background px-2 text-xs"
+          >
+            <option value="todas">Todos</option>
+            <option value="pendente">Pendentes</option>
+            <option value="concluida">Concluídas</option>
+          </select>
+        </div>
+
+        <div className="ml-auto text-xs font-semibold text-muted-foreground">
+          {tarefasFiltradas.length} rotina(s) exibida(s)
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* ---- VISAO 1: CHECKLIST INTERATIVO ---- */}
+      {/* ========================================================================= */}
+      {visao === "Checklist" && (
+        <div className="space-y-4">
+          {/* Card de Progresso do Submenu */}
+          <div className="surface-panel rounded-2xl border bg-gradient-to-r from-card via-card to-primary/5 p-4 shadow-xs">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <ListChecks className="h-5 w-5" />
+                </span>
+                <div>
+                  <h2 className="text-sm font-bold text-foreground">
+                    Checklist de Rotinas {submenu === "diaria" ? "Diárias" : submenu === "mensal" ? "Mensais" : "Consolidadas"}
+                  </h2>
+                  <p className="text-xs text-muted-foreground">
+                    Marque as etapas executadas diretamente nos checkboxes abaixo
+                  </p>
                 </div>
               </div>
 
-              {/* Indicadores resumidos */}
-              <div className="flex flex-wrap items-center gap-4 text-xs">
-                <div className="flex flex-col items-center rounded-xl border bg-background/80 px-3.5 py-1.5 shadow-2xs">
-                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                    Tarefas
-                  </span>
-                  <span className="text-base font-bold tabular-nums">
-                    {totaisChecklist.totalTarefas}
-                  </span>
+              <div className="flex items-center gap-3 text-xs">
+                <div className="rounded-lg border bg-background px-3 py-1 text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold">Tarefas</p>
+                  <p className="font-bold tabular-nums text-foreground">{totaisVisualizacao.totalTarefas}</p>
                 </div>
-                <div className="flex flex-col items-center rounded-xl border bg-background/80 px-3.5 py-1.5 shadow-2xs">
-                  <span className="text-[10px] uppercase font-bold text-success">
-                    Itens Concluídos
-                  </span>
-                  <span className="text-base font-bold text-success tabular-nums">
-                    {totaisChecklist.itensFeitos}
-                  </span>
+                <div className="rounded-lg border bg-background px-3 py-1 text-center">
+                  <p className="text-[10px] text-success uppercase font-bold">Feitos</p>
+                  <p className="font-bold tabular-nums text-success">{totaisVisualizacao.itensFeitos}</p>
                 </div>
-                <div className="flex flex-col items-center rounded-xl border bg-background/80 px-3.5 py-1.5 shadow-2xs">
-                  <span className="text-[10px] uppercase font-bold text-amber-600">
-                    Itens Pendentes
-                  </span>
-                  <span className="text-base font-bold text-amber-600 tabular-nums">
-                    {totaisChecklist.itensPendentes}
-                  </span>
+                <div className="rounded-lg border bg-background px-3 py-1 text-center">
+                  <p className="text-[10px] text-amber-600 uppercase font-bold">Pendentes</p>
+                  <p className="font-bold tabular-nums text-amber-600">{totaisVisualizacao.itensPendentes}</p>
                 </div>
-                <div className="flex flex-col items-center rounded-xl border bg-primary/10 px-4 py-1.5">
-                  <span className="text-[10px] uppercase font-bold text-primary">
-                    Conclusão Geral
-                  </span>
-                  <span className="text-lg font-black text-primary tabular-nums">
-                    {totaisChecklist.pctGeral}%
-                  </span>
+                <div className="rounded-lg bg-primary/10 px-3.5 py-1 text-center">
+                  <p className="text-[10px] text-primary uppercase font-bold">Conclusão</p>
+                  <p className="font-black tabular-nums text-primary text-base">{totaisVisualizacao.pctGeral}%</p>
                 </div>
               </div>
             </div>
 
-            {/* Barra de progresso geral */}
-            <div className="mt-4">
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted/60">
+            {/* Barra de Progresso */}
+            <div className="mt-3">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted/60">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500 transition-all duration-500"
-                  style={{ width: `${totaisChecklist.pctGeral}%` }}
+                  style={{ width: `${totaisVisualizacao.pctGeral}%` }}
                 />
               </div>
             </div>
           </div>
 
-          {/* Barra de Filtros e Busca */}
-          <div className="surface-panel flex flex-wrap items-center gap-3 p-3 text-xs">
-            <div className="relative min-w-[200px] flex-1">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar tarefa diária ou responsável..."
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                className="h-8 pl-8 text-xs"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-muted-foreground">Periodicidade:</span>
-              <select
-                value={filtroPeriod}
-                onChange={(e) => setFiltroPeriod(e.target.value)}
-                className="h-8 rounded-md border bg-background px-2 text-xs"
-              >
-                <option value="todas">Todas</option>
-                <option value="diaria">Diárias</option>
-                <option value="mensal">Mensais</option>
-                <option value="trimestral">Trimestrais</option>
-              </select>
-            </div>
-
-            {categoriasDisponiveis.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-muted-foreground">Categoria:</span>
-                <select
-                  value={filtroCat}
-                  onChange={(e) => setFiltroCat(e.target.value)}
-                  className="h-8 rounded-md border bg-background px-2 text-xs"
-                >
-                  <option value="todas">Todas as categorias</option>
-                  {categoriasDisponiveis.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-muted-foreground">Status:</span>
-              <select
-                value={filtroStatus}
-                onChange={(e) => setFiltroStatus(e.target.value)}
-                className="h-8 rounded-md border bg-background px-2 text-xs"
-              >
-                <option value="todas">Todos</option>
-                <option value="pendente">Pendentes</option>
-                <option value="concluida">Concluídas</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Lista de Tarefas com Checklist Marcável */}
+          {/* Grid de Tarefas com Checklist Marcável */}
           {tarefasFiltradas.length === 0 ? (
             <div className="surface-panel flex flex-col items-center justify-center p-12 text-center gap-3">
               <ListChecks className="h-10 w-10 text-muted-foreground/40" />
               <p className="text-sm font-semibold text-foreground">
-                Nenhuma tarefa encontrada com os filtros atuais.
+                Nenhuma rotina {submenu === "diaria" ? "diária" : submenu === "mensal" ? "mensal" : ""} encontrada com os filtros atuais.
               </p>
               <p className="text-xs text-muted-foreground max-w-sm">
-                Cadastre uma nova tarefa ou importe sua lista diária a partir de um arquivo Excel (.xlsx).
+                Cadastre uma nova rotina ou importe sua lista a partir de um arquivo Excel (.xlsx).
               </p>
               <div className="flex items-center gap-2 mt-2">
                 <Button
@@ -774,7 +1001,7 @@ function Tarefas() {
       {visao === "Kanban" && (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {colunas.map((col) => {
-            const cards = tarefas.filter((t) => t.status === col.id);
+            const cards = tarefasFiltradas.filter((t) => t.status === col.id);
             return (
               <div
                 key={col.id}
@@ -839,17 +1066,17 @@ function Tarefas() {
         <div className="surface-panel overflow-x-auto shadow-sm">
           <div className="flex items-center justify-between px-3 py-2 border-b">
             <p className="text-xs text-muted-foreground font-medium">
-              {tarefas.length} rotina(s) cadastrada(s)
+              {tarefasFiltradas.length} rotina(s) {submenu === "diaria" ? "diárias" : submenu === "mensal" ? "mensais" : ""} cadastrada(s)
             </p>
             <div className="flex items-center gap-2">
               <ImportarRotinasDialog />
               <NovaTarefaDialog />
             </div>
           </div>
-          {tarefas.length === 0 ? (
+          {tarefasFiltradas.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-12 text-center gap-3">
               <p className="text-sm text-muted-foreground">
-                Nenhuma rotina cadastrada ainda.
+                Nenhuma rotina cadastrada neste filtro.
               </p>
               <div className="flex items-center gap-2">
                 <ImportarRotinasDialog />
@@ -871,7 +1098,7 @@ function Tarefas() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {tarefas.map((t) => {
+                {tarefasFiltradas.map((t) => {
                   const check = t.checklist || [];
                   const feitos = check.filter((c) => c.feito).length;
                   return (
@@ -954,14 +1181,14 @@ function Tarefas() {
         <div className="surface-panel space-y-3 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-muted-foreground font-medium">
-              {tarefas.length} rotina(s)
+              {tarefasFiltradas.length} rotina(s)
             </p>
             <div className="flex items-center gap-2">
               <ImportarRotinasDialog />
               <NovaTarefaDialog />
             </div>
           </div>
-          {tarefas.length === 0 ? (
+          {tarefasFiltradas.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center gap-3">
               <p className="text-sm text-muted-foreground">
                 Nenhuma rotina cadastrada.
@@ -973,7 +1200,7 @@ function Tarefas() {
             </div>
           ) : (
             <div className="divide-y">
-              {tarefas.map((t) => {
+              {tarefasFiltradas.map((t) => {
                 const checklist = t.checklist ?? [];
                 const feitos = checklist.filter((c) => c.feito).length;
                 const pct =
