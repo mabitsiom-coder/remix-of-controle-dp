@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 85" width="100%" height="100%" fill="none">
+  <!-- Ícone M Vermelho da Mábit -->
+  <g id="mabit-icon">
+    <!-- Bloco vertical pequeno à esquerda -->
+    <path d="M12 40 L20 40 L20 28 L12 28 Z" fill="#E60000" />
+    <path d="M12 28 L20 20 L20 40 L12 40 Z" fill="#FF0000" />
+    
+    <!-- Primeira coluna e perna -->
+    <rect x="23" y="10" width="8.5" height="30" rx="1" fill="#E60000" />
+    
+    <!-- Linhas cruzadas diagonais (efeito M) -->
+    <path d="M31.5 12 L43 38 L38 38 L28 16 Z" stroke="#FF1E27" stroke-width="1.5" fill="#FF1E27" />
+    <path d="M43 12 L31.5 38 L36.5 38 L46.5 16 Z" stroke="#FF1E27" stroke-width="1.5" fill="#FF1E27" />
+    
+    <!-- Segunda coluna -->
+    <rect x="44.5" y="10" width="8.5" height="30" rx="1" fill="#E60000" />
+  </g>
+
+  <!-- Texto MÁBIT -->
+  <g id="mabit-text">
+    <text x="59" y="38" font-family="'Arial Black', 'Montserrat', 'Impact', sans-serif" font-weight="900" font-size="34" fill="#002296" letter-spacing="-0.5">
+      MÁBIT
+    </text>
+  </g>
+
+  <!-- Texto PESSOAL -->
+  <g id="pessoal-text">
+    <!-- Sombra sutil -->
+    <text x="12.5" y="76.5" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="39" fill="#7E22CE" opacity="0.3" letter-spacing="0.5">
+      PESSOAL
+    </text>
+    <!-- Texto principal lilás -->
+    <text x="12" y="75" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="39" fill="#C084FC" letter-spacing="0.5">
+      PESSOAL
+    </text>
+  </g>
+</svg>

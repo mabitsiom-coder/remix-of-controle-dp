@@ -63,13 +63,13 @@ import { rankingAnalistas, slaMensal } from "@/lib/mock-data";
 export const Route = createFileRoute("/bi")({
   head: () => ({
     meta: [
-      { title: "BI Gerencial por Carteira — DP Control" },
+      { title: "Gestão por Carteira — Departamento Pessoal" },
       {
         name: "description",
         content:
           "Dashboard gerencial por Carteira e Competência: empresas com movimento, acompanhamento de tarefas, SLA e produtividade.",
       },
-      { property: "og:title", content: "BI Gerencial por Carteira — DP Control" },
+      { property: "og:title", content: "Gestão por Carteira — Departamento Pessoal" },
       {
         property: "og:description",
         content: "Indicadores operacionais e gerenciais do DP.",
@@ -246,7 +246,7 @@ function BIGerencial() {
     <div className="space-y-6">
       {/* 1. CABEÇALHO PRINCIPAL */}
       <PageHeader
-        title="BI Gerencial por Carteira"
+        title="Gestão por Carteira"
         description="Acompanhamento executivo de empresas, movimentação, tarefas e produtividade do DP."
       />
 

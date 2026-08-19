@@ -48,10 +48,10 @@ import {
 export const Route = createFileRoute("/grupos")({
   head: () => ({
     meta: [
-      { title: "Grupos Econômicos — DP Control" },
+      { title: "Grupos — Departamento Pessoal" },
       {
         name: "description",
-        content: "Gestão de Grupos Econômicos e holdings que comportam múltiplas empresas.",
+        content: "Gestão de Grupos e holdings que comportam múltiplas empresas.",
       },
     ],
   }),
@@ -73,7 +73,7 @@ function GruposPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Grupos Econômicos & Holdings"
+        title="Grupos"
         description="Agrupe empresas do mesmo grupo empresarial para gestão consolidada e relatórios unificados"
         actions={<CriarGrupoDialog />}
       />

@@ -9,6 +9,7 @@ import { getSupabase } from "@/lib/supabase-browser";
 import { loginUser, registrarPrimeiroAdmin, recarregarUsuarios } from "@/lib/auth-store";
 import { existeUsuario } from "@/lib/usuarios.functions";
 import { sincronizarComBanco, iniciarSincronizacao } from "@/lib/db-sync";
+import { LogoMabit } from "@/components/logo-mabit";
 
 export function PortaoAcesso({ children }: { children: ReactNode }) {
   const [estado, setEstado] = useState<"carregando" | "logado" | "login" | "primeiro-acesso">(
@@ -86,13 +87,11 @@ export function PortaoAcesso({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
       <div className="w-full max-w-sm rounded-xl border bg-card p-6 shadow-sm">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Shield className="h-5 w-5" />
-          </div>
+        <div className="flex flex-col items-center text-center gap-3">
+          <LogoMabit />
           <div>
-            <h1 className="text-base font-semibold text-foreground">DP Control</h1>
-            <p className="text-[11px] text-muted-foreground">
+            <h1 className="text-sm font-semibold text-foreground">Departamento Pessoal</h1>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
               {primeiro
                 ? "Primeiro acesso — crie o administrador do sistema"
                 : "Acesse com seu e-mail corporativo"}

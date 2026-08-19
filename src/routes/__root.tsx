@@ -90,7 +90,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "DP Control — Centro de Controle do Departamento Pessoal" },
+      { title: "Departamento Pessoal — Centro de Controle Operacional" },
       {
         name: "description",
         content:

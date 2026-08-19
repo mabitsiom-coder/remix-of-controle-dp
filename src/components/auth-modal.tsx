@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-store";
+import { LogoMabit } from "@/components/logo-mabit";
 
 export function AuthModal({ trigger }: { trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -52,16 +53,14 @@ export function AuthModal({ trigger }: { trigger?: React.ReactNode }) {
       </DialogTrigger>
       <DialogContent className="max-w-md p-6 sm:rounded-xl">
         <DialogHeader>
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Shield className="h-5 w-5" />
-            </div>
-            <div>
-              <DialogTitle className="text-base font-semibold">Autenticação & Sessão</DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground">
-                Acesso real e individual, com os dados salvos no banco de dados.
-              </DialogDescription>
-            </div>
+          <div className="flex flex-col items-center text-center gap-2 mb-2">
+            <LogoMabit />
+            <DialogTitle className="text-base font-semibold">Autenticação & Sessão</DialogTitle>
+            <DialogDescription className="text-xs">
+              {autenticado
+                ? `Conectado como ${currentUser.nome} (${currentUser.perfil})`
+                : "Entre com suas credenciais de acesso ao sistema"}
+            </DialogDescription>
           </div>
         </DialogHeader>
 

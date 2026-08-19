@@ -38,26 +38,27 @@ import {
 import { useAuth } from "@/lib/auth-store";
 import { AuthModal } from "@/components/auth-modal";
 import { podeAcessarRota } from "@/lib/permissoes";
+import { LogoMabit } from "@/components/logo-mabit";
 
 const grupos = [
   {
     label: "Visão geral",
     items: [
-      { title: "Dashboard", url: "/", icon: LayoutDashboard },
-      { title: "BI Gerencial", url: "/bi", icon: BarChart3 },
+      { title: "Auditoria", url: "/", icon: LayoutDashboard },
+      { title: "Gestão", url: "/bi", icon: BarChart3 },
     ],
   },
   {
     label: "Operação",
     items: [
       { title: "Empresas", url: "/empresas", icon: Building2 },
-      { title: "Grupos Econômicos", url: "/grupos", icon: Layers },
+      { title: "Grupos", url: "/grupos", icon: Layers },
       { title: "Carteiras", url: "/carteiras", icon: Briefcase },
-      { title: "Calendário", url: "/calendario", icon: CalendarDays },
       { title: "Obrigações", url: "/obrigacoes", icon: FileCheck2 },
       { title: "SST", url: "/sst", icon: HeartPulse },
       { title: "Folha de Pagamento", url: "/folha", icon: Receipt },
       { title: "Rotinas", url: "/tarefas", icon: KanbanSquare },
+      { title: "Calendário", url: "/calendario", icon: CalendarDays },
       { title: "Painel Gantt", url: "/gantt", icon: GanttChartSquare },
     ],
   },
@@ -108,16 +109,8 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-1 py-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-            <ShieldCheck className="h-4 w-4" />
-          </div>
-          {!collapsed && (
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-sidebar-foreground">DP Control</p>
-              <p className="truncate text-[11px] text-sidebar-foreground/60">Centro de Controle Operacional</p>
-            </div>
-          )}
+        <div className="flex items-center justify-center px-1 py-2">
+          <LogoMabit collapsed={collapsed} />
         </div>
       </SidebarHeader>
 

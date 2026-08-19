@@ -60,7 +60,7 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Dashboard Executivo — DP Control" },
+      { title: "Auditoria — Departamento Pessoal" },
       {
         name: "description",
         content:
@@ -481,7 +481,7 @@ function Dashboard() {
     <div className="space-y-6">
       {/* ── Cabeçalho ───────────────────────────────────────────────────────── */}
       <PageHeader
-        title="Dashboard Executivo"
+        title="Auditoria"
         description="Visão consolidada das demandas do Departamento Pessoal"
       />
 
