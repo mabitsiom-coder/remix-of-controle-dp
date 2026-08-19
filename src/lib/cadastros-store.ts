@@ -8,6 +8,7 @@ export type Analista = {
   status: "ativo" | "inativo";
   carteiraId?: string | undefined;
   assistenteId?: string | undefined;
+  fotoUrl?: string | undefined;
 };
 
 export type Supervisor = {
@@ -17,6 +18,7 @@ export type Supervisor = {
   departamento: string;
   carteiraIds?: string[] | undefined;
   status: "ativo" | "inativo";
+  fotoUrl?: string | undefined;
 };
 
 export type Carteira = {
@@ -34,6 +36,7 @@ export type Membro = {
   cargo: string; // categoria do cargo (Gerente, Auditoria, etc.)
   nivel?: string | undefined; // nivel dentro do cargo (opcional)
   status: "ativo" | "inativo";
+  fotoUrl?: string | undefined;
 };
 
 const STORAGE_KEYS = {

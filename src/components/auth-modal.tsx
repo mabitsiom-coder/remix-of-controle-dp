@@ -67,9 +67,22 @@ export function AuthModal({ trigger }: { trigger?: React.ReactNode }) {
         {autenticado ? (
           <div className="mt-2 space-y-3 rounded-lg border bg-muted/20 p-4">
             <div className="flex items-center justify-between gap-2">
-              <div>
-                <p className="text-sm font-semibold text-foreground">{currentUser.nome}</p>
-                <p className="text-[11px] text-muted-foreground">{currentUser.email}</p>
+              <div className="flex items-center gap-3">
+                {currentUser.fotoUrl ? (
+                  <img
+                    src={currentUser.fotoUrl}
+                    alt={currentUser.nome}
+                    className="h-10 w-10 rounded-full object-cover border border-primary/30 shrink-0"
+                  />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm shrink-0">
+                    {currentUser.nome.substring(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{currentUser.nome}</p>
+                  <p className="text-[11px] text-muted-foreground">{currentUser.email}</p>
+                </div>
               </div>
               <Badge variant="default" className="text-[10px]">
                 {currentUser.perfil}

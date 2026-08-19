@@ -31,6 +31,7 @@ export type PessoaCadastro = {
   perfil: PerfilAcesso;
   departamento: string;
   origem: string;
+  fotoUrl?: string;
 };
 
 function normalizar(valor: string) {
@@ -58,6 +59,7 @@ export function usePessoasCadastro(): PessoaCadastro[] {
       perfil: "Analista" as PerfilAcesso,
       departamento: carteira ? `Carteira ${carteira.nome}` : "Operações DP",
       origem: "Analista",
+      fotoUrl: a.fotoUrl,
     };
   });
 
@@ -72,6 +74,7 @@ export function usePessoasCadastro(): PessoaCadastro[] {
       perfil: "Supervisor" as PerfilAcesso,
       departamento: nomes.length ? `Carteiras: ${nomes.join(", ")}` : s.departamento || "Supervisão",
       origem: "Supervisor",
+      fotoUrl: s.fotoUrl,
     };
   });
 
@@ -82,6 +85,7 @@ export function usePessoasCadastro(): PessoaCadastro[] {
     perfil: (/coorden/i.test(m.cargo) ? "Coordenador" : /gerent|diret/i.test(m.cargo) ? "Gerente" : /auditor/i.test(m.cargo) ? "Coordenador" : "Analista") as PerfilAcesso,
     departamento: m.cargo + (m.nivel ? ` · ${m.nivel}` : ""),
     origem: m.cargo || "Equipe",
+    fotoUrl: m.fotoUrl,
   }));
 
   return [...deSupervisores, ...deMembros, ...deAnalistas].filter((p) => p.nome.trim());
@@ -227,6 +231,7 @@ function DefinirAcessoDialog({
         senha: senha.trim(),
         perfil,
         departamento: pessoa.departamento,
+        fotoUrl: pessoa.fotoUrl,
         status: "ativo",
       });
       toast.success(`Acesso criado para ${pessoa.nome} (${perfil}).`);

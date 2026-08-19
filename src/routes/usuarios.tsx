@@ -14,6 +14,8 @@ import {
   UserCog,
   LogIn,
   Building,
+  Camera,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -226,9 +228,17 @@ function UsuariosPage() {
                   <tr key={usr.id} className="hover:bg-muted/20 transition-colors">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">
-                          {usr.nome.substring(0, 2).toUpperCase()}
-                        </div>
+                        {usr.fotoUrl ? (
+                          <img
+                            src={usr.fotoUrl}
+                            alt={usr.nome}
+                            className="h-8 w-8 rounded-full object-cover border border-primary/20 shrink-0"
+                          />
+                        ) : (
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs shrink-0">
+                            {usr.nome.substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
                         <div>
                           <p className="font-semibold text-foreground flex items-center gap-1.5">
                             {usr.nome}
@@ -329,6 +339,7 @@ function NovoUsuarioDialog() {
   const [senha, setSenha] = useState("123456");
   const [perfil, setPerfil] = useState<PerfilAcesso>("Analista");
   const [departamento, setDepartamento] = useState("Operações DP");
+  const [fotoUrl, setFotoUrl] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -349,6 +360,7 @@ function NovoUsuarioDialog() {
         senha: senha.trim() || "123456",
         perfil,
         departamento: departamento.trim() || "Departamento Pessoal",
+        fotoUrl: fotoUrl || undefined,
         status: "ativo",
       });
 
@@ -357,6 +369,7 @@ function NovoUsuarioDialog() {
       setNome("");
       setEmail("");
       setSenha("123456");
+      setFotoUrl("");
     } catch (err: any) {
       toast.error(err?.message || "Erro ao cadastrar usuário.");
     }
@@ -373,11 +386,54 @@ function NovoUsuarioDialog() {
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">Cadastrar Novo Usuário</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Defina as credenciais e o perfil de acesso do usuário no sistema.
+            Defina as credenciais, foto e perfil de acesso do usuário no sistema.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="mt-2 space-y-3">
+          <div className="flex items-center gap-3 border p-2.5 rounded-lg bg-muted/20">
+            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border bg-background overflow-hidden shadow-2xs">
+              {fotoUrl ? (
+                <img src={fotoUrl} alt="Preview Avatar" className="h-full w-full object-cover" />
+              ) : (
+                <UserCog className="h-6 w-6 text-muted-foreground" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0 space-y-1">
+              <Label className="text-xs font-medium">Foto Personalizada de Perfil</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (file.size > 2 * 1024 * 1024) {
+                        toast.error("Foto deve ter no máximo 2MB");
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onloadend = () => setFotoUrl(reader.result as string);
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="h-8 text-xs cursor-pointer"
+                />
+                {fotoUrl && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs text-destructive hover:bg-destructive/10"
+                    onClick={() => setFotoUrl("")}
+                  >
+                    Remover
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-1">
             <Label htmlFor="nomeUsr" className="text-xs font-medium">
               Nome Completo *
@@ -472,6 +528,7 @@ function EditarUsuarioDialog({ usuario }: { usuario: Usuario }) {
   const [senha, setSenha] = useState("");
   const [perfil, setPerfil] = useState<PerfilAcesso>(usuario.perfil);
   const [departamento, setDepartamento] = useState(usuario.departamento);
+  const [fotoUrl, setFotoUrl] = useState(usuario.fotoUrl || "");
   const [status, setStatus] = useState<"ativo" | "inativo">(usuario.status);
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -492,6 +549,7 @@ function EditarUsuarioDialog({ usuario }: { usuario: Usuario }) {
         senha: senha.trim(),
         perfil,
         departamento: departamento.trim(),
+        fotoUrl: fotoUrl || undefined,
         status,
       });
       toast.success(`Usuário "${nome}" atualizado!`);
@@ -512,11 +570,53 @@ function EditarUsuarioDialog({ usuario }: { usuario: Usuario }) {
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">Editar Usuário</DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Altere os dados, perfil de acesso ou senha do usuário.
+            Altere os dados, foto de perfil de acesso ou senha do usuário.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleUpdate} className="mt-2 space-y-3">
+          <div className="flex items-center gap-3 border p-2.5 rounded-lg bg-muted/20">
+            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border bg-background overflow-hidden shadow-2xs">
+              {fotoUrl ? (
+                <img src={fotoUrl} alt="Avatar" className="h-full w-full object-cover" />
+              ) : (
+                <UserCog className="h-6 w-6 text-muted-foreground" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0 space-y-1">
+              <Label className="text-xs font-medium">Foto Personalizada do Perfil</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (file.size > 2 * 1024 * 1024) {
+                        toast.error("Foto deve ter no máximo 2MB");
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onloadend = () => setFotoUrl(reader.result as string);
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="h-8 text-xs cursor-pointer"
+                />
+                {fotoUrl && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs text-destructive hover:bg-destructive/10"
+                    onClick={() => setFotoUrl("")}
+                  >
+                    Remover
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
           <div className="space-y-1">
             <Label htmlFor="editNome" className="text-xs font-medium">Nome</Label>
             <Input id="editNome" value={nome} onChange={(e) => setNome(e.target.value)} required />

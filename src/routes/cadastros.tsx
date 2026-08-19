@@ -106,12 +106,14 @@ function TabCargo({ config, membros, addMembro, removeMembro, updateMembro }: {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [nivel, setNivel] = useState<string>(config.niveis[0] ?? "");
+  const [fotoUrl, setFotoUrl] = useState("");
 
   const reset = () => {
     setEditingId(null);
     setNome("");
     setEmail("");
     setNivel(config.niveis[0] ?? "");
+    setFotoUrl("");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -122,7 +124,7 @@ function TabCargo({ config, membros, addMembro, removeMembro, updateMembro }: {
     }
 
     if (editingId) {
-      updateMembro(editingId, { nome: nome.trim(), email: email.trim(), nivel });
+      updateMembro(editingId, { nome: nome.trim(), email: email.trim(), nivel, fotoUrl: fotoUrl || undefined });
       toast.success(`${nome} atualizado com sucesso!`);
     } else {
       addMembro({
@@ -130,6 +132,7 @@ function TabCargo({ config, membros, addMembro, removeMembro, updateMembro }: {
         email: email.trim() || `${nome.toLowerCase().replace(/\s+/g, ".")}@dpcontrol.com.br`,
         cargo: config.key,
         nivel,
+        fotoUrl: fotoUrl || undefined,
         status: "ativo",
       });
       toast.success(`${nome} cadastrado como ${config.label}!`);
@@ -159,6 +162,50 @@ function TabCargo({ config, membros, addMembro, removeMembro, updateMembro }: {
               <X className="h-3.5 w-3.5 mr-1" /> Cancelar Edição
             </Button>
           )}
+        </div>
+
+        {/* Foto de Perfil */}
+        <div className="flex items-center gap-3 border p-2.5 rounded-lg bg-muted/30">
+          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border bg-background overflow-hidden shadow-2xs">
+            {fotoUrl ? (
+              <img src={fotoUrl} alt="Avatar" className="h-full w-full object-cover" />
+            ) : (
+              <IconComp className={`h-6 w-6 ${config.color}`} />
+            )}
+          </div>
+          <div className="flex-1 min-w-0 space-y-1">
+            <Label className="text-xs font-medium">Foto Personalizada do Perfil</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (file.size > 2 * 1024 * 1024) {
+                      toast.error("A foto deve ter no máximo 2MB.");
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onloadend = () => setFotoUrl(reader.result as string);
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className="h-8 text-xs cursor-pointer"
+              />
+              {fotoUrl && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-xs text-destructive hover:bg-destructive/10"
+                  onClick={() => setFotoUrl("")}
+                >
+                  Remover
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
@@ -233,13 +280,21 @@ function TabCargo({ config, membros, addMembro, removeMembro, updateMembro }: {
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${config.bgColor}`}>
-                      <IconComp className={`h-3.5 w-3.5 ${config.color}`} />
-                    </div>
+                    {m.fotoUrl ? (
+                      <img
+                        src={m.fotoUrl}
+                        alt={m.nome}
+                        className="h-8 w-8 shrink-0 rounded-full object-cover border border-primary/20"
+                      />
+                    ) : (
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${config.bgColor}`}>
+                        <IconComp className={`h-4 w-4 ${config.color}`} />
+                      </div>
+                    )}
                     <p className="font-bold text-foreground text-sm truncate">{m.nome}</p>
                   </div>
-                  <p className="text-muted-foreground text-xs truncate pl-9">{m.email}</p>
-                  <div className="pl-9 mt-2">
+                  <p className="text-muted-foreground text-xs truncate pl-10">{m.email}</p>
+                  <div className="pl-10 mt-2">
                     <Badge variant="outline" className="text-[10px] bg-muted/50">
                       {m.nivel}
                     </Badge>
@@ -256,6 +311,7 @@ function TabCargo({ config, membros, addMembro, removeMembro, updateMembro }: {
                       setNome(m.nome);
                       setEmail(m.email);
                       setNivel(m.nivel || (config.niveis[0] ?? ""));
+                      setFotoUrl(m.fotoUrl || "");
                     }}
                   >
                     <Pencil className="h-3.5 w-3.5" />
@@ -322,12 +378,14 @@ function CadastrosPage() {
   const [cargoAnalista, setCargoAnalista] = useState("Analista");
   const [carteiraIdAnalista, setCarteiraIdAnalista] = useState<string>("none");
   const [assistenteIdAnalista, setAssistenteIdAnalista] = useState<string>("none");
+  const [fotoUrlAnalista, setFotoUrlAnalista] = useState("");
 
   // Form Supervisor
   const [editingSupervisorId, setEditingSupervisorId] = useState<string | null>(null);
   const [nomeSupervisor, setNomeSupervisor] = useState("");
   const [emailSupervisor, setEmailSupervisor] = useState("");
   const [carteirasSupervisor, setCarteirasSupervisor] = useState<string[]>([]);
+  const [fotoUrlSupervisor, setFotoUrlSupervisor] = useState("");
 
   // Form Carteira
   const [editingCarteiraId, setEditingCarteiraId] = useState<string | null>(null);
@@ -342,6 +400,7 @@ function CadastrosPage() {
     setCargoAnalista("Analista");
     setCarteiraIdAnalista("none");
     setAssistenteIdAnalista("none");
+    setFotoUrlAnalista("");
   };
 
   const handleAddAnalista = (e: React.FormEvent) => {
@@ -353,6 +412,7 @@ function CadastrosPage() {
       cargo: cargoAnalista,
       carteiraId: carteiraIdAnalista !== "none" ? carteiraIdAnalista : undefined,
       assistenteId: assistenteIdAnalista !== "none" ? assistenteIdAnalista : undefined,
+      fotoUrl: fotoUrlAnalista || undefined,
     };
     if (editingAnalistaId) {
       updateAnalista(editingAnalistaId, payload);
@@ -375,16 +435,17 @@ function CadastrosPage() {
     setNomeSupervisor("");
     setEmailSupervisor("");
     setCarteirasSupervisor([]);
+    setFotoUrlSupervisor("");
   };
 
   const handleAddSupervisor = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nomeSupervisor.trim()) { toast.error("Informe o nome do supervisor."); return; }
     if (editingSupervisorId) {
-      updateSupervisor(editingSupervisorId, { nome: nomeSupervisor.trim(), email: emailSupervisor.trim(), carteiraIds: carteirasSupervisor, departamento: nomesCarteiras(carteirasSupervisor) });
+      updateSupervisor(editingSupervisorId, { nome: nomeSupervisor.trim(), email: emailSupervisor.trim(), carteiraIds: carteirasSupervisor, departamento: nomesCarteiras(carteirasSupervisor), fotoUrl: fotoUrlSupervisor || undefined });
       toast.success(`Supervisor "${nomeSupervisor}" atualizado!`);
     } else {
-      addSupervisor({ nome: nomeSupervisor.trim(), email: emailSupervisor.trim() || `${nomeSupervisor.toLowerCase().replace(/\s+/g, ".")}@dpcontrol.com.br`, carteiraIds: carteirasSupervisor, departamento: nomesCarteiras(carteirasSupervisor), status: "ativo" });
+      addSupervisor({ nome: nomeSupervisor.trim(), email: emailSupervisor.trim() || `${nomeSupervisor.toLowerCase().replace(/\s+/g, ".")}@dpcontrol.com.br`, carteiraIds: carteirasSupervisor, departamento: nomesCarteiras(carteirasSupervisor), status: "ativo", fotoUrl: fotoUrlSupervisor || undefined });
       toast.success(`Supervisor "${nomeSupervisor}" cadastrado!`);
     }
     resetSupervisor();

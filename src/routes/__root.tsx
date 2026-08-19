@@ -160,7 +160,15 @@ function RootComponent() {
                 <AuthModal
                   trigger={
                     <button className="flex items-center gap-2 rounded-lg border bg-muted/30 px-2.5 py-1 text-xs hover:bg-accent transition-colors cursor-pointer">
-                      <Shield className="h-3.5 w-3.5 text-primary" />
+                      {currentUser.fotoUrl ? (
+                        <img
+                          src={currentUser.fotoUrl}
+                          alt={currentUser.nome}
+                          className="h-5 w-5 rounded-full object-cover border border-primary/30"
+                        />
+                      ) : (
+                        <Shield className="h-3.5 w-3.5 text-primary" />
+                      )}
                       <span className="font-semibold">{currentUser.nome}</span>
                       <span className="text-[10px] rounded bg-primary/10 text-primary px-1.5 py-0.5 font-medium">
                         {currentUser.perfil}

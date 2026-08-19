@@ -18,6 +18,7 @@ export type Usuario = {
   senha?: string;
   perfil: PerfilAcesso;
   departamento: string;
+  fotoUrl?: string;
   status: "ativo" | "inativo";
   criadoEm: string;
 };
@@ -86,9 +87,11 @@ export async function recarregarUsuarios(): Promise<{ atual: Usuario; lista: Usu
     .select("id,nome,email,perfil,departamento,status,created_at")
     .order("created_at", { ascending: true });
 
+  const usuariosLocais = getStoredUsers();
+
   if (error) {
     console.error("Falha ao carregar usuários:", error.message);
-    return { atual: getCurrentUser(), lista: getStoredUsers() };
+    return { atual: getCurrentUser(), lista: usuariosLocais };
   }
 
   type Linha = {
@@ -101,15 +104,19 @@ export async function recarregarUsuarios(): Promise<{ atual: Usuario; lista: Usu
     created_at: string;
   };
 
-  const lista: Usuario[] = ((data ?? []) as Linha[]).map((u) => ({
-    id: u.id,
-    nome: u.nome,
-    email: u.email,
-    perfil: u.perfil as PerfilAcesso,
-    departamento: u.departamento,
-    status: (u.status === "inativo" ? "inativo" : "ativo") as "ativo" | "inativo",
-    criadoEm: formatarData(u.created_at),
-  }));
+  const lista: Usuario[] = ((data ?? []) as Linha[]).map((u) => {
+    const local = usuariosLocais.find((loc) => loc.id === u.id || loc.email.toLowerCase() === u.email.toLowerCase());
+    return {
+      id: u.id,
+      nome: u.nome,
+      email: u.email,
+      perfil: u.perfil as PerfilAcesso,
+      departamento: u.departamento,
+      fotoUrl: local?.fotoUrl,
+      status: (u.status === "inativo" ? "inativo" : "ativo") as "ativo" | "inativo",
+      criadoEm: formatarData(u.created_at),
+    };
+  });
 
   const atual = lista.find((u) => u.id === uid) ?? usuarioVazio;
   gravarCache(CACHE_USERS, lista);
@@ -157,7 +164,14 @@ export async function addUsuario(
     },
   });
   const { lista } = await recarregarUsuarios();
-  return lista.find((u) => u.email.toLowerCase() === dados.email.trim().toLowerCase())!;
+  const criado = lista.find((u) => u.email.toLowerCase() === dados.email.trim().toLowerCase())!;
+  if (dados.fotoUrl && criado) {
+    criado.fotoUrl = dados.fotoUrl;
+    const atualizados = lista.map((u) => (u.id === criado.id ? criado : u));
+    gravarCache(CACHE_USERS, atualizados);
+    if (getCurrentUser().id === criado.id) gravarCache(CACHE_CURRENT, criado);
+  }
+  return criado;
 }
 
 export async function updateUsuario(id: string, novosDados: Partial<Usuario>) {
@@ -173,7 +187,19 @@ export async function updateUsuario(id: string, novosDados: Partial<Usuario>) {
     },
   });
   const { lista } = await recarregarUsuarios();
-  return lista.find((u) => u.id === id);
+  const atuais = getStoredUsers();
+  const atualizados = atuais.map((u) => {
+    if (u.id === id) {
+      return { ...u, ...novosDados };
+    }
+    return u;
+  });
+  gravarCache(CACHE_USERS, atualizados);
+  const cur = getCurrentUser();
+  if (cur.id === id) {
+    gravarCache(CACHE_CURRENT, { ...cur, ...novosDados });
+  }
+  return atualizados.find((u) => u.id === id);
 }
 
 export async function removeUsuario(id: string) {

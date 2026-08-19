@@ -144,9 +144,17 @@ export function AppSidebar() {
         <AuthModal
           trigger={
             <button className="flex w-full items-center gap-2 rounded-lg bg-sidebar-accent px-2 py-2 text-left hover:bg-sidebar-accent/80 transition-colors cursor-pointer">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground">
-                {getInitials(currentUser.nome)}
-              </div>
+              {currentUser.fotoUrl ? (
+                <img
+                  src={currentUser.fotoUrl}
+                  alt={currentUser.nome}
+                  className="h-8 w-8 shrink-0 rounded-full object-cover border border-sidebar-primary/30"
+                />
+              ) : (
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-primary text-xs font-semibold text-sidebar-primary-foreground">
+                  {getInitials(currentUser.nome)}
+                </div>
+              )}
               {!collapsed && (
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-medium text-sidebar-accent-foreground">{currentUser.nome}</p>
