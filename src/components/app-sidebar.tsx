@@ -8,14 +8,12 @@ import {
   FileCheck2,
   HeartPulse,
   Receipt,
-  ListChecks,
   KanbanSquare,
   GanttChartSquare,
   FolderOpen,
   TriangleAlert,
   GraduationCap,
   BarChart3,
-  BellRing,
   Sparkles,
   ShieldCheck,
   UserCog,
@@ -47,7 +45,6 @@ const grupos = [
     items: [
       { title: "Dashboard", url: "/", icon: LayoutDashboard },
       { title: "BI Gerencial", url: "/bi", icon: BarChart3 },
-      { title: "Alertas", url: "/alertas", icon: BellRing },
     ],
   },
   {
@@ -62,7 +59,6 @@ const grupos = [
       { title: "Folha de Pagamento", url: "/folha", icon: Receipt },
       { title: "Rotinas", url: "/tarefas", icon: KanbanSquare },
       { title: "Painel Gantt", url: "/gantt", icon: GanttChartSquare },
-      { title: "Checklists", url: "/checklists", icon: ListChecks },
     ],
   },
   {

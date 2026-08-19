@@ -12,7 +12,6 @@ export const PERFIS_GESTAO: PerfilAcesso[] = [
 export const ROTAS_VISAO_GERAL = [
   "/",
   "/bi",
-  "/alertas",
 ];
 
 /** Rotas da área de Operação — liberadas para todos os usuários. */
@@ -26,7 +25,6 @@ export const ROTAS_OPERACAO = [
   "/folha",
   "/tarefas",
   "/gantt",
-  "/checklists",
 ];
 
 /** Todas as rotas liberadas para usuários comuns (Visão Geral + Operação). */
