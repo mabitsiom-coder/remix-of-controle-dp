@@ -1,6 +1,6 @@
 import type { PerfilAcesso } from "@/lib/auth-store";
 
-/** Perfis com acesso total a todas as funções do sistema. */
+/** Perfis com acesso total a todas as funções do sistema (Gestão / Administrador como fabio-adm). */
 export const PERFIS_GESTAO: PerfilAcesso[] = [
   "Administrador",
   "Gerente",
@@ -8,7 +8,14 @@ export const PERFIS_GESTAO: PerfilAcesso[] = [
   "Supervisor",
 ];
 
-/** Rotas da área de Operações — únicas liberadas para o perfil Analista. */
+/** Rotas da área de Visão Geral — liberadas para todos os usuários. */
+export const ROTAS_VISAO_GERAL = [
+  "/",
+  "/bi",
+  "/alertas",
+];
+
+/** Rotas da área de Operação — liberadas para todos os usuários. */
 export const ROTAS_OPERACAO = [
   "/empresas",
   "/grupos",
@@ -22,16 +29,28 @@ export const ROTAS_OPERACAO = [
   "/checklists",
 ];
 
+/** Todas as rotas liberadas para usuários comuns (Visão Geral + Operação). */
+export const ROTAS_USUARIOS = [
+  ...ROTAS_VISAO_GERAL,
+  ...ROTAS_OPERACAO,
+];
+
 export function isGestao(perfil: PerfilAcesso | string) {
   return PERFIS_GESTAO.includes(perfil as PerfilAcesso);
 }
 
 export function podeAcessarRota(perfil: PerfilAcesso | string, pathname: string) {
+  // Administradores e perfis de gestão têm acesso a todo o sistema
   if (isGestao(perfil)) return true;
-  return ROTAS_OPERACAO.some((rota) => pathname === rota || pathname.startsWith(`${rota}/`));
+
+  // Usuários comuns têm acesso total às áreas de Visão Geral e Operação
+  return ROTAS_USUARIOS.some(
+    (rota) => pathname === rota || (rota !== "/" && pathname.startsWith(`${rota}/`)),
+  );
 }
 
 /** Primeira rota disponível para o perfil (usada em redirecionamentos). */
 export function rotaInicial(perfil: PerfilAcesso | string) {
-  return isGestao(perfil) ? "/" : "/empresas";
+  return "/";
 }
+
