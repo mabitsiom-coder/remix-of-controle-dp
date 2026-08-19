@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Clock,
   Paperclip,
@@ -10,13 +10,28 @@ import {
   Circle,
   Repeat,
   Info,
+  ListChecks,
+  Search,
+  Filter,
+  Download,
+  Calendar,
+  Sparkles,
+  CheckSquare,
+  Square,
+  AlertTriangle,
+  User,
+  Tag,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { NovaTarefaDialog } from "@/components/nova-tarefa-dialog";
-import { ImportarRotinasDialog } from "@/components/importar-rotinas-dialog";
+import {
+  ImportarRotinasDialog,
+  downloadModeloXLSX,
+} from "@/components/importar-rotinas-dialog";
 import { DetalhesRotinaDialog } from "@/components/detalhes-rotina-dialog";
 import {
   useTarefas,
@@ -29,16 +44,16 @@ import type { Tarefa } from "@/lib/mock-data";
 export const Route = createFileRoute("/tarefas")({
   head: () => ({
     meta: [
-      { title: "Gestão de Rotinas — DP Control" },
+      { title: "Rotinas e Checklist Diário — Departamento Pessoal" },
       {
         name: "description",
         content:
-          "Kanban, lista e cronograma das rotinas do DP com periodicidade automática, checklists e importação Excel.",
+          "Lista de tarefas diárias, checklist interativo, kanban e cronograma com importação em planilha Excel.",
       },
-      { property: "og:title", content: "Gestão de Rotinas — DP Control" },
+      { property: "og:title", content: "Rotinas e Checklist Diário — Departamento Pessoal" },
       {
         property: "og:description",
-        content: "Kanban operacional e rotinas do Departamento Pessoal.",
+        content: "Checklist de tarefas diárias e rotinas operacionais do DP.",
       },
     ],
   }),
@@ -52,7 +67,7 @@ const colunas = [
   { id: "concluida" as const, nome: "Concluída" },
 ];
 
-const visoes = ["Kanban", "Lista", "Cronograma"] as const;
+const visoes = ["Checklist Diário", "Kanban", "Lista", "Cronograma"] as const;
 
 const PRIORIDADE_COR: Record<string, string> = {
   baixa: "bg-emerald-500/80",
@@ -222,10 +237,17 @@ function TarefaCard({
 }
 
 function Tarefas() {
-  const [visao, setVisao] = useState<(typeof visoes)[number]>("Kanban");
+  const [visao, setVisao] = useState<(typeof visoes)[number]>("Checklist Diário");
   const [rotinaSelecionada, setRotinaSelecionada] = useState<Tarefa | null>(null);
   const [detalhesAberto, setDetalhesAberto] = useState(false);
   const { tarefas } = useTarefas();
+
+  // Filtros para o Checklist Diário
+  const [busca, setBusca] = useState("");
+  const [filtroPeriod, setFiltroPeriod] = useState<string>("todas");
+  const [filtroCat, setFiltroCat] = useState<string>("todas");
+  const [filtroStatus, setFiltroStatus] = useState<string>("todas");
+  const [novoItemTexto, setNovoItemTexto] = useState<{ [tarefaId: string]: string }>({});
 
   const handleMover = (id: string, novoStatus: Tarefa["status"]) => {
     updateTarefa(id, { status: novoStatus });
@@ -236,11 +258,106 @@ function Tarefas() {
     setDetalhesAberto(true);
   };
 
+  // Categorias presentes
+  const categoriasDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    tarefas.forEach((t) => {
+      if (t.categoria) set.add(t.categoria);
+    });
+    return Array.from(set);
+  }, [tarefas]);
+
+  // Filtragem para o Checklist Diário
+  const tarefasFiltradas = useMemo(() => {
+    return tarefas.filter((t) => {
+      const matchBusca =
+        !busca ||
+        t.titulo.toLowerCase().includes(busca.toLowerCase()) ||
+        (t.descricao && t.descricao.toLowerCase().includes(busca.toLowerCase())) ||
+        (t.responsavel && t.responsavel.toLowerCase().includes(busca.toLowerCase()));
+
+      const matchPeriod =
+        filtroPeriod === "todas" ||
+        (filtroPeriod === "diaria" && (t.periodicidade === "Diária" || !t.periodicidade)) ||
+        t.periodicidade?.toLowerCase() === filtroPeriod.toLowerCase();
+
+      const matchCat =
+        filtroCat === "todas" || t.categoria?.toLowerCase() === filtroCat.toLowerCase();
+
+      const matchStatus =
+        filtroStatus === "todas" ||
+        (filtroStatus === "pendente" && t.status !== "concluida") ||
+        (filtroStatus === "concluida" && t.status === "concluida");
+
+      return matchBusca && matchPeriod && matchCat && matchStatus;
+    });
+  }, [tarefas, busca, filtroPeriod, filtroCat, filtroStatus]);
+
+  // Cálculos de progresso do Checklist Diário
+  const totaisChecklist = useMemo(() => {
+    let totalItens = 0;
+    let itensFeitos = 0;
+    let tarefasConcluidas = 0;
+
+    tarefasFiltradas.forEach((t) => {
+      const lista = t.checklist || [];
+      totalItens += lista.length;
+      itensFeitos += lista.filter((c) => c.feito).length;
+      if (t.status === "concluida" || (lista.length > 0 && lista.every((c) => c.feito))) {
+        tarefasConcluidas++;
+      }
+    });
+
+    const pctGeral =
+      totalItens > 0
+        ? Math.round((itensFeitos / totalItens) * 100)
+        : tarefasFiltradas.length > 0
+        ? Math.round((tarefasConcluidas / tarefasFiltradas.length) * 100)
+        : 0;
+
+    return {
+      totalTarefas: tarefasFiltradas.length,
+      tarefasConcluidas,
+      totalItens,
+      itensFeitos,
+      itensPendentes: totalItens - itensFeitos,
+      pctGeral,
+    };
+  }, [tarefasFiltradas]);
+
+  const handleAdicionarItemChecklist = (tarefaId: string) => {
+    const texto = (novoItemTexto[tarefaId] || "").trim();
+    if (!texto) return;
+
+    const t = tarefas.find((item) => item.id === tarefaId);
+    if (!t) return;
+
+    const checklistAtual = t.checklist || [];
+    const novoChecklist = [
+      ...checklistAtual,
+      { item: texto, feito: false, obrigatorio: false },
+    ];
+
+    updateTarefa(tarefaId, { checklist: novoChecklist });
+    setNovoItemTexto((prev) => ({ ...prev, [tarefaId]: "" }));
+  };
+
+  const handleMarcarTodosItens = (tarefa: Tarefa, feito: boolean) => {
+    const checklistAtual = tarefa.checklist || [];
+    if (checklistAtual.length === 0) return;
+
+    const novoChecklist = checklistAtual.map((c) => ({ ...c, feito }));
+    updateTarefa(tarefa.id, {
+      checklist: novoChecklist,
+      status: feito ? "concluida" : "fazendo",
+    });
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Gestão de Rotinas"
-        description="Rotinas operacionais compartilhadas, prazos, periodicidade e checklists"
+        title="Rotinas & Checklist Diário"
+        description="Acompanhamento diário de rotinas operacionais com marcação de checklists e importação em planilha Excel"
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1 rounded-lg border p-1 bg-background">
@@ -250,7 +367,7 @@ function Tarefas() {
                   onClick={() => setVisao(v)}
                   className={
                     visao === v
-                      ? "rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
+                      ? "rounded-md bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-xs"
                       : "rounded-md px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted"
                   }
                 >
@@ -258,13 +375,402 @@ function Tarefas() {
                 </button>
               ))}
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadModeloXLSX}
+              className="gap-1.5 text-xs border-emerald-600/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+              title="Baixar planilha modelo de rotinas e checklists (.xlsx)"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Modelo XLSX
+            </Button>
             <ImportarRotinasDialog />
             <NovaTarefaDialog />
           </div>
         }
       />
 
-      {/* ---- KANBAN ---- */}
+      {/* ========================================================================= */}
+      {/* ---- VISAO 1: CHECKLIST DIARIO INTERATIVO ---- */}
+      {/* ========================================================================= */}
+      {visao === "Checklist Diário" && (
+        <div className="space-y-4">
+          {/* Card de Progresso Geral do Checklist */}
+          <div className="surface-panel rounded-2xl border-2 border-primary/20 bg-gradient-to-r from-card via-card to-primary/5 p-5 shadow-sm">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <ListChecks className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <h2 className="text-base font-bold text-foreground">
+                      Painel do Checklist Diário
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                      Marque as tarefas e etapas diárias conforme for executando
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Indicadores resumidos */}
+              <div className="flex flex-wrap items-center gap-4 text-xs">
+                <div className="flex flex-col items-center rounded-xl border bg-background/80 px-3.5 py-1.5 shadow-2xs">
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground">
+                    Tarefas
+                  </span>
+                  <span className="text-base font-bold tabular-nums">
+                    {totaisChecklist.totalTarefas}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center rounded-xl border bg-background/80 px-3.5 py-1.5 shadow-2xs">
+                  <span className="text-[10px] uppercase font-bold text-success">
+                    Itens Concluídos
+                  </span>
+                  <span className="text-base font-bold text-success tabular-nums">
+                    {totaisChecklist.itensFeitos}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center rounded-xl border bg-background/80 px-3.5 py-1.5 shadow-2xs">
+                  <span className="text-[10px] uppercase font-bold text-amber-600">
+                    Itens Pendentes
+                  </span>
+                  <span className="text-base font-bold text-amber-600 tabular-nums">
+                    {totaisChecklist.itensPendentes}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center rounded-xl border bg-primary/10 px-4 py-1.5">
+                  <span className="text-[10px] uppercase font-bold text-primary">
+                    Conclusão Geral
+                  </span>
+                  <span className="text-lg font-black text-primary tabular-nums">
+                    {totaisChecklist.pctGeral}%
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Barra de progresso geral */}
+            <div className="mt-4">
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted/60">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-500 transition-all duration-500"
+                  style={{ width: `${totaisChecklist.pctGeral}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Barra de Filtros e Busca */}
+          <div className="surface-panel flex flex-wrap items-center gap-3 p-3 text-xs">
+            <div className="relative min-w-[200px] flex-1">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar tarefa diária ou responsável..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                className="h-8 pl-8 text-xs"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-muted-foreground">Periodicidade:</span>
+              <select
+                value={filtroPeriod}
+                onChange={(e) => setFiltroPeriod(e.target.value)}
+                className="h-8 rounded-md border bg-background px-2 text-xs"
+              >
+                <option value="todas">Todas</option>
+                <option value="diaria">Diárias</option>
+                <option value="mensal">Mensais</option>
+                <option value="trimestral">Trimestrais</option>
+              </select>
+            </div>
+
+            {categoriasDisponiveis.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-muted-foreground">Categoria:</span>
+                <select
+                  value={filtroCat}
+                  onChange={(e) => setFiltroCat(e.target.value)}
+                  className="h-8 rounded-md border bg-background px-2 text-xs"
+                >
+                  <option value="todas">Todas as categorias</option>
+                  {categoriasDisponiveis.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-muted-foreground">Status:</span>
+              <select
+                value={filtroStatus}
+                onChange={(e) => setFiltroStatus(e.target.value)}
+                className="h-8 rounded-md border bg-background px-2 text-xs"
+              >
+                <option value="todas">Todos</option>
+                <option value="pendente">Pendentes</option>
+                <option value="concluida">Concluídas</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Lista de Tarefas com Checklist Marcável */}
+          {tarefasFiltradas.length === 0 ? (
+            <div className="surface-panel flex flex-col items-center justify-center p-12 text-center gap-3">
+              <ListChecks className="h-10 w-10 text-muted-foreground/40" />
+              <p className="text-sm font-semibold text-foreground">
+                Nenhuma tarefa encontrada com os filtros atuais.
+              </p>
+              <p className="text-xs text-muted-foreground max-w-sm">
+                Cadastre uma nova tarefa ou importe sua lista diária a partir de um arquivo Excel (.xlsx).
+              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadModeloXLSX}
+                  className="gap-1.5 text-xs"
+                >
+                  <Download className="h-3.5 w-3.5" /> Baixar Modelo XLSX
+                </Button>
+                <ImportarRotinasDialog />
+                <NovaTarefaDialog />
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {tarefasFiltradas.map((tarefa) => {
+                const checklist = tarefa.checklist || [];
+                const feitos = checklist.filter((c) => c.feito).length;
+                const total = checklist.length;
+                const pct = total > 0 ? Math.round((feitos / total) * 100) : tarefa.status === "concluida" ? 100 : 0;
+                const isConcluida = tarefa.status === "concluida" || (total > 0 && feitos === total);
+
+                return (
+                  <div
+                    key={tarefa.id}
+                    className={`surface-panel rounded-xl border flex flex-col justify-between transition-all ${
+                      isConcluida
+                        ? "border-emerald-500/30 bg-emerald-500/5 shadow-2xs"
+                        : "hover:border-primary/40 shadow-xs"
+                    }`}
+                  >
+                    {/* Topo do Card */}
+                    <div className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h3
+                            className={`text-sm font-bold leading-tight cursor-pointer hover:text-primary transition-colors ${
+                              isConcluida ? "line-through text-muted-foreground" : "text-foreground"
+                            }`}
+                            onClick={() => abrirDetalhes(tarefa)}
+                          >
+                            {tarefa.titulo}
+                          </h3>
+                          {tarefa.descricao && (
+                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                              {tarefa.descricao}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <StatusBadge status={tarefa.prioridade} />
+                          <button
+                            onClick={() => deleteTarefa(tarefa.id)}
+                            className="p-1 text-muted-foreground hover:text-destructive transition-colors rounded"
+                            title="Excluir tarefa"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Badges de Meta */}
+                      <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                        {tarefa.periodicidade && (
+                          <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-0.5 font-bold text-primary">
+                            <Repeat className="h-3 w-3" /> {tarefa.periodicidade}
+                          </span>
+                        )}
+                        {tarefa.categoria && (
+                          <span className="rounded bg-muted px-2 py-0.5 font-medium text-muted-foreground">
+                            {tarefa.categoria}
+                          </span>
+                        )}
+                        {tarefa.responsavel && (
+                          <span className="inline-flex items-center gap-1 rounded bg-muted/60 px-2 py-0.5 text-muted-foreground">
+                            <User className="h-3 w-3" /> {tarefa.responsavel}
+                          </span>
+                        )}
+                        {tarefa.prazo && (
+                          <span className="rounded border bg-background px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                            📅 {tarefa.prazo}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Barra de Progresso da Tarefa */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[11px] font-semibold text-muted-foreground">
+                            {total > 0
+                              ? `${feitos} de ${total} etapas concluídas`
+                              : isConcluida
+                              ? "Tarefa Concluída"
+                              : "Sem checklist"}
+                          </span>
+                          <span
+                            className={`font-bold tabular-nums text-xs ${
+                              pct === 100
+                                ? "text-emerald-600"
+                                : pct >= 50
+                                ? "text-primary"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {pct}%
+                          </span>
+                        </div>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted/70">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              pct === 100 ? "bg-emerald-500" : "bg-primary"
+                            }`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Lista de Checklist Marcável */}
+                      <div className="border-t pt-2.5">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                            Checklist da Rotina
+                          </span>
+                          {total > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => handleMarcarTodosItens(tarefa, feitos < total)}
+                              className="text-[10px] font-semibold text-primary hover:underline"
+                            >
+                              {feitos < total ? "Marcar todos" : "Desmarcar todos"}
+                            </button>
+                          )}
+                        </div>
+
+                        {checklist.length === 0 ? (
+                          <p className="text-xs text-muted-foreground italic py-1">
+                            Nenhuma etapa cadastrada no checklist.
+                          </p>
+                        ) : (
+                          <ul className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                            {checklist.map((item, idx) => (
+                              <li
+                                key={idx}
+                                onClick={() => toggleChecklistItem(tarefa.id, idx)}
+                                className={`flex items-start gap-2.5 rounded-lg border p-2 text-xs transition-colors cursor-pointer select-none ${
+                                  item.feito
+                                    ? "bg-emerald-500/10 border-emerald-500/30 text-muted-foreground"
+                                    : "bg-background hover:bg-muted/40 border-border text-foreground font-medium"
+                                }`}
+                              >
+                                <span className="mt-0.5 shrink-0">
+                                  {item.feito ? (
+                                    <CheckSquare className="h-4 w-4 text-emerald-600" />
+                                  ) : (
+                                    <Square className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" />
+                                  )}
+                                </span>
+                                <span
+                                  className={`flex-1 leading-snug ${
+                                    item.feito ? "line-through text-muted-foreground font-normal" : ""
+                                  }`}
+                                >
+                                  {item.item}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        {/* Adicionar novo item rápido ao checklist */}
+                        <div className="mt-2.5 flex items-center gap-1.5">
+                          <Input
+                            placeholder="Adicionar etapa..."
+                            value={novoItemTexto[tarefa.id] || ""}
+                            onChange={(e) =>
+                              setNovoItemTexto((prev) => ({
+                                ...prev,
+                                [tarefa.id]: e.target.value,
+                              }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleAdicionarItemChecklist(tarefa.id);
+                              }
+                            }}
+                            className="h-7 text-xs"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleAdicionarItemChecklist(tarefa.id)}
+                            className="h-7 px-2.5 text-xs font-semibold"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Rodapé do Card */}
+                    <div className="border-t bg-muted/20 p-3 flex items-center justify-between gap-2">
+                      <Button
+                        size="sm"
+                        variant={isConcluida ? "outline" : "default"}
+                        className={`h-7 text-xs font-semibold gap-1.5 ${
+                          isConcluida
+                            ? "border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+                            : "bg-primary text-primary-foreground hover:bg-primary/90"
+                        }`}
+                        onClick={() => {
+                          const novoStatus = isConcluida ? "fazendo" : "concluida";
+                          updateTarefa(tarefa.id, { status: novoStatus });
+                        }}
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        {isConcluida ? "Concluída" : "Finalizar Rotina"}
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => abrirDetalhes(tarefa)}
+                        className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        Ver Detalhes
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* ---- VISAO 2: KANBAN ---- */}
+      {/* ========================================================================= */}
       {visao === "Kanban" && (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {colunas.map((col) => {
@@ -326,7 +832,9 @@ function Tarefas() {
         </div>
       )}
 
-      {/* ---- LISTA ---- */}
+      {/* ========================================================================= */}
+      {/* ---- VISAO 3: LISTA ---- */}
+      {/* ========================================================================= */}
       {visao === "Lista" && (
         <div className="surface-panel overflow-x-auto shadow-sm">
           <div className="flex items-center justify-between px-3 py-2 border-b">
@@ -356,80 +864,92 @@ function Tarefas() {
                   <th className="p-3 font-medium">Periodicidade</th>
                   <th className="p-3 font-medium">Categoria</th>
                   <th className="p-3 font-medium">Data-base / Prazo</th>
-                  <th className="p-3 font-medium">Horas</th>
+                  <th className="p-3 font-medium">Checklist</th>
                   <th className="p-3 font-medium">Status</th>
                   <th className="p-3 font-medium">Prioridade</th>
                   <th className="p-3 font-medium" />
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {tarefas.map((t) => (
-                  <tr
-                    key={t.id}
-                    className="hover:bg-muted/40 transition-colors cursor-pointer"
-                    onClick={() => abrirDetalhes(t)}
-                  >
-                    <td className="p-3 font-medium max-w-[240px]">
-                      <div className="truncate font-semibold">{t.titulo}</div>
-                      {t.descricao && (
-                        <p className="text-xs text-muted-foreground truncate font-normal">
-                          {t.descricao}
-                        </p>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      {t.periodicidade ? (
-                        <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                          <Repeat className="h-3 w-3" /> {t.periodicidade}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Pontual</span>
-                      )}
-                    </td>
-                    <td className="p-3 text-muted-foreground">
-                      <span className="rounded-full border px-2 py-0.5 text-xs">
-                        {t.categoria ?? "Folha"}
-                      </span>
-                    </td>
-                    <td className="p-3 tabular-nums font-mono text-xs">{t.prazo}</td>
-                    <td className="p-3 tabular-nums text-xs">
-                      {t.horasGastas ?? 0}h / {t.horasPrevistas ?? 1}h
-                    </td>
-                    <td className="p-3">
-                      <span className="rounded-full border px-2 py-0.5 text-[11px] capitalize">
-                        {t.status === "fazendo"
-                          ? "Em andamento"
-                          : t.status === "revisao"
-                          ? "Em revisão"
-                          : t.status === "concluida"
-                          ? "Concluída"
-                          : "Backlog"}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <StatusBadge status={t.prioridade} />
-                    </td>
-                    <td
-                      className="p-3 text-right"
-                      onClick={(e) => e.stopPropagation()}
+                {tarefas.map((t) => {
+                  const check = t.checklist || [];
+                  const feitos = check.filter((c) => c.feito).length;
+                  return (
+                    <tr
+                      key={t.id}
+                      className="hover:bg-muted/40 transition-colors cursor-pointer"
+                      onClick={() => abrirDetalhes(t)}
                     >
-                      <button
-                        onClick={() => deleteTarefa(t.id)}
-                        className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded"
-                        title="Excluir rotina"
+                      <td className="p-3 font-medium max-w-[240px]">
+                        <div className="truncate font-semibold">{t.titulo}</div>
+                        {t.descricao && (
+                          <p className="text-xs text-muted-foreground truncate font-normal">
+                            {t.descricao}
+                          </p>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        {t.periodicidade ? (
+                          <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                            <Repeat className="h-3 w-3" /> {t.periodicidade}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Pontual</span>
+                        )}
+                      </td>
+                      <td className="p-3 text-muted-foreground">
+                        <span className="rounded-full border px-2 py-0.5 text-xs">
+                          {t.categoria ?? "Folha"}
+                        </span>
+                      </td>
+                      <td className="p-3 tabular-nums font-mono text-xs">{t.prazo}</td>
+                      <td className="p-3">
+                        {check.length > 0 ? (
+                          <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-xs font-semibold">
+                            <CheckSquare className="h-3 w-3 text-primary" /> {feitos}/{check.length}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="p-3">
+                        <span className="rounded-full border px-2 py-0.5 text-[11px] capitalize">
+                          {t.status === "fazendo"
+                            ? "Em andamento"
+                            : t.status === "revisao"
+                            ? "Em revisão"
+                            : t.status === "concluida"
+                            ? "Concluída"
+                            : "Backlog"}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <StatusBadge status={t.prioridade} />
+                      </td>
+                      <td
+                        className="p-3 text-right"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                        <button
+                          onClick={() => deleteTarefa(t.id)}
+                          className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded"
+                          title="Excluir rotina"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}
         </div>
       )}
 
-      {/* ---- CRONOGRAMA ---- */}
+      {/* ========================================================================= */}
+      {/* ---- VISAO 4: CRONOGRAMA ---- */}
+      {/* ========================================================================= */}
       {visao === "Cronograma" && (
         <div className="surface-panel space-y-3 p-4 shadow-sm">
           <div className="flex items-center justify-between mb-2">
@@ -452,45 +972,67 @@ function Tarefas() {
               </div>
             </div>
           ) : (
-            tarefas.map((t) => {
-              const inicio = Math.min(90, (t.horasGastas ?? 0) * 8);
-              const largura = Math.max(12, ((t.horasPrevistas ?? 1) / 8) * 40);
-              return (
-                <div
-                  key={t.id}
-                  onClick={() => abrirDetalhes(t)}
-                  className="flex items-center gap-4 hover:bg-muted/20 p-1.5 rounded-lg cursor-pointer transition-colors"
-                >
-                  <div className="w-56 shrink-0 truncate">
-                    <span className="text-xs font-medium">{t.titulo}</span>
-                    {t.periodicidade && (
-                      <span className="ml-1.5 text-[10px] text-primary font-normal">
-                        ({t.periodicidade})
-                      </span>
-                    )}
+            <div className="divide-y">
+              {tarefas.map((t) => {
+                const checklist = t.checklist ?? [];
+                const feitos = checklist.filter((c) => c.feito).length;
+                const pct =
+                  checklist.length > 0
+                    ? Math.round((feitos / checklist.length) * 100)
+                    : t.status === "concluida"
+                    ? 100
+                    : 0;
+
+                return (
+                  <div
+                    key={t.id}
+                    className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between cursor-pointer hover:bg-muted/20 px-2 rounded-lg transition-colors"
+                    onClick={() => abrirDetalhes(t)}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-semibold">{t.titulo}</p>
+                        {t.periodicidade && (
+                          <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.2 text-[10px] font-medium text-primary">
+                            <Repeat className="h-2.5 w-2.5" /> {t.periodicidade}
+                          </span>
+                        )}
+                        <StatusBadge status={t.prioridade} />
+                      </div>
+                      {t.descricao && (
+                        <p className="text-xs text-muted-foreground truncate">{t.descricao}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 sm:w-64">
+                      <div className="w-full">
+                        <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
+                          <span>Progresso</span>
+                          <span>{pct}%</span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="h-full rounded-full bg-primary transition-all duration-300"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="relative h-6 flex-1 rounded-md bg-muted">
-                    <div
-                      className={`absolute top-0 h-6 rounded-md ${PRIORIDADE_COR[t.prioridade] ?? "bg-primary/70"}`}
-                      style={{ left: `${inicio}px`, width: `${largura}%` }}
-                    />
-                  </div>
-                  <span className="w-20 shrink-0 text-right text-[11px] text-muted-foreground tabular-nums">
-                    {t.prazo}
-                  </span>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
       )}
 
-      {/* Modal de Detalhes e Edição da Rotina */}
-      <DetalhesRotinaDialog
-        tarefa={rotinaSelecionada}
-        open={detalhesAberto}
-        onOpenChange={setDetalhesAberto}
-      />
+      {/* Modal de Detalhes da Rotina */}
+      {rotinaSelecionada && (
+        <DetalhesRotinaDialog
+          rotina={rotinaSelecionada}
+          open={detalhesAberto}
+          onOpenChange={setDetalhesAberto}
+        />
+      )}
     </div>
   );
 }

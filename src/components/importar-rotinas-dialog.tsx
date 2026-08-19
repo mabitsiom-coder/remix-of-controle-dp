@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   XCircle,
   RotateCcw,
+  ListChecks,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -26,7 +27,7 @@ import {
   getStoredTarefas,
   type NovaTarefaForm,
 } from "@/lib/tarefas-store";
-import type { PeriodicidadeRotina } from "@/lib/mock-data";
+import type { PeriodicidadeRotina, Prioridade } from "@/lib/mock-data";
 import { PERIODICIDADES, parseData } from "@/lib/rotinas-view";
 
 type LinhaPlanilha = {
@@ -37,6 +38,11 @@ type LinhaPlanilha = {
   periodicidadeValida?: PeriodicidadeRotina | undefined;
   dataBaseBruta: string;
   dataBaseFormatada?: string | undefined; // YYYY-MM-DD
+  checklistItens: string;
+  checklistQtd: number;
+  responsavel: string;
+  prioridade: Prioridade;
+  categoria: string;
   observacao: string;
   status: "valido" | "erro" | "duplicado";
   motivo?: string | undefined;
@@ -44,7 +50,7 @@ type LinhaPlanilha = {
 
 // Normalizador tolerante para periodicidade
 function normalizarPeriodicidade(val: string): PeriodicidadeRotina | null {
-  if (!val) return null;
+  if (!val) return "Diária";
   const s = val
     .trim()
     .toLowerCase()
@@ -57,7 +63,17 @@ function normalizarPeriodicidade(val: string): PeriodicidadeRotina | null {
   if (s === "semestral" || s === "semestre" || s === "semestralmente") return "Semestral";
   if (s === "anual" || s === "ano" || s === "anualmente") return "Anual";
 
-  return null;
+  return "Diária";
+}
+
+// Normalizador de prioridade
+function normalizarPrioridade(val: string): Prioridade {
+  if (!val) return "media";
+  const s = val.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (s.includes("crit") || s.includes("urgente")) return "critica";
+  if (s.includes("alt")) return "alta";
+  if (s.includes("baix")) return "baixa";
+  return "media";
 }
 
 // Formatador tolerante de datas do Excel (texto BR, ISO ou número serial)
@@ -66,10 +82,8 @@ function normalizarDataExcel(val: unknown): { iso: string; formattedBr: string }
 
   // Número serial do Excel (ex: 45564)
   if (typeof val === "number" && !isNaN(val)) {
-    // Dias desde 1899-12-30 (correção de leap year bug do Excel)
     const dataJs = new Date(Math.round((val - 25569) * 86400 * 1000));
     if (!isNaN(dataJs.getTime())) {
-      // Ajustar timezone UTC para evitar quebra de dia
       const ano = dataJs.getUTCFullYear();
       const mes = String(dataJs.getUTCMonth() + 1).padStart(2, "0");
       const dia = String(dataJs.getUTCDate()).padStart(2, "0");
@@ -106,6 +120,97 @@ function normalizarDataExcel(val: unknown): { iso: string; formattedBr: string }
   return null;
 }
 
+export function downloadModeloXLSX() {
+  const dados = [
+    [
+      "Rotina",
+      "Descrição",
+      "Periodicidade",
+      "Data-base",
+      "Checklist (itens separados por ;)",
+      "Responsável",
+      "Prioridade",
+      "Categoria",
+      "Observação",
+    ],
+    [
+      "Fechamento de Ponto Diário",
+      "Tratamento de inconsistências de ponto dos colaboradores",
+      "Diária",
+      "20/08/2026",
+      "Coletar batidas dos relógios REP; Tratar marcações ímpares; Justificar ausências e atestados; Emitir espelho para aprovação",
+      "Camila Rocha",
+      "Alta",
+      "Folha",
+      "Executar preferencialmente no primeiro horário",
+    ],
+    [
+      "Admissões do Dia",
+      "Conferência e cadastro de novos colaboradores",
+      "Diária",
+      "20/08/2026",
+      "Conferir documentos recebidos; Cadastrar dados no sistema; Transmitir evento S-2200 eSocial; Gerar contrato e termo de admissão",
+      "Diego Menezes",
+      "Alta",
+      "Admissões",
+      "Transmitir antes do início das atividades",
+    ],
+    [
+      "Processamento de Rescisões",
+      "Cálculo e homologação de desligamentos",
+      "Diária",
+      "20/08/2026",
+      "Calcular termo rescisório; Emitir guia rescisória GRRF/FGTS; Transmitir S-2299 eSocial; Enviar documentos para pagamento",
+      "Tatiane Lopes",
+      "Alta",
+      "Demissões",
+      "Atentar para o prazo legal de 10 dias",
+    ],
+    [
+      "Conferência e Envio de DCTFWeb",
+      "Fechamento da DCTFWeb e emissão de DARF",
+      "Mensal",
+      "15/09/2026",
+      "Transmitir eSocial S-1299; Transmitir EFD-Reinf R-2099; Acessar portal DCTFWeb; Conferir débitos e créditos; Transmitir e emitir guia",
+      "Ariany",
+      "Crítica",
+      "DCTFWeb",
+      "Vencimento dia 15",
+    ],
+    [
+      "Pesquisa FGTS Trimestral",
+      "Auditoria de recolhimentos de FGTS das empresas",
+      "Trimestral",
+      "30/09/2026",
+      "Solicitar extrato consolidado Caixa; Baixar arquivos de retorno; Analisar competências com divergência; Notificar cliente",
+      "Rafael Prado",
+      "Média",
+      "FGTS",
+      "Rotina preventiva de regularidade",
+    ],
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(dados);
+
+  // Ajustar larguras das colunas
+  ws["!cols"] = [
+    { wch: 32 }, // Rotina
+    { wch: 38 }, // Descrição
+    { wch: 15 }, // Periodicidade
+    { wch: 14 }, // Data-base
+    { wch: 55 }, // Checklist
+    { wch: 20 }, // Responsável
+    { wch: 14 }, // Prioridade
+    { wch: 16 }, // Categoria
+    { wch: 35 }, // Observação
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Tarefas e Rotinas");
+  XLSX.writeFile(wb, "modelo_tarefas_diarias_rotinas.xlsx");
+  toast.success("Modelo XLSX baixado com sucesso!");
+}
+
 export function ImportarRotinasDialog({
   trigger,
   onSuccess,
@@ -120,66 +225,9 @@ export function ImportarRotinasDialog({
   const [isArrastando, setIsArrastando] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const baixarModelo = () => {
-    const dados = [
-      ["Rotina", "Descrição", "Periodicidade", "Data-base", "Observação"],
-      [
-        "Fechamento da Folha",
-        "Realizar fechamento mensal da folha",
-        "Mensal",
-        "30/09/2026",
-        "Conferir eventos antes do fechamento",
-      ],
-      [
-        "Conferência de Benefícios",
-        "Conferir benefícios dos colaboradores",
-        "Mensal",
-        "25/09/2026",
-        "",
-      ],
-      [
-        "Relatório Trimestral",
-        "Preparar relatório trimestral",
-        "Trimestral",
-        "30/09/2026",
-        "",
-      ],
-      [
-        "Revisão Semestral",
-        "Revisar procedimentos internos",
-        "Semestral",
-        "31/12/2026",
-        "",
-      ],
-      [
-        "Rotina Anual",
-        "Executar conferência anual",
-        "Anual",
-        "31/12/2026",
-        "",
-      ],
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet(dados);
-
-    // Ajustar larguras das colunas
-    ws["!cols"] = [
-      { wch: 30 }, // Rotina
-      { wch: 40 }, // Descrição
-      { wch: 15 }, // Periodicidade
-      { wch: 14 }, // Data-base
-      { wch: 40 }, // Observação
-    ];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Rotinas");
-    XLSX.writeFile(wb, "modelo_importacao_rotinas.xlsx");
-    toast.success("Modelo baixado com sucesso!");
-  };
-
   const processarArquivo = async (file: File) => {
-    if (!file.name.match(/\.(xlsx|xls)$/i)) {
-      toast.error("Por favor, selecione um arquivo Excel (.xlsx ou .xls)");
+    if (!file.name.match(/\.(xlsx|xls|csv)$/i)) {
+      toast.error("Por favor, selecione um arquivo Excel (.xlsx ou .xls) ou .csv");
       return;
     }
 
@@ -197,7 +245,6 @@ export function ImportarRotinasDialog({
         return;
       }
 
-      // Lê como array de arrays para flexibilidade de cabeçalho
       const rows: unknown[][] = XLSX.utils.sheet_to_json(firstSheet, {
         header: 1,
         raw: true,
@@ -215,18 +262,26 @@ export function ImportarRotinasDialog({
         String(c ?? "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
       );
 
-      let idxRotina = headerRow.findIndex((h) => h.includes("rotina") || h.includes("titulo") || h.includes("nome"));
+      let idxRotina = headerRow.findIndex((h) => h.includes("rotina") || h.includes("tarefa") || h.includes("titulo") || h.includes("nome"));
       let idxDesc = headerRow.findIndex((h) => h.includes("desc"));
       let idxPeriod = headerRow.findIndex((h) => h.includes("period") || h.includes("recorr"));
-      let idxData = headerRow.findIndex((h) => h.includes("data") || h.includes("prazo") || h.includes("base"));
+      let idxData = headerRow.findIndex((h) => h.includes("data") || h.includes("prazo") || h.includes("base") || h.includes("venc"));
+      let idxChecklist = headerRow.findIndex((h) => h.includes("check") || h.includes("itens") || h.includes("etapas"));
+      let idxResp = headerRow.findIndex((h) => h.includes("resp") || h.includes("analista") || h.includes("usuario"));
+      let idxPrio = headerRow.findIndex((h) => h.includes("prio"));
+      let idxCat = headerRow.findIndex((h) => h.includes("categ") || h.includes("depto") || h.includes("area"));
       let idxObs = headerRow.findIndex((h) => h.includes("obs"));
 
-      // Fallbacks para posições padrão se o cabeçalho não bater perfeitamente
+      // Fallbacks padrão se não bater
       if (idxRotina === -1) idxRotina = 0;
       if (idxDesc === -1) idxDesc = 1;
       if (idxPeriod === -1) idxPeriod = 2;
       if (idxData === -1) idxData = 3;
-      if (idxObs === -1) idxObs = 4;
+      if (idxChecklist === -1) idxChecklist = 4;
+      if (idxResp === -1) idxResp = 5;
+      if (idxPrio === -1) idxPrio = 6;
+      if (idxCat === -1) idxCat = 7;
+      if (idxObs === -1) idxObs = 8;
 
       const existentes = getStoredTarefas();
       const mapExistentes = new Set(
@@ -245,396 +300,334 @@ export function ImportarRotinasDialog({
         const desc = String(row[idxDesc] ?? "").trim();
         const periodBruta = String(row[idxPeriod] ?? "").trim();
         const dataBruta = row[idxData];
+        const checklistBruto = String(row[idxChecklist] ?? "").trim();
+        const resp = String(row[idxResp] ?? "").trim();
+        const prioBruta = String(row[idxPrio] ?? "").trim();
+        const cat = String(row[idxCat] ?? "").trim();
         const obs = String(row[idxObs] ?? "").trim();
 
         // Ignorar linhas completamente vazias
-        if (!rotina && !desc && !periodBruta && !dataBruta && !obs) {
+        if (!rotina && !desc && !periodBruta && !dataBruta && !checklistBruto) continue;
+
+        const linhaNum = i + 1;
+
+        if (!rotina) {
+          parsedLinhas.push({
+            linhaNum,
+            rotina: "—",
+            descricao: desc,
+            periodicidadeBruta: periodBruta,
+            dataBaseBruta: String(dataBruta ?? ""),
+            checklistItens: checklistBruto,
+            checklistQtd: 0,
+            responsavel: resp,
+            prioridade: "media",
+            categoria: cat || "Geral",
+            observacao: obs,
+            status: "erro",
+            motivo: "Nome da rotina/tarefa é obrigatório.",
+          });
           continue;
         }
 
-        const linhaNum = i + 1;
+        const dataNorm = normalizarDataExcel(dataBruta);
+        const periodicidadeValida = normalizarPeriodicidade(periodBruta) || "Diária";
+        const prioridade = normalizarPrioridade(prioBruta);
+
+        // Contagem de itens do checklist
+        const itensChecklist = checklistBruto
+          ? checklistBruto.split(/[;\n]/).map((s) => s.trim()).filter(Boolean)
+          : [];
+
+        // Chave de unicidade
+        const chave = `${rotina.toLowerCase()}|${periodicidadeValida}|${dataNorm?.formattedBr ?? ""}`;
+
         let status: LinhaPlanilha["status"] = "valido";
-        let motivo = "";
+        let motivo: string | undefined = undefined;
 
-        // Validação da Rotina
-        if (!rotina) {
-          status = "erro";
-          motivo = "Nome da rotina não informado.";
+        if (mapExistentes.has(chave) || setNoArquivo.has(chave)) {
+          status = "duplicado";
+          motivo = "Rotina já cadastrada com os mesmos dados.";
         }
 
-        // Validação da Periodicidade
-        const periodicidadeValida = normalizarPeriodicidade(periodBruta);
-        if (!periodicidadeValida) {
-          status = "erro";
-          motivo = motivo
-            ? `${motivo} Periodicidade inválida (use: ${PERIODICIDADES.join(", ")}).`
-            : `Periodicidade inválida ("${periodBruta}"). Use: ${PERIODICIDADES.join(", ")}.`;
-        }
-
-        // Validação da Data-base
-        const dataNormalizada = normalizarDataExcel(dataBruta);
-        if (!dataNormalizada) {
-          status = "erro";
-          motivo = motivo
-            ? `${motivo} Data-base inválida ou não informada.`
-            : `Data-base inválida ou vazia ("${String(dataBruta ?? "")}").`;
-        }
-
-        // Validação de Duplicidade
-        if (status === "valido" && periodicidadeValida && dataNormalizada) {
-          const chave = `${rotina.toLowerCase()}|${periodicidadeValida}|${dataNormalizada.iso}`;
-
-          if (setNoArquivo.has(chave)) {
-            status = "duplicado";
-            motivo = "Rotina duplicada dentro da própria planilha.";
-          } else if (mapExistentes.has(chave)) {
-            status = "duplicado";
-            motivo = "Rotina idêntica já cadastrada no sistema (mesmo nome, periodicidade e data-base).";
-          } else {
-            setNoArquivo.add(chave);
-          }
-        }
+        setNoArquivo.add(chave);
 
         parsedLinhas.push({
           linhaNum,
           rotina,
           descricao: desc,
           periodicidadeBruta: periodBruta,
-          periodicidadeValida: periodicidadeValida ?? undefined,
-          dataBaseBruta: dataNormalizada ? dataNormalizada.formattedBr : String(dataBruta ?? ""),
-          dataBaseFormatada: dataNormalizada?.iso,
+          periodicidadeValida,
+          dataBaseBruta: String(dataBruta ?? ""),
+          dataBaseFormatada: dataNorm?.formattedBr,
+          checklistItens: itensChecklist.join("\n"),
+          checklistQtd: itensChecklist.length,
+          responsavel: resp,
+          prioridade,
+          categoria: cat || "Folha",
           observacao: obs,
           status,
-          motivo: motivo || undefined,
+          motivo,
         });
       }
 
       setLinhas(parsedLinhas);
-      if (parsedLinhas.length === 0) {
-        toast.error("Nenhum registro legível encontrado na planilha.");
-      }
-    } catch (err) {
+      setIsProcessando(false);
+    } catch (err: unknown) {
       console.error(err);
-      toast.error("Erro ao ler o arquivo Excel. Verifique a estrutura do arquivo.");
-    } finally {
+      toast.error("Erro ao ler planilha. Verifique o formato do arquivo.");
       setIsProcessando(false);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      void processarArquivo(file);
+  const handleSalvar = () => {
+    const validas = linhas.filter((l) => l.status === "valido");
+
+    if (validas.length === 0) {
+      toast.error("Nenhuma linha válida para importar.");
+      return;
     }
+
+    const novas: NovaTarefaForm[] = validas.map((l) => ({
+      titulo: l.rotina,
+      descricao: l.descricao || undefined,
+      periodicidade: l.periodicidadeValida,
+      prazo: l.dataBaseFormatada || new Date().toLocaleDateString("pt-BR"),
+      checklistItens: l.checklistItens || undefined,
+      responsavel: l.responsavel || undefined,
+      prioridade: l.prioridade,
+      categoria: l.categoria || "Folha",
+      observacoes: l.observacao || undefined,
+      horasPrevistas: 1,
+      status: "backlog",
+    }));
+
+    createBatchTarefas(novas);
+
+    toast.success(`${validas.length} tarefa(s) e rotina(s) importada(s) com sucesso!`);
+    setOpen(false);
+    setLinhas([]);
+    setNomeArquivo("");
+    if (onSuccess) onSuccess();
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsArrastando(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      void processarArquivo(file);
-    }
-  };
-
-  const limparArquivo = () => {
+  const resetar = () => {
     setLinhas([]);
     setNomeArquivo("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const total = linhas.length;
-  const validos = linhas.filter((l) => l.status === "valido");
-  const duplicados = linhas.filter((l) => l.status === "duplicado");
-  const erros = linhas.filter((l) => l.status === "erro");
-
-  const confirmarImportacao = () => {
-    if (validos.length === 0) {
-      toast.error("Não há registros válidos para importar.");
-      return;
-    }
-
-    try {
-      const tarefasParaImportar: NovaTarefaForm[] = validos.map((l) => ({
-        titulo: l.rotina,
-        descricao: l.descricao || undefined,
-        periodicidade: l.periodicidadeValida,
-        prazo: l.dataBaseFormatada || "",
-        dataInicio: l.dataBaseFormatada || "",
-        prioridade: "media",
-        status: "backlog",
-        horasPrevistas: 2,
-        observacoes: l.observacao || undefined,
-      }));
-
-      createBatchTarefas(tarefasParaImportar);
-      toast.success(
-        `Importação concluída com sucesso! ${validos.length} rotinas foram cadastradas.`
-      );
-      setOpen(false);
-      limparArquivo();
-      onSuccess?.();
-    } catch (err) {
-      console.error(err);
-      toast.error("Erro ao cadastrar as rotinas no sistema.");
-    }
-  };
+  const totalValidas = linhas.filter((l) => l.status === "valido").length;
+  const totalErros = linhas.filter((l) => l.status === "erro").length;
+  const totalDuplicadas = linhas.filter((l) => l.status === "duplicado").length;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {trigger ?? (
-          <Button variant="outline" className="gap-1.5 shadow-sm">
-            <FileSpreadsheet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-            Importar Rotinas
+        {trigger || (
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+            <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
+            Importar XLSX
           </Button>
         )}
       </DialogTrigger>
-
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-6 sm:rounded-xl">
-        <DialogHeader className="shrink-0 border-b pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <FileSpreadsheet className="h-5 w-5" />
-              </div>
-              <div>
-                <DialogTitle className="text-lg font-semibold">
-                  Importar Rotinas em Lote (.xlsx)
-                </DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground">
-                  Cadastre dezenas ou centenas de rotinas globais instantaneamente via planilha Excel.
-                </DialogDescription>
-              </div>
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={baixarModelo}
-              className="gap-1.5 text-xs shrink-0 self-start sm:self-auto border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10"
-            >
-              <Download className="h-3.5 w-3.5" /> Baixar Modelo de Importação
-            </Button>
-          </div>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-6">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+            <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
+            Importar Tarefas Diárias e Rotinas (.xlsx)
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            Envie sua planilha Excel (.xlsx) contendo a lista de tarefas, periodicidade e itens de checklist.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto py-4 space-y-4">
-          {/* Upload Area se não houver arquivo */}
-          {linhas.length === 0 ? (
+        {linhas.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-6 py-6">
+            {/* Download do modelo */}
+            <div className="w-full max-w-lg rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/5 p-4 text-center">
+              <p className="text-xs font-semibold text-emerald-950 dark:text-emerald-300">
+                Ainda não tem o arquivo de layout?
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5 mb-3">
+                Baixe o modelo oficial com colunas de tarefas, data-base e checklist pré-formatado.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={downloadModeloXLSX}
+                className="gap-2 border-emerald-500/40 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10 font-semibold"
+              >
+                <Download className="h-4 w-4" />
+                Baixar Modelo Excel (.xlsx)
+              </Button>
+            </div>
+
+            {/* Zona de Drop */}
             <div
               onDragOver={(e) => {
                 e.preventDefault();
                 setIsArrastando(true);
               }}
               onDragLeave={() => setIsArrastando(false)}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all ${
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsArrastando(false);
+                if (e.dataTransfer.files?.[0]) {
+                  void processarArquivo(e.dataTransfer.files[0]);
+                }
+              }}
+              className={`w-full max-w-lg rounded-xl border-2 border-dashed p-8 text-center transition-all ${
                 isArrastando
-                  ? "border-primary bg-primary/5"
-                  : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/40"
+                  ? "border-primary bg-primary/5 scale-[1.01]"
+                  : "border-muted-foreground/30 hover:border-primary/50"
               }`}
             >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx, .xls"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary mb-3">
-                <UploadCloud className="h-7 w-7" />
-              </div>
-              <h4 className="text-sm font-semibold">
-                {isProcessando
-                  ? "Lendo e validando planilha..."
-                  : "Clique para selecionar ou arraste o arquivo .xlsx aqui"}
-              </h4>
-              <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                Colunas esperadas: <strong>Rotina</strong>, <strong>Descrição</strong>, <strong>Periodicidade</strong>, <strong>Data-base</strong>, <strong>Observação</strong>.
+              <UploadCloud className="mx-auto h-10 w-10 text-muted-foreground/60 mb-3" />
+              <p className="text-sm font-semibold">
+                Arraste o arquivo .xlsx aqui ou clique para selecionar
               </p>
+              <p className="text-xs text-muted-foreground mt-1 mb-4">
+                Suporta formatos .xlsx, .xls e .csv
+              </p>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept=".xlsx,.xls,.csv"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    void processarArquivo(e.target.files[0]);
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={isProcessando}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {isProcessando ? "Lendo planilha..." : "Selecionar Arquivo"}
+              </Button>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Barra de resumo do arquivo */}
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
-                <div className="flex items-center gap-2">
-                  <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
-                  <span className="text-xs font-semibold">{nomeArquivo}</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={limparArquivo}
-                    className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    <RotateCcw className="h-3 w-3" /> Trocar arquivo
-                  </Button>
-                </div>
-              </div>
-
-              {/* Cards de contadores */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div className="rounded-lg border p-2.5 bg-background text-center">
-                  <p className="text-[11px] text-muted-foreground font-medium">Total de Registros</p>
-                  <p className="text-lg font-bold tabular-nums">{total}</p>
-                </div>
-                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-2.5 text-center">
-                  <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium flex items-center justify-center gap-1">
-                    <CheckCircle2 className="h-3 w-3" /> Registros Válidos
-                  </p>
-                  <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-                    {validos.length}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 text-center">
-                  <p className="text-[11px] text-amber-700 dark:text-amber-300 font-medium flex items-center justify-center gap-1">
-                    <AlertTriangle className="h-3 w-3" /> Duplicados
-                  </p>
-                  <p className="text-lg font-bold text-amber-600 dark:text-amber-400 tabular-nums">
-                    {duplicados.length}
-                  </p>
-                </div>
-                <div className="rounded-lg border border-rose-500/30 bg-rose-500/5 p-2.5 text-center">
-                  <p className="text-[11px] text-rose-700 dark:text-rose-300 font-medium flex items-center justify-center gap-1">
-                    <XCircle className="h-3 w-3" /> Com Erro
-                  </p>
-                  <p className="text-lg font-bold text-rose-600 dark:text-rose-400 tabular-nums">
-                    {erros.length}
-                  </p>
-                </div>
-              </div>
-
-              {/* Tabela de Pré-visualização */}
-              <div className="rounded-lg border overflow-hidden">
-                <div className="max-h-[360px] overflow-y-auto">
-                  <table className="w-full text-xs">
-                    <thead className="sticky top-0 bg-muted/90 backdrop-blur-sm border-b text-muted-foreground uppercase tracking-wider font-semibold">
-                      <tr>
-                        <th className="p-2.5 text-center w-12">Linha</th>
-                        <th className="p-2.5 text-left">Rotina</th>
-                        <th className="p-2.5 text-left">Periodicidade</th>
-                        <th className="p-2.5 text-left">Data-base</th>
-                        <th className="p-2.5 text-left">Observação</th>
-                        <th className="p-2.5 text-left">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {linhas.map((l) => {
-                        const isValido = l.status === "valido";
-                        const isDuplicado = l.status === "duplicado";
-                        const isErro = l.status === "erro";
-
-                        return (
-                          <tr
-                            key={l.linhaNum}
-                            className={`hover:bg-muted/30 transition-colors ${
-                              isErro
-                                ? "bg-rose-500/5"
-                                : isDuplicado
-                                ? "bg-amber-500/5"
-                                : ""
-                            }`}
-                          >
-                            <td className="p-2.5 text-center font-mono text-muted-foreground">
-                              {l.linhaNum}
-                            </td>
-                            <td className="p-2.5 font-medium max-w-[220px] truncate" title={l.rotina}>
-                              {l.rotina || <span className="text-rose-500 italic">Vazio</span>}
-                              {l.descricao && (
-                                <p className="text-[10px] text-muted-foreground truncate" title={l.descricao}>
-                                  {l.descricao}
-                                </p>
-                              )}
-                            </td>
-                            <td className="p-2.5">
-                              {l.periodicidadeValida ? (
-                                <span className="inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 font-medium text-primary text-[11px]">
-                                  {l.periodicidadeValida}
-                                </span>
-                              ) : (
-                                <span className="text-rose-500 font-medium">
-                                  {l.periodicidadeBruta || "—"}
-                                </span>
-                              )}
-                            </td>
-                            <td className="p-2.5 tabular-nums">
-                              {l.dataBaseBruta || "—"}
-                            </td>
-                            <td className="p-2.5 text-muted-foreground max-w-[150px] truncate" title={l.observacao}>
-                              {l.observacao || "—"}
-                            </td>
-                            <td className="p-2.5">
-                              {isValido && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                                  <CheckCircle2 className="h-3 w-3" /> Válido
-                                </span>
-                              )}
-                              {isDuplicado && (
-                                <div className="space-y-0.5">
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                                    <AlertTriangle className="h-3 w-3" /> Duplicado
-                                  </span>
-                                  <p className="text-[10px] text-amber-700 dark:text-amber-300">
-                                    {l.motivo}
-                                  </p>
-                                </div>
-                              )}
-                              {isErro && (
-                                <div className="space-y-0.5">
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2 py-0.5 text-[11px] font-medium text-rose-600 dark:text-rose-400">
-                                    <XCircle className="h-3 w-3" /> Erro
-                                  </span>
-                                  <p className="text-[10px] text-rose-700 dark:text-rose-300 font-medium">
-                                    {l.motivo}
-                                  </p>
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <DialogFooter className="shrink-0 border-t pt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground text-center sm:text-left">
-            {linhas.length > 0
-              ? `${validos.length} de ${total} registros prontos para importação.`
-              : "Selecione um arquivo para pré-visualizar."}
-          </p>
-
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setOpen(false);
-                limparArquivo();
-              }}
-              className="text-xs"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              onClick={confirmarImportacao}
-              disabled={validos.length === 0}
-              className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
-            >
-              <CheckCircle2 className="h-4 w-4" /> Confirmar Importação ({validos.length})
-            </Button>
           </div>
+        ) : (
+          <div className="flex-1 flex flex-col gap-4 overflow-hidden py-2">
+            {/* Barra de resumo */}
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/40 p-3 text-xs">
+              <div className="flex items-center gap-4">
+                <span className="font-semibold text-foreground">
+                  Arquivo: <span className="font-normal text-muted-foreground">{nomeArquivo}</span>
+                </span>
+                <span className="flex items-center gap-1 text-emerald-600 font-semibold">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> {totalValidas} válida(s)
+                </span>
+                {totalDuplicadas > 0 && (
+                  <span className="flex items-center gap-1 text-amber-600 font-semibold">
+                    <AlertTriangle className="h-3.5 w-3.5" /> {totalDuplicadas} duplicada(s)
+                  </span>
+                )}
+                {totalErros > 0 && (
+                  <span className="flex items-center gap-1 text-rose-600 font-semibold">
+                    <XCircle className="h-3.5 w-3.5" /> {totalErros} com erro
+                  </span>
+                )}
+              </div>
+              <Button variant="ghost" size="sm" onClick={resetar} className="h-7 text-xs gap-1">
+                <RotateCcw className="h-3 w-3" /> Trocar arquivo
+              </Button>
+            </div>
+
+            {/* Tabela de Preview */}
+            <div className="flex-1 overflow-auto rounded-lg border">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-background border-b text-muted-foreground font-semibold">
+                  <tr>
+                    <th className="p-2 text-center w-12">Linha</th>
+                    <th className="p-2 text-left">Rotina / Tarefa</th>
+                    <th className="p-2 text-left">Periodicidade</th>
+                    <th className="p-2 text-left">Data-base</th>
+                    <th className="p-2 text-center">Checklist</th>
+                    <th className="p-2 text-left">Responsável</th>
+                    <th className="p-2 text-left">Prioridade</th>
+                    <th className="p-2 text-left">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {linhas.map((l, idx) => (
+                    <tr
+                      key={idx}
+                      className={
+                        l.status === "erro"
+                          ? "bg-rose-500/10 text-rose-700 dark:text-rose-300"
+                          : l.status === "duplicado"
+                          ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                          : "hover:bg-muted/40"
+                      }
+                    >
+                      <td className="p-2 text-center font-mono">{l.linhaNum}</td>
+                      <td className="p-2 font-medium max-w-[200px] truncate">
+                        {l.rotina}
+                        {l.descricao && (
+                          <p className="text-[10px] text-muted-foreground truncate">{l.descricao}</p>
+                        )}
+                      </td>
+                      <td className="p-2">{l.periodicidadeValida ?? l.periodicidadeBruta}</td>
+                      <td className="p-2 font-mono">
+                        {l.dataBaseFormatada || l.dataBaseBruta || "Hoje"}
+                      </td>
+                      <td className="p-2 text-center">
+                        {l.checklistQtd > 0 ? (
+                          <span className="inline-flex items-center gap-1 rounded bg-primary/10 text-primary px-1.5 py-0.5 font-bold">
+                            <ListChecks className="h-3 w-3" /> {l.checklistQtd} itens
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="p-2 text-muted-foreground">{l.responsavel || "—"}</td>
+                      <td className="p-2 capitalize">{l.prioridade}</td>
+                      <td className="p-2">
+                        {l.status === "valido" && (
+                          <span className="inline-flex items-center gap-1 text-emerald-600 font-semibold">
+                            <CheckCircle2 className="h-3 w-3" /> Pronta
+                          </span>
+                        )}
+                        {l.status === "duplicado" && (
+                          <span className="inline-flex items-center gap-1 text-amber-600 font-medium" title={l.motivo}>
+                            <AlertTriangle className="h-3 w-3" /> Duplicada
+                          </span>
+                        )}
+                        {l.status === "erro" && (
+                          <span className="inline-flex items-center gap-1 text-rose-600 font-semibold" title={l.motivo}>
+                            <XCircle className="h-3 w-3" /> {l.motivo || "Erro"}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        <DialogFooter className="flex items-center justify-between pt-2 border-t mt-2">
+          <Button variant="outline" size="sm" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          {linhas.length > 0 && (
+            <Button
+              size="sm"
+              onClick={handleSalvar}
+              disabled={totalValidas === 0}
+              className="gap-2 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Importar {totalValidas} Rotina(s)
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

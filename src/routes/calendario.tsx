@@ -5,10 +5,14 @@ import { CalendarDays, ChevronLeft, ChevronRight, Repeat } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { NovaTarefaDialog } from "@/components/nova-tarefa-dialog";
-import { ImportarRotinasDialog } from "@/components/importar-rotinas-dialog";
+import {
+  ImportarRotinasDialog,
+  downloadModeloXLSX,
+} from "@/components/importar-rotinas-dialog";
 import { DetalhesRotinaDialog } from "@/components/detalhes-rotina-dialog";
 import { useTarefas, type Tarefa } from "@/lib/tarefas-store";
 import { eventosDoMes, diasNoMes, NOMES_MES } from "@/lib/rotinas-view";
+import { Download } from "lucide-react";
 
 export const Route = createFileRoute("/calendario")({
   head: () => ({
@@ -95,6 +99,16 @@ function Calendario() {
                 </button>
               ))}
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadModeloXLSX}
+              className="gap-1.5 text-xs border-emerald-600/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+              title="Baixar planilha modelo de rotinas e checklists (.xlsx)"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Modelo XLSX
+            </Button>
             <ImportarRotinasDialog />
             <NovaTarefaDialog />
           </div>
