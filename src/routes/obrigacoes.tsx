@@ -123,6 +123,7 @@ const tiposObriga = [
 ];
 
 function Obrigacoes() {
+  const { user } = useAuth();
   const [filtroTipo, setFiltroTipo] = useState("Pesq. FGTS Trim.");
   const { obrigacoes = [] } = useObrigacoes() || {};
   const { registros: dctfRegistros = [] } = useRegDCTFWeb() || {};
@@ -131,6 +132,17 @@ function Obrigacoes() {
   const { registros: reajusteRegistros = [] } = useRegReajusteSindicato() || {};
   const { empresas = [] } = useEmpresas() || {};
   const { carteiras = [] } = useCadastros() || {};
+
+  const handleUpdateDCTF = (r: RegDCTFWeb, campo: keyof RegDCTFWeb, valor: any) => {
+    try {
+      const usuarioLogado = user?.nome || "Sistema";
+      upsertDCTFWeb(r.id, { [campo]: valor }, r, usuarioLogado);
+      toast.success("Campo atualizado com sucesso!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao atualizar o registro.");
+    }
+  };
 
   const [busca, setBusca] = useState("");
   const [carteiraFiltro, setCarteiraFiltro] = useState<string>("todas");
@@ -1608,43 +1620,174 @@ function Obrigacoes() {
                     <td className="p-2 font-bold text-center tabular-nums border-r">{r.codigo || "—"}</td>
                     <td className="p-2 font-bold text-foreground border-r">{r.empresa}</td>
                     <td className="p-2 text-center tabular-nums border-r text-muted-foreground">{r.cnpj || "—"}</td>
-                    <td className="p-2 text-center font-bold border-r">{r.tipo || "C/M"}</td>
+                    <td className="p-1 border-r text-center w-24">
+                      <select
+                        value={r.tipo || "C/M"}
+                        onChange={(e) => handleUpdateDCTF(r, "tipo", e.target.value as any)}
+                        className="h-8 w-full rounded border border-input bg-background px-1 py-0.5 text-[11px] font-bold text-center focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                      >
+                        <option value="C/M">C/M</option>
+                        <option value="S/M">S/M</option>
+                      </select>
+                    </td>
                     
-                    <td className="p-2 text-center font-bold border-r">
-                      <span className={r.reinf === "SIM" ? "text-success font-extrabold" : "text-destructive"}>
-                        {r.reinf}
-                      </span>
+                    <td className="p-1 border-r text-center w-24">
+                      <select
+                        value={r.reinf || "SIM"}
+                        onChange={(e) => handleUpdateDCTF(r, "reinf", e.target.value as any)}
+                        className={cn(
+                          "h-8 w-full rounded border border-input bg-background px-1 py-0.5 text-[11px] font-bold text-center cursor-pointer",
+                          (r.reinf === "SIM") ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                        )}
+                      >
+                        <option value="SIM" className="text-emerald-600 font-bold">SIM</option>
+                        <option value="NÃO" className="text-rose-600 font-bold">NÃO</option>
+                        <option value="❌" className="text-rose-600 font-bold">❌</option>
+                      </select>
                     </td>
-                    <td className="p-2 text-center font-bold border-r">
-                      <span className={r.eSocial === "SIM" ? "text-success font-extrabold" : "text-destructive"}>
-                        {r.eSocial}
-                      </span>
-                    </td>
-
-                    <td className="p-2 text-center border-r font-bold text-destructive">{r.nfCprb}</td>
-                    <td className="p-2 text-center border-r font-bold text-destructive">{r.nfRetInss}</td>
-                    <td className="p-2 text-center border-r font-bold text-destructive">{r.nfRetCsrf}</td>
-
-                    <td className="p-2 text-center border-r tabular-nums font-semibold">
-                      {r.transmissaoPublicacao || "—"}
-                    </td>
-
-                    <td className="p-2 text-center border-r tabular-nums font-semibold">
-                      {r.reciboDocSalvo || "—"}
-                    </td>
-
-                    <td className="p-2 text-center border-r font-bold">
-                      <span className={r.conferidoAnalista === "CONFERIDO" ? "text-success" : "text-destructive"}>
-                        {r.conferidoAnalista}
-                      </span>
-                    </td>
-                    <td className="p-2 text-center border-r font-bold">
-                      <span className={r.revisadoSupervisao === "REVISADO" ? "text-success" : "text-destructive"}>
-                        {r.revisadoSupervisao}
-                      </span>
+                    <td className="p-1 border-r text-center w-24">
+                      <select
+                        value={r.eSocial || "SIM"}
+                        onChange={(e) => handleUpdateDCTF(r, "eSocial", e.target.value as any)}
+                        className={cn(
+                          "h-8 w-full rounded border border-input bg-background px-1 py-0.5 text-[11px] font-bold text-center cursor-pointer",
+                          (r.eSocial === "SIM") ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                        )}
+                      >
+                        <option value="SIM" className="text-emerald-600 font-bold">SIM</option>
+                        <option value="NÃO" className="text-rose-600 font-bold">NÃO</option>
+                        <option value="❌" className="text-rose-600 font-bold">❌</option>
+                      </select>
                     </td>
 
-                    <td className="p-2 border-r text-muted-foreground">{r.observacao || "—"}</td>
+                    <td className="p-1 border-r text-center w-24">
+                      <select
+                        value={r.nfCprb || "❌"}
+                        onChange={(e) => handleUpdateDCTF(r, "nfCprb", e.target.value as any)}
+                        className={cn(
+                          "h-8 w-full rounded border border-input bg-background px-1 py-0.5 text-[11px] font-bold text-center cursor-pointer",
+                          (r.nfCprb === "SIM") ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                        )}
+                      >
+                        <option value="SIM" className="text-emerald-600 font-bold">SIM</option>
+                        <option value="NÃO" className="text-rose-600 font-bold">NÃO</option>
+                        <option value="❌" className="text-rose-600 font-bold">❌</option>
+                      </select>
+                    </td>
+                    <td className="p-1 border-r text-center w-24">
+                      <select
+                        value={r.nfRetInss || "❌"}
+                        onChange={(e) => handleUpdateDCTF(r, "nfRetInss", e.target.value as any)}
+                        className={cn(
+                          "h-8 w-full rounded border border-input bg-background px-1 py-0.5 text-[11px] font-bold text-center cursor-pointer",
+                          (r.nfRetInss === "SIM") ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                        )}
+                      >
+                        <option value="SIM" className="text-emerald-600 font-bold">SIM</option>
+                        <option value="NÃO" className="text-rose-600 font-bold">NÃO</option>
+                        <option value="❌" className="text-rose-600 font-bold">❌</option>
+                      </select>
+                    </td>
+                    <td className="p-1 border-r text-center w-24">
+                      <select
+                        value={r.nfRetCsrf || "❌"}
+                        onChange={(e) => handleUpdateDCTF(r, "nfRetCsrf", e.target.value as any)}
+                        className={cn(
+                          "h-8 w-full rounded border border-input bg-background px-1 py-0.5 text-[11px] font-bold text-center cursor-pointer",
+                          (r.nfRetCsrf === "SIM") ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                        )}
+                      >
+                        <option value="SIM" className="text-emerald-600 font-bold">SIM</option>
+                        <option value="NÃO" className="text-rose-600 font-bold">NÃO</option>
+                        <option value="❌" className="text-rose-600 font-bold">❌</option>
+                      </select>
+                    </td>
+
+                    <td className="p-1 border-r text-center min-w-[150px]">
+                      <input
+                        type="text"
+                        defaultValue={r.transmissaoPublicacao || ""}
+                        onBlur={(e) => {
+                          if (e.target.value !== (r.transmissaoPublicacao || "")) {
+                            handleUpdateDCTF(r, "transmissaoPublicacao", e.target.value);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        className="h-8 w-full rounded border border-input bg-background px-2 py-1 text-xs font-semibold text-center"
+                        placeholder="—"
+                      />
+                    </td>
+
+                    <td className="p-1 border-r text-center min-w-[150px]">
+                      <input
+                        type="text"
+                        defaultValue={r.reciboDocSalvo || ""}
+                        onBlur={(e) => {
+                          if (e.target.value !== (r.reciboDocSalvo || "")) {
+                            handleUpdateDCTF(r, "reciboDocSalvo", e.target.value);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        className="h-8 w-full rounded border border-input bg-background px-2 py-1 text-xs font-semibold text-center"
+                        placeholder="—"
+                      />
+                    </td>
+
+                    <td className="p-1 border-r text-center min-w-[130px]">
+                      <select
+                        value={r.conferidoAnalista || "—"}
+                        onChange={(e) => handleUpdateDCTF(r, "conferidoAnalista", e.target.value as any)}
+                        className={cn(
+                          "h-8 w-full rounded border border-input bg-background px-1 py-0.5 text-[11px] font-bold text-center cursor-pointer",
+                          (r.conferidoAnalista === "CONFERIDO") ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                        )}
+                      >
+                        <option value="CONFERIDO" className="text-emerald-600 font-bold">CONFERIDO</option>
+                        <option value="PENDENTE" className="text-rose-600 font-bold">PENDENTE</option>
+                        <option value="—" className="text-muted-foreground font-bold">—</option>
+                      </select>
+                    </td>
+                    <td className="p-1 border-r text-center min-w-[130px]">
+                      <select
+                        value={r.revisadoSupervisao || "—"}
+                        onChange={(e) => handleUpdateDCTF(r, "revisadoSupervisao", e.target.value as any)}
+                        className={cn(
+                          "h-8 w-full rounded border border-input bg-background px-1 py-0.5 text-[11px] font-bold text-center cursor-pointer",
+                          (r.revisadoSupervisao === "REVISADO") ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                        )}
+                      >
+                        <option value="REVISADO" className="text-emerald-600 font-bold">REVISADO</option>
+                        <option value="PENDENTE" className="text-rose-600 font-bold">PENDENTE</option>
+                        <option value="—" className="text-muted-foreground font-bold">—</option>
+                      </select>
+                    </td>
+
+                    <td className="p-1 border-r text-center min-w-[180px]">
+                      <input
+                        type="text"
+                        defaultValue={r.observacao || ""}
+                        onBlur={(e) => {
+                          if (e.target.value !== (r.observacao || "")) {
+                            handleUpdateDCTF(r, "observacao", e.target.value);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        className="h-8 w-full rounded border border-input bg-background px-2 py-1 text-xs text-muted-foreground"
+                        placeholder="—"
+                      />
+                    </td>
                     <td className="p-2 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <Button

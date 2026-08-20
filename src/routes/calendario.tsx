@@ -58,7 +58,10 @@ function Calendario() {
   const [detalhesAberto, setDetalhesAberto] = useState(false);
 
   const { tarefas } = useTarefas();
-  const eventos = useMemo(() => eventosDoMes(tarefas, ano, mes), [tarefas, ano, mes]);
+  const tarefasFiltradas = useMemo(() => {
+    return (tarefas || []).filter((t) => t && t.periodicidade !== "Diária");
+  }, [tarefas]);
+  const eventos = useMemo(() => eventosDoMes(tarefasFiltradas, ano, mes), [tarefasFiltradas, ano, mes]);
 
   const dias = diasNoMes(ano, mes);
   const offset = new Date(ano, mes, 1).getDay();
