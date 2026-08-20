@@ -21,6 +21,10 @@ export type RegParticularidade = {
   informacoes: string;
   folhaPagamento: string;
   observacao: string;
+  /** Dia de fechamento da folha: "20", "25", "30" ou "" (não definido). */
+  diaFolha?: "20" | "25" | "30" | "";
+  /** Identifica folhas sem lançamentos (folha zerada / referência sem movimento). */
+  folhaSemLancamento?: boolean;
   atualizadoPor?: string;
   atualizadoEm?: string;
   historico?: HistoricoParticularidade[];
@@ -108,6 +112,8 @@ export function salvarParticularidade(
       informacoes: dados.informacoes ?? "",
       folhaPagamento: dados.folhaPagamento ?? "",
       observacao: dados.observacao ?? "",
+      diaFolha: dados.diaFolha ?? "",
+      folhaSemLancamento: dados.folhaSemLancamento ?? false,
       atualizadoPor: usuario,
       atualizadoEm: agora,
       historico: novoHistorico,
