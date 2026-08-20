@@ -83,6 +83,8 @@ import {
   useRegReajusteSindicato,
   deleteReajusteSindicato,
   updateReajusteSindicato,
+  getStoredReajusteSindicato,
+  createReajusteSindicato,
   type RegReajusteSindicato,
 } from "@/lib/reajuste-sindicato-store";
 import { useEmpresas } from "@/lib/empresas-store";
@@ -137,6 +139,27 @@ function Obrigacoes() {
     try {
       const usuarioLogado = user?.nome || "Sistema";
       upsertDCTFWeb(r.id, { [campo]: valor }, r, usuarioLogado);
+      toast.success("Campo atualizado com sucesso!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao atualizar o registro.");
+    }
+  };
+
+  const handleUpdateReajuste = (r: RegReajusteSindicato, campo: keyof RegReajusteSindicato, valor: any) => {
+    try {
+      const atuais = getStoredReajusteSindicato();
+      const atual = atuais.find((item) => item.id === r.id || item.codigo === r.codigo);
+      if (atual) {
+        updateReajusteSindicato(atual.id, { [campo]: valor });
+      } else {
+        const novo = {
+          ...r,
+          [campo]: valor,
+        };
+        const { id, ...dados } = novo;
+        createReajusteSindicato(dados);
+      }
       toast.success("Campo atualizado com sucesso!");
     } catch (err) {
       console.error(err);
@@ -1036,34 +1059,127 @@ function Obrigacoes() {
                       )}>
                         {r.empresa}
                       </td>
-                      <td className="p-2.5 border-r text-muted-foreground font-medium">{r.ramoAtividade || "—"}</td>
-                      <td className="p-2.5 text-center border-r font-semibold text-foreground">{r.sindicato || "—"}</td>
-                      <td className="p-2.5 text-center border-r tabular-nums font-semibold text-primary">{r.numSolicitacao || "—"}</td>
+                      <td className="p-1 border-r text-center min-w-[180px]">
+                        <input
+                          type="text"
+                          defaultValue={r.ramoAtividade || ""}
+                          onBlur={(e) => {
+                            if (e.target.value !== (r.ramoAtividade || "")) {
+                              handleUpdateReajuste(r, "ramoAtividade", e.target.value);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          className="h-8 w-full rounded border border-input bg-background px-2 py-1 text-xs text-muted-foreground"
+                          placeholder="—"
+                        />
+                      </td>
+                      <td className="p-1 border-r text-center min-w-[150px]">
+                        <input
+                          type="text"
+                          defaultValue={r.sindicato || ""}
+                          onBlur={(e) => {
+                            if (e.target.value !== (r.sindicato || "")) {
+                              handleUpdateReajuste(r, "sindicato", e.target.value);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          className="h-8 w-full rounded border border-input bg-background px-2 py-1 text-xs font-semibold text-center text-foreground"
+                          placeholder="—"
+                        />
+                      </td>
+                      <td className="p-1 border-r text-center min-w-[120px]">
+                        <input
+                          type="text"
+                          defaultValue={r.numSolicitacao || ""}
+                          onBlur={(e) => {
+                            if (e.target.value !== (r.numSolicitacao || "")) {
+                              handleUpdateReajuste(r, "numSolicitacao", e.target.value);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          className="h-8 w-full rounded border border-input bg-background px-2 py-1 text-xs font-semibold text-center text-primary"
+                          placeholder="—"
+                        />
+                      </td>
 
                       {/* Autorização */}
-                      <td className="p-2.5 text-center font-bold border-r">
-                        <span className={r.autorizacao === "SIM" ? "text-success font-extrabold" : r.autorizacao === "NÃO" ? "text-destructive" : "text-muted-foreground"}>
-                          {r.autorizacao}
-                        </span>
+                      <td className="p-1 border-r text-center min-w-[100px]">
+                        <select
+                          value={r.autorizacao || "—"}
+                          onChange={(e) => handleUpdateReajuste(r, "autorizacao", e.target.value as any)}
+                          className={cn(
+                            "h-8 w-full rounded border border-input bg-background px-1 py-0.5 text-[11px] font-bold text-center cursor-pointer",
+                            r.autorizacao === "SIM" ? "text-emerald-600 dark:text-emerald-400" : r.autorizacao === "NÃO" ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground"
+                          )}
+                        >
+                          <option value="SIM" className="text-emerald-600 font-bold">SIM</option>
+                          <option value="NÃO" className="text-rose-600 font-bold">NÃO</option>
+                          <option value="—" className="text-muted-foreground font-bold">—</option>
+                        </select>
                       </td>
 
                       {/* Reajuste Salarial */}
-                      <td className="p-2.5 text-center font-bold border-r">
-                        <span className={r.reajusteSalarial === "SIM" ? "text-success font-extrabold" : r.reajusteSalarial === "NÃO" ? "text-destructive" : "text-muted-foreground"}>
-                          {r.reajusteSalarial}
-                        </span>
+                      <td className="p-1 border-r text-center min-w-[100px]">
+                        <select
+                          value={r.reajusteSalarial || "—"}
+                          onChange={(e) => handleUpdateReajuste(r, "reajusteSalarial", e.target.value as any)}
+                          className={cn(
+                            "h-8 w-full rounded border border-input bg-background px-1 py-0.5 text-[11px] font-bold text-center cursor-pointer",
+                            r.reajusteSalarial === "SIM" ? "text-emerald-600 dark:text-emerald-400" : r.reajusteSalarial === "NÃO" ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground"
+                          )}
+                        >
+                          <option value="SIM" className="text-emerald-600 font-bold">SIM</option>
+                          <option value="NÃO" className="text-rose-600 font-bold">NÃO</option>
+                          <option value="—" className="text-muted-foreground font-bold">—</option>
+                        </select>
                       </td>
 
                       {/* Contribuição Assistencial */}
-                      <td className="p-2.5 text-center font-bold border-r">
-                        <span className={r.contribuicaoAssistencial === "SIM" ? "text-purple-600 dark:text-purple-400 font-extrabold" : r.contribuicaoAssistencial === "NÃO" ? "text-destructive" : "text-muted-foreground"}>
-                          {r.contribuicaoAssistencial}
-                        </span>
+                      <td className="p-1 border-r text-center min-w-[100px]">
+                        <select
+                          value={r.contribuicaoAssistencial || "—"}
+                          onChange={(e) => handleUpdateReajuste(r, "contribuicaoAssistencial", e.target.value as any)}
+                          className={cn(
+                            "h-8 w-full rounded border border-input bg-background px-1 py-0.5 text-[11px] font-bold text-center cursor-pointer",
+                            r.contribuicaoAssistencial === "SIM" ? "text-purple-600 dark:text-purple-400 font-bold" : r.contribuicaoAssistencial === "NÃO" ? "text-rose-600 dark:text-rose-400" : "text-muted-foreground"
+                          )}
+                        >
+                          <option value="SIM" className="text-purple-600 dark:text-purple-400 font-bold">SIM</option>
+                          <option value="NÃO" className="text-rose-600 font-bold">NÃO</option>
+                          <option value="—" className="text-muted-foreground font-bold">—</option>
+                        </select>
                       </td>
 
                       {/* Observação */}
-                      <td className="p-2.5 border-r text-muted-foreground font-medium max-w-xs break-words">
-                        {r.observacao || "—"}
+                      <td className="p-1 border-r text-center min-w-[180px]">
+                        <input
+                          type="text"
+                          defaultValue={r.observacao || ""}
+                          onBlur={(e) => {
+                            if (e.target.value !== (r.observacao || "")) {
+                              handleUpdateReajuste(r, "observacao", e.target.value);
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          className="h-8 w-full rounded border border-input bg-background px-2 py-1 text-xs text-muted-foreground"
+                          placeholder="—"
+                        />
                       </td>
 
                       <td className="p-2.5 text-center">
