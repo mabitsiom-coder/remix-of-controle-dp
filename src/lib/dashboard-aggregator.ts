@@ -487,7 +487,7 @@ export function calcularProximasRotinas(
     const dias = diasAte(data);
     // Mostrar: não concluídas que vencem em até 14 dias ou já atrasadas
     if (t.status === "concluida" && dias > 0) continue;
-    if (dias > 14 && t.status !== "atrasada") continue;
+    if (dias > 14) continue;
 
     resultado.push({
       id: t.id,

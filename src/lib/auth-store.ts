@@ -18,7 +18,7 @@ export type Usuario = {
   senha?: string;
   perfil: PerfilAcesso;
   departamento: string;
-  fotoUrl?: string;
+  fotoUrl?: string | undefined;
   status: "ativo" | "inativo";
   criadoEm: string;
 };

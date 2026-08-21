@@ -1255,7 +1255,7 @@ function Tarefas() {
       {/* Modal de Detalhes da Rotina */}
       {rotinaSelecionada && (
         <DetalhesRotinaDialog
-          rotina={rotinaSelecionada}
+          tarefa={rotinaSelecionada}
           open={detalhesAberto}
           onOpenChange={setDetalhesAberto}
         />
