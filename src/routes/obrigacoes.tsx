@@ -125,7 +125,7 @@ const tiposObriga = [
 ];
 
 function Obrigacoes() {
-  const { user } = useAuth();
+  const { currentUser: user } = useAuth();
   const [filtroTipo, setFiltroTipo] = useState("Pesq. FGTS Trim.");
   const { obrigacoes = [] } = useObrigacoes() || {};
   const { registros: dctfRegistros = [] } = useRegDCTFWeb() || {};
