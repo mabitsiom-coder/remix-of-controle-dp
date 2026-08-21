@@ -31,7 +31,7 @@ export type PessoaCadastro = {
   perfil: PerfilAcesso;
   departamento: string;
   origem: string;
-  fotoUrl?: string;
+  fotoUrl?: string | undefined;
 };
 
 function normalizar(valor: string) {
