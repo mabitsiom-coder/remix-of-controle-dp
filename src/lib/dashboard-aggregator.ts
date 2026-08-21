@@ -13,7 +13,7 @@
  *  - Empresas           : Empresa[]
  */
 
-import type { FolhaTarefa } from "./folha-fechamento";
+import type { FolhaTarefa, StatusFolha } from "./folha-fechamento";
 import { statusFolhaMeta } from "./folha-fechamento";
 import type { Obrigacao } from "./mock-data";
 import type { Empresa, Tarefa } from "./mock-data";
@@ -21,6 +21,7 @@ import type { RegDCTFWeb } from "./dctfweb-store";
 import type { RegFGTSTrimestral } from "./fgts-trimestral-store";
 import type { RegEspelhoDebito } from "./espelho-debito-store";
 import type { RegSST } from "./sst-store";
+import type { RegParticularidade } from "./particularidades-store";
 import {
   normalizarCarteira,
   TODAS_CARTEIRAS,
@@ -1014,3 +1015,269 @@ export function calcularIndicadorGeralConclusao(
 
   return { previstas, concluidas, pctGeral };
 }
+
+// ─── Transmissão da Folha por Vencimento ─────────────────────────────────────
+
+export type EmpresaFolhaVencimento = {
+  id: string;
+  codigo: string;
+  nome: string;
+  carteira: string;
+  responsavel: string;
+  status: StatusFolha;
+  transmitida: boolean;
+  dataConclusao?: string;
+  tipoPonto?: string;
+  empregados?: number;
+};
+
+export type ItemTransmissaoFolhaVencimento = {
+  dia: string;
+  label: string;
+  tituloCard: string;
+  subtitulo?: string;
+  isDomestica?: boolean;
+  total: number;
+  transmitidas: number;
+  pendentes: number;
+  emAtraso: number;
+  pctTransmitido: number;
+  porStatus: {
+    concluida: number;
+    conferencia: number;
+    andamento: number;
+    aguardando: number;
+    nao_iniciada: number;
+  };
+  empresas: EmpresaFolhaVencimento[];
+};
+
+export type ResumoTransmissoesFolhaVencimento = {
+  totalGeral: number;
+  totalTransmitidas: number;
+  totalPendentes: number;
+  totalEmAtraso: number;
+  pctGeralTransmitido: number;
+  itens: ItemTransmissaoFolhaVencimento[];
+};
+
+export function isEmpresaDomestica(empresa: Empresa): boolean {
+  if (empresa.tipo === "domestico-pf") return true;
+  const texto = `${empresa.nome} ${empresa.regime || ""} ${empresa.convenio || ""} ${empresa.particularidades?.fechamento || ""}`.toLowerCase();
+  return (
+    texto.includes("domestico") ||
+    texto.includes("doméstic") ||
+    texto.includes("domestica") ||
+    texto.includes("esocial domestico") ||
+    texto.includes("e-social domestico") ||
+    texto.includes("empregador doméstico") ||
+    texto.includes("empregador domestico")
+  );
+}
+
+export function extrairDiaFechamento(
+  empresa: Empresa,
+  particularidadesMap?: Map<string, RegParticularidade>,
+): string {
+  const part = particularidadesMap?.get(empresa.id);
+  if (part?.diaFolha && part.diaFolha !== "") {
+    return part.diaFolha;
+  }
+
+  const textoFolha = (part?.folhaPagamento || "").trim();
+  const textoEmpresa = (empresa.particularidades?.fechamento || "").trim();
+  const texto = textoFolha || textoEmpresa;
+
+  if (!texto) return "20";
+
+  // Busca menções explícitas a dia de envio ou fechamento
+  const matchEnvio = texto.match(/envio\s+(?:até\s+)?(?:dia\s+)?(\d{1,2})/i);
+  if (matchEnvio && matchEnvio[1]) {
+    return String(parseInt(matchEnvio[1], 10)).padStart(2, "0");
+  }
+
+  const matchDia = texto.match(/(?:dia|fechamento|vencimento|do|ao|até)\s*(\d{1,2})/i);
+  if (matchDia && matchDia[1]) {
+    return String(parseInt(matchDia[1], 10)).padStart(2, "0");
+  }
+
+  if (/\b25\b/.test(texto)) return "25";
+  if (/\b30\b/.test(texto)) return "30";
+  if (/\b20\b/.test(texto)) return "20";
+  if (/\b0?5\b/.test(texto)) return "05";
+  if (/\b10\b/.test(texto)) return "10";
+  if (/\b15\b/.test(texto)) return "15";
+
+  return "20";
+}
+
+export function calcularTransmissoesFolhaPorVencimento(
+  folhaTarefas: FolhaTarefa[],
+  empresas: Empresa[],
+  particularidades: RegParticularidade[],
+  competencia: string,
+  carteira: string,
+): ResumoTransmissoesFolhaVencimento {
+  const isAll = !carteira || carteira === TODAS_CARTEIRAS;
+  const empresasAtivas = empresas.filter((e) => e && !e.excluida);
+  const empresasFiltradas = isAll
+    ? empresasAtivas
+    : empresasAtivas.filter(
+        (e) => normalizarCarteira(e.carteira) === normalizarCarteira(carteira),
+      );
+
+  const folhaComp = folhaTarefas.filter((t) => t.competencia === competencia);
+  const folhaMap = new Map<string, FolhaTarefa>();
+  for (const t of folhaComp) {
+    if (t.id) folhaMap.set(t.id, t);
+    if (t.codigo) folhaMap.set(t.codigo, t);
+    if (t.empresa) folhaMap.set(t.empresa.trim().toLowerCase(), t);
+  }
+
+  const partMap = new Map<string, RegParticularidade>();
+  for (const p of particularidades) {
+    if (p.empresaId) partMap.set(p.empresaId, p);
+  }
+
+  const gruposMap = new Map<string, EmpresaFolhaVencimento[]>();
+  gruposMap.set("20", []);
+  gruposMap.set("25", []);
+  gruposMap.set("30", []);
+  gruposMap.set("domestica", []);
+
+  for (const emp of empresasFiltradas) {
+    const isDom = isEmpresaDomestica(emp);
+    const chaveGrupo = isDom
+      ? "domestica"
+      : (() => {
+          const diaRaw = extrairDiaFechamento(emp, partMap);
+          return diaRaw.length === 1 ? `0${diaRaw}` : diaRaw;
+        })();
+
+    if (!gruposMap.has(chaveGrupo)) {
+      gruposMap.set(chaveGrupo, []);
+    }
+
+    const tarefa =
+      folhaMap.get(`${emp.codigoDominio || emp.id}-${competencia}`) ||
+      folhaMap.get(`${emp.id}::${competencia}`) ||
+      folhaMap.get(emp.codigoDominio || "") ||
+      folhaMap.get(emp.id) ||
+      folhaMap.get(emp.nome.trim().toLowerCase());
+
+    const status: StatusFolha = tarefa?.status || "nao_iniciada";
+    const transmitida = status === "concluida" || Boolean(tarefa?.dataConclusao || tarefa?.dataPublicacao);
+
+    gruposMap.get(chaveGrupo)!.push({
+      id: emp.id,
+      codigo: emp.codigoDominio || emp.id,
+      nome: emp.nome,
+      carteira: emp.carteira || "Sem Carteira",
+      responsavel: emp.responsavel || emp.analista || "Não informado",
+      status,
+      transmitida,
+      dataConclusao: tarefa?.dataConclusao || tarefa?.dataPublicacao,
+      tipoPonto: tarefa?.tipoPonto,
+      empregados: tarefa?.empregados ?? emp.funcionarios ?? 0,
+    });
+  }
+
+  const [mesRaw, anoRaw] = competencia.split("/").map(Number);
+  const mesComp = mesRaw ?? 1;
+  const anoComp = anoRaw ?? new Date().getFullYear();
+  const hojeD = hoje();
+
+  const itens: ItemTransmissaoFolhaVencimento[] = [];
+  
+  // Ordenação: 20, 25, 30, outros dias e Doméstica (como 4º card)
+  const chaves = Array.from(gruposMap.keys());
+  const diasNumericos = chaves
+    .filter((k) => k !== "domestica" && !isNaN(Number(k)))
+    .sort((a, b) => Number(a) - Number(b));
+  const outrosDias = chaves.filter((k) => k !== "domestica" && isNaN(Number(k)));
+  const chavesOrdenadas = [
+    ...diasNumericos,
+    ...outrosDias,
+    ...(gruposMap.has("domestica") ? ["domestica"] : []),
+  ];
+
+  let totalGeral = 0;
+  let totalTransmitidas = 0;
+  let totalPendentes = 0;
+  let totalEmAtraso = 0;
+
+  for (const chave of chavesOrdenadas) {
+    const listaEmpresas = gruposMap.get(chave) || [];
+    const isDom = chave === "domestica";
+
+    // Mantém grupos padrão (20, 25, 30 e domestica) sempre visíveis
+    if (listaEmpresas.length === 0 && chave !== "20" && chave !== "25" && chave !== "30" && !isDom) {
+      continue;
+    }
+
+    const diaNum = isDom ? 7 : (Number(chave) || 20);
+    const dataVenc = new Date(anoComp, mesComp, diaNum);
+    const prazoVencido = dataVenc.getTime() < hojeD.getTime();
+
+    let transmitidas = 0;
+    let pendentes = 0;
+    let emAtraso = 0;
+
+    const porStatus = {
+      concluida: 0,
+      conferencia: 0,
+      andamento: 0,
+      aguardando: 0,
+      nao_iniciada: 0,
+    };
+
+    for (const emp of listaEmpresas) {
+      porStatus[emp.status] = (porStatus[emp.status] ?? 0) + 1;
+
+      if (emp.transmitida) {
+        transmitidas++;
+      } else {
+        pendentes++;
+        if (prazoVencido) {
+          emAtraso++;
+        }
+      }
+    }
+
+    const total = listaEmpresas.length;
+    const pctTransmitido = total > 0 ? Math.round((transmitidas / total) * 100) : 0;
+
+    totalGeral += total;
+    totalTransmitidas += transmitidas;
+    totalPendentes += pendentes;
+    totalEmAtraso += emAtraso;
+
+    itens.push({
+      dia: chave,
+      label: isDom ? "Folhas Domésticas (PF)" : `Folhas do Dia ${chave}`,
+      tituloCard: isDom ? "Folhas Domésticas" : `Folhas do ${Number(chave)}`,
+      subtitulo: isDom ? "eSocial Doméstico / DAE (PF)" : `Vencimento dia ${chave}`,
+      isDomestica: isDom,
+      total,
+      transmitidas,
+      pendentes,
+      emAtraso,
+      pctTransmitido,
+      porStatus,
+      empresas: listaEmpresas,
+    });
+  }
+
+  const pctGeralTransmitido =
+    totalGeral > 0 ? Math.round((totalTransmitidas / totalGeral) * 100) : 0;
+
+  return {
+    totalGeral,
+    totalTransmitidas,
+    totalPendentes,
+    totalEmAtraso,
+    pctGeralTransmitido,
+    itens,
+  };
+}
+

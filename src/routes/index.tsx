@@ -27,10 +27,19 @@ import {
   ChevronRight,
   BarChart3,
   ArrowRight,
+  Search,
+  Eye,
+  Check,
+  ExternalLink,
+  Briefcase,
+  Tag,
+  UserCheck,
+  XCircle,
+  Layers,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
-import { competencias } from "@/lib/folha-fechamento";
+import { competencias, statusFolhaMeta } from "@/lib/folha-fechamento";
 import { useFolhaTarefasSalvas } from "@/lib/folha-db";
 import { useEmpresas } from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
@@ -40,7 +49,25 @@ import { useRegFGTSTrimestral } from "@/lib/fgts-trimestral-store";
 import { useRegEspelhoDebito } from "@/lib/espelho-debito-store";
 import { useRegSST } from "@/lib/sst-store";
 import { useTarefas } from "@/lib/tarefas-store";
-import { listarNomesCarteiras, TODAS_CARTEIRAS } from "@/lib/carteiras-core";
+import { useParticularidades } from "@/lib/particularidades-store";
+import { listarNomesCarteiras, TODAS_CARTEIRAS, normalizarCarteira } from "@/lib/carteiras-core";
+import { obterResponsaveisCarteira } from "@/lib/bi-service";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 import {
   calcularResumoFolha,
@@ -55,6 +82,8 @@ import {
   calcularDistribuicaoDemandas,
   calcularProximosVencimentos,
   calcularIndicadorGeralConclusao,
+  calcularTransmissoesFolhaPorVencimento,
+  type ItemTransmissaoFolhaVencimento,
 } from "@/lib/dashboard-aggregator";
 
 export const Route = createFileRoute("/")({
@@ -292,13 +321,14 @@ function Dashboard() {
   // ── Dados dos módulos ──────────────────────────────────────────────────────
   const { folhaTarefas } = useFolhaTarefasSalvas();
   const { empresas: empresasAtivas } = useEmpresas();
-  const { carteiras: carteirasCad } = useCadastros();
+  const { carteiras: carteirasCad, analistas: analistasCad, supervisores: supervisoresCad } = useCadastros();
   const { obrigacoes } = useObrigacoes();
   const { registros: dctfweb } = useRegDCTFWeb();
   const { registros: fgts } = useRegFGTSTrimestral();
   const { registros: espelho } = useRegEspelhoDebito();
   const { registros: registrosSST } = useRegSST();
   const { tarefas } = useTarefas();
+  const { registros: particularidades } = useParticularidades();
 
   // Lista de carteiras dinâmica
   const nomesCarteiras = useMemo(
@@ -306,11 +336,78 @@ function Dashboard() {
     [empresasAtivas, carteirasCad],
   );
 
+  // Metadados da carteira selecionada (semelhante à Gestão por Carteira)
+  const carteiraInfo = useMemo(() => {
+    const isAll = !carteira || carteira === TODAS_CARTEIRAS;
+    if (isAll) {
+      return {
+        nome: "Todas as Carteiras",
+        categoria: "Visão Consolidada",
+        analistas: ["Equipe Operacional Geral"],
+        supervisor: "Supervisão Geral",
+      };
+    }
+
+    const carteiraObj = carteirasCad.find(
+      (c) => normalizarCarteira(c.nome) === normalizarCarteira(carteira),
+    );
+
+    const responsaveis = obterResponsaveisCarteira(
+      carteira,
+      carteirasCad,
+      analistasCad || [],
+      supervisoresCad || [],
+      empresasAtivas,
+    );
+
+    return {
+      nome: carteira,
+      categoria: carteiraObj?.categoria || "Geral",
+      analistas: responsaveis.analistas.length > 0 ? responsaveis.analistas : ["Equipe Operacional"],
+      supervisor: responsaveis.supervisor || "Supervisão Geral",
+    };
+  }, [carteira, carteirasCad, analistasCad, supervisoresCad, empresasAtivas]);
+
   // ── Cálculos agregados (memoizados) ────────────────────────────────────────
   const resumoFolha = useMemo(
     () => calcularResumoFolha(folhaTarefas, empresasAtivas, competencia, carteira),
     [folhaTarefas, empresasAtivas, competencia, carteira],
   );
+
+  const transmissoesFolhaVencimento = useMemo(
+    () =>
+      calcularTransmissoesFolhaPorVencimento(
+        folhaTarefas,
+        empresasAtivas,
+        particularidades,
+        competencia,
+        carteira,
+      ),
+    [folhaTarefas, empresasAtivas, particularidades, competencia, carteira],
+  );
+
+  // Estado do modal de detalhes da transmissão da folha por vencimento
+  const [modalVencimento, setModalVencimento] = useState<ItemTransmissaoFolhaVencimento | null>(null);
+  const [buscaEmpresasVenc, setBuscaEmpresasVenc] = useState("");
+  const [filtroStatusVenc, setFiltroStatusVenc] = useState<"todas" | "transmitidas" | "pendentes">("todas");
+
+  const empresasFiltradasModal = useMemo(() => {
+    if (!modalVencimento) return [];
+    return modalVencimento.empresas.filter((emp) => {
+      if (filtroStatusVenc === "transmitidas" && !emp.transmitida) return false;
+      if (filtroStatusVenc === "pendentes" && emp.transmitida) return false;
+      if (buscaEmpresasVenc.trim()) {
+        const q = buscaEmpresasVenc.toLowerCase().trim();
+        const match =
+          emp.nome.toLowerCase().includes(q) ||
+          emp.codigo.toLowerCase().includes(q) ||
+          emp.responsavel.toLowerCase().includes(q) ||
+          emp.carteira.toLowerCase().includes(q);
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [modalVencimento, filtroStatusVenc, buscaEmpresasVenc]);
 
   const resumoObrigacoes = useMemo(
     () =>
@@ -485,43 +582,147 @@ function Dashboard() {
         description="Visão consolidada das demandas do Departamento Pessoal"
       />
 
-      {/* ── LINHA 1 — Filtros ────────────────────────────────────────────── */}
-      <div className="surface-panel flex flex-wrap items-center gap-3 p-3">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <select
-            id="filtro-competencia"
-            value={competencia}
-            onChange={(e) => setCompetencia(e.target.value)}
-            className="h-9 rounded-md border bg-background px-2 text-sm"
-          >
-            {competencias.map((c) => (
-              <option key={c} value={c}>
-                Competência {c}
-              </option>
-            ))}
-          </select>
+      {/* ── PAINEL CENTRALIZADO DE CONTROLE EXECUTIVO & FILTROS COM ALTO DESTAQUE ── */}
+      <div className="surface-panel relative overflow-hidden rounded-2xl border-2 border-primary/20 bg-gradient-to-b from-card via-card to-primary/5 p-5 md:p-6 shadow-md">
+        <div className="flex flex-col items-center text-center gap-5">
+          {/* Barra de Filtros Centralizada */}
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {/* Seletor de Competência */}
+            <div className="flex items-center gap-2 rounded-xl border-2 border-primary/30 bg-background/90 px-3.5 py-1.5 shadow-sm hover:border-primary transition-all">
+              <Calendar className="h-4 w-4 text-primary" />
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                Competência:
+              </span>
+              <Select value={competencia} onValueChange={setCompetencia}>
+                <SelectTrigger className="h-8 w-32 border-0 bg-transparent text-sm font-bold text-foreground focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {competencias.map((c) => (
+                    <SelectItem key={c} value={c} className="text-xs font-semibold">
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Seletor de Carteira */}
+            <div className="flex items-center gap-2 rounded-xl border-2 border-primary/30 bg-background/90 px-3.5 py-1.5 shadow-sm hover:border-primary transition-all">
+              <Briefcase className="h-4 w-4 text-primary" />
+              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                Carteira:
+              </span>
+              <Select value={carteira} onValueChange={setCarteira}>
+                <SelectTrigger className="h-8 min-w-44 border-0 bg-transparent text-sm font-bold text-foreground focus:ring-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={TODAS_CARTEIRAS} className="text-xs font-bold text-primary">
+                    ★ Todas as Carteiras (Consolidado)
+                  </SelectItem>
+                  {nomesCarteiras.map((c) => {
+                    const catObj = carteirasCad.find(
+                      (x) => normalizarCarteira(x.nome) === normalizarCarteira(c),
+                    );
+                    return (
+                      <SelectItem key={c} value={c} className="text-xs">
+                        <span className="font-semibold">{c}</span>
+                        {catObj?.categoria && (
+                          <span className="ml-2 rounded border bg-muted/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                            {catObj.categoria}
+                          </span>
+                        )}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Botão de alternar para Todas */}
+            {carteira !== TODAS_CARTEIRAS ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCarteira(TODAS_CARTEIRAS)}
+                className="h-11 rounded-xl border-primary/30 text-xs font-semibold hover:bg-primary hover:text-primary-foreground transition-all shadow-sm"
+              >
+                <XCircle className="h-4 w-4 mr-1.5 text-primary" /> Ver Todas as Carteiras
+              </Button>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2.5 text-xs font-bold text-primary">
+                <Layers className="h-4 w-4" /> Visão Geral Consolidada
+              </span>
+            )}
+          </div>
+
+          {/* Divisor Elegante */}
+          <div className="w-full max-w-5xl border-t border-border/60" />
+
+          {/* Cards de Identificação dos Responsáveis, Categoria e Carteira em Destaque Central */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 w-full max-w-6xl">
+            {/* 1. Carteira Ativa */}
+            <div className="flex flex-col items-center justify-center rounded-xl border bg-background/80 p-3.5 text-center shadow-2xs">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1">
+                <Briefcase className="h-3.5 w-3.5 text-primary" /> Carteira Selecionada
+              </span>
+              <p className="text-base font-extrabold text-foreground truncate max-w-full">
+                {carteiraInfo.nome}
+              </p>
+            </div>
+
+            {/* 2. Categoria da Carteira Dinâmica */}
+            <div className="flex flex-col items-center justify-center rounded-xl border bg-background/80 p-3.5 text-center shadow-2xs">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1">
+                <Tag className="h-3.5 w-3.5 text-primary" /> Categoria / Segmento
+              </span>
+              <span
+                className="inline-flex items-center justify-center text-center rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-extrabold text-primary max-w-full truncate"
+                title={carteiraInfo.categoria}
+              >
+                {carteiraInfo.categoria}
+              </span>
+            </div>
+
+            {/* 3. Analista Responsável */}
+            <div className="flex flex-col items-center justify-center rounded-xl border bg-background/80 p-3.5 text-center shadow-2xs">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1">
+                <UserCheck className="h-3.5 w-3.5 text-primary" /> Analista(s) Responsável(is)
+              </span>
+              <div className="flex flex-wrap items-center justify-center gap-1">
+                {carteiraInfo.analistas.map((a, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center rounded-lg bg-muted px-2 py-0.5 text-xs font-extrabold text-foreground"
+                  >
+                    {a}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* 4. Supervisor Responsável */}
+            <div className="flex flex-col items-center justify-center rounded-xl border bg-background/80 p-3.5 text-center shadow-2xs">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> Supervisor Responsável
+              </span>
+              <p className="text-sm font-extrabold text-foreground">
+                {carteiraInfo.supervisor}
+              </p>
+            </div>
+
+            {/* 5. Período / Competência */}
+            <div className="flex flex-col items-center justify-center rounded-xl border bg-background/80 p-3.5 text-center shadow-2xs">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1">
+                <Calendar className="h-3.5 w-3.5 text-primary" /> Competência Ativa
+              </span>
+              <span className="inline-flex items-center rounded-lg bg-muted px-2.5 py-0.5 text-xs font-extrabold text-foreground tabular-nums">
+                {competencia}
+              </span>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Building2 className="h-4 w-4 text-muted-foreground" />
-          <select
-            id="filtro-carteira"
-            value={carteira}
-            onChange={(e) => setCarteira(e.target.value)}
-            className="h-9 rounded-md border bg-background px-2 text-sm"
-          >
-            <option value={TODAS_CARTEIRAS}>Todas as Carteiras</option>
-            {nomesCarteiras.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
-        <span className="ml-auto text-xs text-muted-foreground">
-          {totalEmpresas} empresa{totalEmpresas !== 1 ? "s" : ""} •{" "}
-          {carteira === TODAS_CARTEIRAS ? "Visão consolidada" : carteira}
-        </span>
       </div>
 
       {/* ── LINHA 2 — Visão Geral do Setor ──────────────────────────────────── */}
@@ -883,6 +1084,187 @@ function Dashboard() {
             </div>
           </button>
         </div>
+      </div>
+
+      {/* ── Transmissão da Folha por Vencimento ──────────────────────── */}
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <SectionTitle icon={Calendar}>
+            Transmissão da Folha por Vencimento
+          </SectionTitle>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {transmissoesFolhaVencimento.totalTransmitidas} transmitidas
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-warning/15 px-2.5 py-0.5 text-xs font-semibold text-warning">
+              <Clock className="h-3.5 w-3.5" />
+              {transmissoesFolhaVencimento.totalPendentes} pendentes
+            </span>
+            {transmissoesFolhaVencimento.totalEmAtraso > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/15 px-2.5 py-0.5 text-xs font-semibold text-destructive">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                {transmissoesFolhaVencimento.totalEmAtraso} em atraso
+              </span>
+            )}
+          </div>
+        </div>
+
+        {transmissoesFolhaVencimento.itens.length === 0 ? (
+          <EmptyState label="Nenhuma empresa encontrada para a competência e carteira selecionadas." />
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {transmissoesFolhaVencimento.itens.map((item) => {
+              const temAtraso = item.emAtraso > 0;
+
+              return (
+                <div
+                  key={item.dia}
+                  className="surface-panel flex flex-col justify-between p-4 transition-all hover:ring-2 hover:ring-primary/40 shadow-xs"
+                >
+                  <div>
+                    {/* Header do Card */}
+                    <div className="mb-3 flex items-start justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className={cn(
+                            "flex h-8 w-8 items-center justify-center rounded-lg font-bold text-xs shrink-0",
+                            item.isDomestica
+                              ? "bg-purple-500/15 text-purple-600 dark:text-purple-400"
+                              : "bg-primary/10 text-primary text-sm",
+                          )}
+                        >
+                          {item.isDomestica ? "DOM" : item.dia}
+                        </span>
+                        <div>
+                          <h3 className="text-sm font-bold text-foreground leading-tight flex items-center gap-1.5">
+                            {item.tituloCard}
+                            {item.isDomestica && (
+                              <span className="rounded bg-purple-500/15 text-purple-700 dark:text-purple-300 px-1 py-0.2 text-[9px] font-semibold">
+                                PF
+                              </span>
+                            )}
+                          </h3>
+                          <p className="text-[11px] text-muted-foreground">
+                            {item.subtitulo ?? `Vencimento dia ${item.dia}`}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="rounded-md border bg-muted/60 px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                        {item.total} {item.total === 1 ? (item.isDomestica ? "doméstica" : "empresa") : (item.isDomestica ? "domésticas" : "empresas")}
+                      </span>
+                    </div>
+
+                    {/* Destaques: Transmitidas vs Pendentes */}
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div className="rounded-lg border border-success/30 bg-success/10 p-2.5">
+                        <div className="flex items-center gap-1.5 text-success">
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                          <span className="text-[10px] font-semibold uppercase tracking-wide">
+                            Transmitidas
+                          </span>
+                        </div>
+                        <p className="mt-1 text-2xl font-extrabold tabular-nums text-success leading-none">
+                          {item.transmitidas}
+                        </p>
+                      </div>
+
+                      <div
+                        className={cn(
+                          "rounded-lg border p-2.5",
+                          item.pendentes > 0
+                            ? "border-warning/30 bg-warning/10"
+                            : "border-muted bg-muted/30",
+                        )}
+                      >
+                        <div className="flex items-center gap-1.5 text-warning">
+                          <Clock className="h-3.5 w-3.5 shrink-0" />
+                          <span className="text-[10px] font-semibold uppercase tracking-wide">
+                            Pendentes
+                          </span>
+                        </div>
+                        <p
+                          className={cn(
+                            "mt-1 text-2xl font-extrabold tabular-nums leading-none",
+                            item.pendentes > 0 ? "text-warning" : "text-muted-foreground",
+                          )}
+                        >
+                          {item.pendentes}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Progresso de Transmissão */}
+                    <div className="mb-3">
+                      <div className="mb-1 flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Transmissão</span>
+                        <span className="font-bold tabular-nums">
+                          {item.pctTransmitido}%
+                        </span>
+                      </div>
+                      <ProgressBar
+                        value={item.pctTransmitido}
+                        tone={
+                          item.pctTransmitido >= 80
+                            ? "success"
+                            : item.pctTransmitido >= 50
+                              ? "warning"
+                              : "danger"
+                        }
+                      />
+                    </div>
+
+                    {/* Detalhamento por Status */}
+                    <div className="grid grid-cols-4 gap-1 text-center text-[10px]">
+                      <div className="rounded border bg-card/60 p-1" title="Concluídas">
+                        <p className="font-bold tabular-nums text-success">{item.porStatus.concluida}</p>
+                        <p className="text-muted-foreground truncate">Concl.</p>
+                      </div>
+                      <div className="rounded border bg-card/60 p-1" title="Em Conferência">
+                        <p className="font-bold tabular-nums text-primary">{item.porStatus.conferencia}</p>
+                        <p className="text-muted-foreground truncate">Conf.</p>
+                      </div>
+                      <div className="rounded border bg-card/60 p-1" title="Em Andamento">
+                        <p className="font-bold tabular-nums text-info">{item.porStatus.andamento}</p>
+                        <p className="text-muted-foreground truncate">Andam.</p>
+                      </div>
+                      <div className="rounded border bg-card/60 p-1" title="Aguardando / Não Iniciadas">
+                        <p className="font-bold tabular-nums text-muted-foreground">
+                          {item.porStatus.nao_iniciada + item.porStatus.aguardando}
+                        </p>
+                        <p className="text-muted-foreground truncate">Não Inic.</p>
+                      </div>
+                    </div>
+
+                    {/* Alerta de Atraso se houver */}
+                    {temAtraso && (
+                      <div className="mt-2 flex items-center gap-1.5 rounded-md bg-destructive/10 px-2 py-1 text-xs text-destructive font-medium">
+                        <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                        <span>{item.emAtraso} folha{item.emAtraso > 1 ? "s" : ""} em atraso</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Ação: Ver empresas */}
+                  <div className="mt-3.5 pt-2.5 border-t">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setModalVencimento(item);
+                        setBuscaEmpresasVenc("");
+                        setFiltroStatusVenc("todas");
+                      }}
+                      className="w-full flex items-center justify-center gap-1.5 rounded-md bg-primary/10 hover:bg-primary/20 text-primary py-1.5 text-xs font-semibold transition-colors"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      {item.isDomestica ? `Ver Domésticas (${item.total})` : `Ver Empresas (${item.total})`}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── LINHA 4 — Gráficos ───────────────────────────────────────────────── */}
@@ -1405,6 +1787,165 @@ function Dashboard() {
           )}
         </Panel>
       </div>
+
+      {/* ── Modal de Detalhes da Folha por Vencimento ──────────────── */}
+      <Dialog
+        open={Boolean(modalVencimento)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setModalVencimento(null);
+            setBuscaEmpresasVenc("");
+            setFiltroStatusVenc("todas");
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col p-0 overflow-hidden">
+          <DialogHeader className="p-4 border-b bg-muted/20">
+            <div className="flex flex-wrap items-center justify-between gap-3 pr-6">
+              <div>
+                <DialogTitle className="text-base font-bold flex items-center gap-2">
+                  <span
+                    className={cn(
+                      "flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold",
+                      modalVencimento?.isDomestica
+                        ? "bg-purple-500/15 text-purple-600 dark:text-purple-400"
+                        : "bg-primary/15 text-primary",
+                    )}
+                  >
+                    {modalVencimento?.isDomestica ? "DOM" : modalVencimento?.dia}
+                  </span>
+                  Transmissão da Folha — {modalVencimento?.label}
+                </DialogTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Competência: <strong className="text-foreground">{competencia}</strong> · Carteira:{" "}
+                  <strong className="text-foreground">{carteira}</strong>
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="rounded-md bg-success/15 px-2.5 py-1 font-semibold text-success">
+                  {modalVencimento?.transmitidas} Transmitidas
+                </span>
+                <span className="rounded-md bg-warning/15 px-2.5 py-1 font-semibold text-warning">
+                  {modalVencimento?.pendentes} Pendentes
+                </span>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {/* Barra de filtros internos */}
+          <div className="p-3 border-b bg-background flex flex-wrap items-center justify-between gap-3">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por código, empresa ou responsável..."
+                value={buscaEmpresasVenc}
+                onChange={(e) => setBuscaEmpresasVenc(e.target.value)}
+                className="pl-8 h-8 text-xs"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              {(["todas", "transmitidas", "pendentes"] as const).map((tipo) => (
+                <button
+                  key={tipo}
+                  type="button"
+                  onClick={() => setFiltroStatusVenc(tipo)}
+                  className={cn(
+                    "px-2.5 py-1 rounded-md text-xs font-semibold capitalize transition-all",
+                    filtroStatusVenc === tipo
+                      ? "bg-primary text-primary-foreground shadow-xs"
+                      : "bg-muted text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {tipo === "todas" ? "Todas" : tipo === "transmitidas" ? "Transmitidas" : "Pendentes"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tabela de Empresas */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {empresasFiltradasModal.length === 0 ? (
+              <div className="flex h-36 flex-col items-center justify-center gap-2 rounded-lg border border-dashed">
+                <p className="text-xs text-muted-foreground">
+                  Nenhuma empresa encontrada com os filtros atuais.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/50">
+                    <tr className="border-b text-muted-foreground">
+                      <th className="py-2 px-3 text-left font-medium">Cód.</th>
+                      <th className="py-2 px-3 text-left font-medium">Empresa</th>
+                      <th className="py-2 px-3 text-left font-medium">Carteira</th>
+                      <th className="py-2 px-3 text-left font-medium">Responsável</th>
+                      <th className="py-2 px-3 text-center font-medium">Empregados</th>
+                      <th className="py-2 px-3 text-center font-medium">Status da Folha</th>
+                      <th className="py-2 px-3 text-right font-medium">Publicação</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {empresasFiltradasModal.map((emp) => {
+                      const statusMeta = statusFolhaMeta[emp.status];
+                      return (
+                        <tr key={emp.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="py-2 px-3 font-mono font-semibold text-muted-foreground">
+                            {emp.codigo}
+                          </td>
+                          <td className="py-2 px-3 font-medium text-foreground">
+                            {emp.nome}
+                          </td>
+                          <td className="py-2 px-3 text-muted-foreground">
+                            {emp.carteira}
+                          </td>
+                          <td className="py-2 px-3 text-muted-foreground">
+                            {emp.responsavel}
+                          </td>
+                          <td className="py-2 px-3 text-center tabular-nums">
+                            {emp.empregados ?? "—"}
+                          </td>
+                          <td className="py-2 px-3 text-center">
+                            <span
+                              className={cn(
+                                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border",
+                                statusMeta.className,
+                              )}
+                            >
+                              {emp.transmitida && <Check className="h-3 w-3" />}
+                              {statusMeta.label}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 text-right font-mono text-muted-foreground">
+                            {emp.dataConclusao || "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Footer do Modal */}
+          <div className="p-3 border-t bg-muted/20 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              Exibindo {empresasFiltradasModal.length} de {modalVencimento?.total} empresas
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setModalVencimento(null);
+                goToFolha();
+              }}
+              className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors"
+            >
+              Ir para Folha de Pagamento <ExternalLink className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
