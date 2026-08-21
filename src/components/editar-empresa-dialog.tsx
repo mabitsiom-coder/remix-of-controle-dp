@@ -276,7 +276,16 @@ export function EditarEmpresaDialog({
                   <Select
                     value={formData.tipo || "com-movimento"}
                     onValueChange={(val: "com-movimento" | "sem-movimento" | "domestico-pf") =>
-                      setFormData({ ...formData, tipo: val })
+                      setFormData((prev) => ({
+                        ...prev,
+                        tipo: val,
+                        fechamento:
+                          val === "sem-movimento"
+                            ? "Sem Movimento"
+                            : prev.fechamento === "Sem Movimento" || prev.fechamento === "Sem movimento"
+                              ? "Fechamento padrão até dia 20 de cada mês."
+                              : prev.fechamento,
+                      }))
                     }
                   >
                     <SelectTrigger id="edit-tipo">

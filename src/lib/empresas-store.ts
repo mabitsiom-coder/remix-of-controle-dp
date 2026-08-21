@@ -7,20 +7,42 @@ import { vincularEmpresaAoGrupo } from "./grupos-store";
 const STORAGE_KEY = "dp_control_empresas_v1";
 const EVENT_NAME = "empresas-updated";
 
+function sanitizarEmpresas(lista: Empresa[]): Empresa[] {
+  return lista.map((e) => {
+    if (e && e.tipo === "sem-movimento") {
+      return {
+        ...e,
+        particularidades: {
+          ...(e.particularidades || {}),
+          fechamento: "Sem Movimento",
+          envio: e.particularidades?.envio || "Envio por e-mail e portal do cliente.",
+          duplaConferencia: Boolean(e.particularidades?.duplaConferencia),
+          fluxoAprovacao: e.particularidades?.fluxoAprovacao || "Analista → Supervisor → Cliente",
+          rubricas: e.particularidades?.rubricas || ["Salário base", "INSS", "FGTS", "VT"],
+          eventos: e.particularidades?.eventos || ["Folha mensal"],
+          observacoes: e.particularidades?.observacoes || "",
+        },
+      };
+    }
+    return e;
+  });
+}
+
 /** TODAS as empresas, inclusive as excluídas logicamente. */
 export function getTodasEmpresas(): Empresa[] {
-  if (typeof window === "undefined") return mockEmpresas;
+  if (typeof window === "undefined") return sanitizarEmpresas(mockEmpresas);
   try {
     const item = localStorage.getItem(STORAGE_KEY);
     if (!item) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mockEmpresas));
-      return mockEmpresas;
+      const sanitizadas = sanitizarEmpresas(mockEmpresas);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizadas));
+      return sanitizadas;
     }
     const lista = JSON.parse(item);
-    return Array.isArray(lista) ? lista : mockEmpresas;
+    return Array.isArray(lista) ? sanitizarEmpresas(lista) : sanitizarEmpresas(mockEmpresas);
   } catch (error) {
     console.error("Erro ao ler empresas do localStorage:", error);
-    return mockEmpresas;
+    return sanitizarEmpresas(mockEmpresas);
   }
 }
 
@@ -41,7 +63,8 @@ export function getEmpresaById(id: string): Empresa | undefined {
 export function saveEmpresas(lista: Empresa[]) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
+    const sanitizadas = sanitizarEmpresas(lista);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizadas));
     window.dispatchEvent(new CustomEvent(EVENT_NAME));
   } catch (error) {
     console.error("Erro ao salvar empresas no localStorage:", error);
@@ -209,7 +232,7 @@ export function createEmpresa(dados: NovaEmpresaForm, criadoPor?: string): Empre
     ultimaRevisao: dataFormatada,
     diasSemRevisao: 0,
     particularidades: {
-      fechamento: dados.fechamento || "Fechamento padrão até dia 20 de cada mês.",
+      fechamento: dados.tipo === "sem-movimento" ? "Sem Movimento" : (dados.fechamento || "Fechamento padrão até dia 20 de cada mês."),
       envio: dados.envio || "Envio por e-mail e portal do cliente.",
       duplaConferencia: Boolean(dados.duplaConferencia),
       fluxoAprovacao: dados.fluxoAprovacao || "Analista → Supervisor → Cliente",
@@ -247,12 +270,22 @@ export function updateEmpresa(id: string, dados: NovaEmpresaForm): Empresa | und
     hoje.getMonth() + 1,
   ).padStart(2, "0")}/${hoje.getFullYear()}`;
 
+  const tipoFinal = dados.tipo ?? atual.tipo ?? "com-movimento";
+  const fechamentoFinal =
+    tipoFinal === "sem-movimento"
+      ? "Sem Movimento"
+      : dados.fechamento && dados.fechamento !== "Sem Movimento" && dados.fechamento !== "Sem movimento"
+        ? dados.fechamento
+        : atual.particularidades.fechamento === "Sem Movimento" || atual.particularidades.fechamento === "Sem movimento"
+          ? "Fechamento padrão até dia 20 de cada mês."
+          : atual.particularidades.fechamento || "Fechamento padrão até dia 20 de cada mês.";
+
   const atualizada: Empresa = {
     ...atual,
     nome: dados.nome.trim() || atual.nome,
     cnpj: dados.cnpj || atual.cnpj,
     regime: dados.regime || atual.regime,
-    tipo: dados.tipo ?? atual.tipo ?? "com-movimento",
+    tipo: tipoFinal,
     codigoDominio: dados.codigoDominio ?? atual.codigoDominio ?? "",
     responsavel: dados.responsavel || atual.responsavel,
     carteira: dados.carteira || atual.carteira,
@@ -268,7 +301,7 @@ export function updateEmpresa(id: string, dados: NovaEmpresaForm): Empresa | und
     diasSemRevisao: 0,
     particularidades: {
       ...atual.particularidades,
-      fechamento: dados.fechamento || atual.particularidades.fechamento,
+      fechamento: fechamentoFinal,
       envio: dados.envio || atual.particularidades.envio,
       duplaConferencia: Boolean(dados.duplaConferencia),
       fluxoAprovacao: dados.fluxoAprovacao || atual.particularidades.fluxoAprovacao,
@@ -294,6 +327,7 @@ export function updateEmpresa(id: string, dados: NovaEmpresaForm): Empresa | und
 }
 
 export function empresaToForm(empresa: Empresa): NovaEmpresaForm {
+  const isSemMov = empresa.tipo === "sem-movimento";
   return {
     nome: empresa.nome,
     cnpj: empresa.cnpj,
@@ -311,7 +345,7 @@ export function empresaToForm(empresa: Empresa): NovaEmpresaForm {
     procuracao: empresa.procuracao,
     risco: empresa.risco,
     status: empresa.status,
-    fechamento: empresa.particularidades.fechamento,
+    fechamento: isSemMov ? "Sem Movimento" : (empresa.particularidades.fechamento || "Fechamento padrão até dia 20 de cada mês."),
     envio: empresa.particularidades.envio,
     duplaConferencia: empresa.particularidades.duplaConferencia,
     fluxoAprovacao: empresa.particularidades.fluxoAprovacao,

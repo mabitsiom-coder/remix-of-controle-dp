@@ -233,6 +233,7 @@ export function ParticularidadesCliente() {
   const linhas: LinhaParticularidade[] = useMemo(() => {
     return empresasDaCarteira(empresas, carteiraFiltro).map((emp) => {
       const reg = porEmpresa.get(emp.id);
+      const isSemMov = emp.tipo === "sem-movimento";
       return {
         empresaId: emp.id,
         codigo: emp.codigoDominio || emp.id,
@@ -242,7 +243,7 @@ export function ParticularidadesCliente() {
         supervisor: emp.supervisor || "—",
         grupos: reg?.grupos || grupoDaEmpresa.get(emp.id) || "—",
         informacoes: reg?.informacoes || "",
-        folhaPagamento: reg?.folhaPagamento || emp.particularidades?.fechamento || "",
+        folhaPagamento: isSemMov ? "Sem Movimento" : (reg?.folhaPagamento || emp.particularidades?.fechamento || ""),
         observacao: reg?.observacao || "",
         atualizadoPor: reg?.atualizadoPor,
         atualizadoEm: reg?.atualizadoEm,
