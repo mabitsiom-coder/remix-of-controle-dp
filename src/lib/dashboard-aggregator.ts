@@ -1080,7 +1080,7 @@ export function extrairDiaFechamento(
   particularidadesMap?: Map<string, RegParticularidade>,
 ): string {
   const part = particularidadesMap?.get(empresa.id);
-  if (part?.diaFolha && part.diaFolha !== "") {
+  if (part?.diaFolha && part.diaFolha.length > 0) {
     return part.diaFolha;
   }
 
@@ -1176,7 +1176,7 @@ export function calcularTransmissoesFolhaPorVencimento(
       responsavel: emp.responsavel || emp.analista || "Não informado",
       status,
       transmitida,
-      dataConclusao: tarefa?.dataConclusao || tarefa?.dataPublicacao,
+      dataConclusao: tarefa?.dataConclusao || tarefa?.dataPublicacao || undefined,
       tipoPonto: tarefa?.tipoPonto,
       empregados: tarefa?.empregados ?? emp.funcionarios ?? 0,
     });

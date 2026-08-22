@@ -374,7 +374,7 @@ export function NovaEmpresaDialog({
                             ? "Sem Movimento"
                             : prev.fechamento === "Sem Movimento" || prev.fechamento === "Sem movimento"
                               ? "Fechamento padrão até dia 20 de cada mês."
-                              : prev.fechamento,
+                              : prev.fechamento ?? "",
                       }))
                     }
                   >
