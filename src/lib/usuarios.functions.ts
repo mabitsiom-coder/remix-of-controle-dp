@@ -147,9 +147,16 @@ export const removerUsuario = createServerFn({ method: "POST" })
 
 /** Indica se já existe algum usuário cadastrado (usado na primeira configuração). */
 export const existeUsuario = createServerFn({ method: "GET" }).handler(async () => {
-  const { getAdminClient } = await import("./supabase-admin.server");
-  const admin = getAdminClient();
-  const { count, error } = await admin.from("usuarios").select("id", { count: "exact", head: true });
-  if (error) throw new Error(error.message);
-  return { existe: (count ?? 0) > 0 };
+  const url = process.env["SUPABASE_URL"];
+  const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
+  if (!url || !key) throw new Error("Configuração do banco de dados indisponível.");
+
+  const res = await fetch(`${url}/rest/v1/rpc/existe_usuario`, {
+    method: "POST",
+    headers: { apikey: key, "content-type": "application/json" },
+    body: "{}",
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return { existe: Boolean(await res.json()) };
 });
+
