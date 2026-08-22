@@ -106,25 +106,6 @@ function UsuariosPage() {
         }
       />
 
-      {/* CREDENCIAIS DO ADMINISTRADOR EM DESTAQUE */}
-      <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20 text-primary shrink-0">
-            <Shield className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-primary uppercase tracking-wide">
-              Acesso Administrador Padrão
-            </p>
-            <p className="text-sm font-medium text-foreground">
-              E-mail: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">auditoria@mabitcontabilidade.com.br</code> · Senha: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">123456</code>
-            </p>
-          </div>
-        </div>
-        <Badge variant="outline" className="text-xs border-primary/40 text-primary">
-          Acesso Total ao Sistema
-        </Badge>
-      </div>
 
       {isAdmin && <AcessosCadastros />}
 
