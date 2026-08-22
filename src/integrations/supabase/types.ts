@@ -214,6 +214,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      existe_usuario: { Args: never; Returns: boolean }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_gestao: { Args: { _user_id: string }; Returns: boolean }
       is_usuario_ativo: { Args: { _user_id: string }; Returns: boolean }
