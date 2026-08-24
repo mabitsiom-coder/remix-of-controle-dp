@@ -552,6 +552,10 @@ function Dashboard() {
     (e) => e.tipo !== "sem-movimento",
   ).length;
   const semMovimento = totalEmpresas - comMovimento;
+  const totalVidas = empresasFiltradas.reduce(
+    (acc, e) => acc + (Number(e.funcionarios) || 0),
+    0,
+  );
 
   // Total de demandas para visão geral
   const totalDemandas =
