@@ -36,6 +36,7 @@ import {
   UserCheck,
   XCircle,
   Layers,
+  Users,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
