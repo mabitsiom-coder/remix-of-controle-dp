@@ -64,8 +64,29 @@ export const Route = createFileRoute("/empresas/$empresaId")({
     };
   },
   component: EmpresaDetalhe,
-  errorComponent: () => <p className="text-sm text-muted-foreground">Não foi possível carregar a empresa.</p>,
-  notFoundComponent: () => <p className="text-sm text-muted-foreground">Empresa não encontrada.</p>,
+  errorComponent: () => (
+    <div className="mx-auto mt-10 max-w-md rounded-xl border bg-card p-8 text-center shadow-sm">
+      <h2 className="text-base font-semibold text-foreground">Erro ao carregar empresa</h2>
+      <p className="mt-2 text-xs text-muted-foreground">Não foi possível carregar os dados desta empresa.</p>
+      <Link to="/empresas" className="mt-4 inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground">
+        Voltar para Empresas
+      </Link>
+    </div>
+  ),
+  notFoundComponent: () => (
+    <div className="mx-auto mt-10 max-w-md rounded-xl border bg-card p-8 text-center shadow-sm">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive mb-3">
+        <AlertTriangle className="h-6 w-6" />
+      </div>
+      <h2 className="text-base font-semibold text-foreground">Acesso Não Autorizado / Empresa Não Encontrada</h2>
+      <p className="mt-2 text-xs text-muted-foreground">
+        Esta empresa não existe ou não pertence à sua carteira autorizada.
+      </p>
+      <Link to="/empresas" className="mt-5 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90">
+        Voltar para a Lista de Empresas
+      </Link>
+    </div>
+  ),
 });
 
 function EmpresaDetalhe() {

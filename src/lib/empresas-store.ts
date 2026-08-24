@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { type Empresa } from "./mock-data";
 import { vincularEmpresaAoGrupo } from "./grupos-store";
 import { registrarAuditoria } from "./auditoria-store";
+import { filtrarEmpresasPorEscopo, empresaPertenceAoEscopo } from "./permissoes";
+import { getCurrentUser, type Usuario } from "./auth-store";
 
 const mockEmpresas: Empresa[] = [];
 
@@ -57,8 +59,14 @@ export function getEmpresasExcluidas(): Empresa[] {
   return getTodasEmpresas().filter((e) => e && e.excluida);
 }
 
-export function getEmpresaById(id: string): Empresa | undefined {
-  return getTodasEmpresas().find((e) => e.id === id);
+export function getEmpresaById(id: string, usuario?: Usuario | null): Empresa | undefined {
+  const empresa = getTodasEmpresas().find((e) => e.id === id);
+  if (!empresa) return undefined;
+  const user = usuario !== undefined ? usuario : getCurrentUser();
+  if (user && !empresaPertenceAoEscopo(empresa, user)) {
+    return undefined;
+  }
+  return empresa;
 }
 
 export function saveEmpresas(lista: Empresa[]) {
@@ -420,38 +428,58 @@ export function empresaToForm(empresa: Empresa): NovaEmpresaForm {
   };
 }
 
-export function useEmpresas() {
+export function useEmpresas(options?: { ignorarEscopo?: boolean }) {
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [todasEmpresas, setTodasEmpresas] = useState<Empresa[]>([]);
   const [empresasExcluidas, setEmpresasExcluidas] = useState<Empresa[]>([]);
 
   useEffect(() => {
     const ler = () => {
-      setEmpresas(getStoredEmpresas());
-      setEmpresasExcluidas(getEmpresasExcluidas());
+      const ativas = getStoredEmpresas();
+      const excluidas = getEmpresasExcluidas();
+      const user = getCurrentUser();
+      setTodasEmpresas(ativas);
+      setEmpresasExcluidas(excluidas);
+      if (options?.ignorarEscopo) {
+        setEmpresas(ativas);
+      } else {
+        setEmpresas(filtrarEmpresasPorEscopo(ativas, user));
+      }
     };
     ler();
 
     const handleChange = () => ler();
 
     window.addEventListener(EVENT_NAME, handleChange);
+    window.addEventListener("auth-state-changed", handleChange);
     window.addEventListener("storage", handleChange);
 
     return () => {
       window.removeEventListener(EVENT_NAME, handleChange);
+      window.removeEventListener("auth-state-changed", handleChange);
       window.removeEventListener("storage", handleChange);
     };
-  }, []);
+  }, [options?.ignorarEscopo]);
 
   return {
     empresas,
+    todasEmpresas,
     empresasExcluidas,
     createEmpresa,
     updateEmpresa,
     excluirEmpresa,
     restaurarEmpresa,
     refresh: () => {
-      setEmpresas(getStoredEmpresas());
-      setEmpresasExcluidas(getEmpresasExcluidas());
+      const ativas = getStoredEmpresas();
+      const excluidas = getEmpresasExcluidas();
+      const user = getCurrentUser();
+      setTodasEmpresas(ativas);
+      setEmpresasExcluidas(excluidas);
+      if (options?.ignorarEscopo) {
+        setEmpresas(ativas);
+      } else {
+        setEmpresas(filtrarEmpresasPorEscopo(ativas, user));
+      }
     },
   };
 }

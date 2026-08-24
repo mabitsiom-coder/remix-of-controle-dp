@@ -46,11 +46,12 @@ function CarteirasPage() {
   const [busca, setBusca] = useState("");
   const [carteiraSelecionada, setCarteiraSelecionada] = useState<string | null>(null);
 
-  // Garantir que carteiras vindas das empresas mas não salvas no store também apareçam
-  const nomesCarteirasRegistradas = new Set(carteiras.map((c) => c.nome));
-  const todasCarteirasNomes = Array.from(
-    new Set([...carteiras.map((c) => c.nome), ...empresas.map((e) => e.carteira)]),
-  );
+  const isOperacional = !podeGerenciarCarteiras;
+
+  // Analistas visualizam exclusivamente a sua carteira
+  const todasCarteirasNomes = isOperacional
+    ? Array.from(new Set([...empresas.map((e) => e.carteira), currentUser.carteira].filter(Boolean) as string[]))
+    : Array.from(new Set([...carteiras.map((c) => c.nome), ...empresas.map((e) => e.carteira)].filter(Boolean) as string[]));
 
   // Agrupar dados por carteira
   const carteirasAgrupadas = todasCarteirasNomes.map((nomeCarteira) => {

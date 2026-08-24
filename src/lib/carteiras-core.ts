@@ -29,6 +29,34 @@ export function normalizarCarteira(valor?: string | null): string {
     .trim();
 }
 
+/** Extrai código canônico do grupo (ex: 'RH-G-01', 'G1', 'G01' -> 'G1') */
+export function extrairCodigoGrupoCarteira(valor?: string | null): string {
+  if (!valor) return "";
+  const limpo = valor.trim().toUpperCase();
+  const match = limpo.match(/\b(?:RH-?)?G-?0*(\d+)\b/i);
+  if (match && match[1]) {
+    return `G${parseInt(match[1], 10)}`;
+  }
+  return limpo;
+}
+
+/**
+ * Compara se duas carteiras são equivalentes, suportando
+ * variações como "RH-G-01", "G1", "RH-G-01 - Geral 1", etc.
+ */
+export function carteirasBatem(carteiraA?: string | null, carteiraB?: string | null): boolean {
+  if (!carteiraA || !carteiraB) return false;
+  const normA = normalizarCarteira(carteiraA).toUpperCase();
+  const normB = normalizarCarteira(carteiraB).toUpperCase();
+  if (normA === normB) return true;
+
+  const codA = extrairCodigoGrupoCarteira(carteiraA);
+  const codB = extrairCodigoGrupoCarteira(carteiraB);
+  if (codA && codB && codA === codB) return true;
+
+  return false;
+}
+
 /** Carteira oficial de uma empresa — sempre vem do cadastro da empresa. */
 export function carteiraDaEmpresa(empresa?: Pick<Empresa, "carteira"> | null): string {
   return normalizarCarteira(empresa?.carteira);
@@ -80,13 +108,13 @@ export function listarNomesCarteiras(
 /** Empresas vinculadas a uma carteira (ou todas, quando o filtro é "todas"). */
 export function empresasDaCarteira(empresas: Empresa[], filtro: string): Empresa[] {
   if (!filtro || filtro === TODAS_CARTEIRAS) return empresas.filter(Boolean);
-  return empresas.filter((e) => e && carteiraDaEmpresa(e) === normalizarCarteira(filtro));
+  return empresas.filter((e) => e && (carteiraDaEmpresa(e) === normalizarCarteira(filtro) || carteirasBatem(e.carteira, filtro)));
 }
 
 /** Verdadeiro quando a carteira informada atende ao filtro selecionado. */
 export function pertenceACarteira(carteira: string | undefined, filtro: string): boolean {
   if (!filtro || filtro === TODAS_CARTEIRAS) return true;
-  return normalizarCarteira(carteira) === normalizarCarteira(filtro);
+  return normalizarCarteira(carteira) === normalizarCarteira(filtro) || carteirasBatem(carteira, filtro);
 }
 
 /** Contagem de empresas por carteira (usada nas abas de cada módulo). */

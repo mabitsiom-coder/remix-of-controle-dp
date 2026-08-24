@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Area,
   AreaChart,
@@ -52,6 +52,8 @@ import { useTarefas } from "@/lib/tarefas-store";
 import { useParticularidades } from "@/lib/particularidades-store";
 import { listarNomesCarteiras, TODAS_CARTEIRAS, normalizarCarteira } from "@/lib/carteiras-core";
 import { obterResponsaveisCarteira } from "@/lib/bi-service";
+import { useAuth } from "@/lib/auth-store";
+import { isNivelOperacional } from "@/lib/permissoes";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -315,8 +317,23 @@ function SectionTitle({
 
 function Dashboard() {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  const isOperacional = isNivelOperacional(currentUser.perfil);
+
   const [competencia, setCompetencia] = useState(competencias[1]!);
-  const [carteira, setCarteira] = useState<string>(TODAS_CARTEIRAS);
+  const [carteira, setCarteira] = useState<string>(() => {
+    if (isOperacional && currentUser.carteira) {
+      return currentUser.carteira;
+    }
+    return TODAS_CARTEIRAS;
+  });
+
+  // Atualiza carteira caso o usuário logado mude
+  useEffect(() => {
+    if (isOperacional && currentUser.carteira) {
+      setCarteira(currentUser.carteira);
+    }
+  }, [isOperacional, currentUser.carteira]);
 
   // ── Dados dos módulos ──────────────────────────────────────────────────────
   const { folhaTarefas } = useFolhaTarefasSalvas();
@@ -608,52 +625,69 @@ function Dashboard() {
             </div>
 
             {/* Seletor de Carteira */}
-            <div className="flex items-center gap-2 rounded-xl border-2 border-primary/30 bg-background/90 px-3.5 py-1.5 shadow-sm hover:border-primary transition-all">
-              <Briefcase className="h-4 w-4 text-primary" />
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                Carteira:
-              </span>
-              <Select value={carteira} onValueChange={setCarteira}>
-                <SelectTrigger className="h-8 min-w-44 border-0 bg-transparent text-sm font-bold text-foreground focus:ring-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={TODAS_CARTEIRAS} className="text-xs font-bold text-primary">
-                    ★ Todas as Carteiras (Consolidado)
-                  </SelectItem>
-                  {nomesCarteiras.map((c) => {
-                    const catObj = carteirasCad.find(
-                      (x) => normalizarCarteira(x.nome) === normalizarCarteira(c),
-                    );
-                    return (
-                      <SelectItem key={c} value={c} className="text-xs">
-                        <span className="font-semibold">{c}</span>
-                        {catObj?.categoria && (
-                          <span className="ml-2 rounded border bg-muted/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                            {catObj.categoria}
-                          </span>
-                        )}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Botão de alternar para Todas */}
-            {carteira !== TODAS_CARTEIRAS ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCarteira(TODAS_CARTEIRAS)}
-                className="h-11 rounded-xl border-primary/30 text-xs font-semibold hover:bg-primary hover:text-primary-foreground transition-all shadow-sm"
-              >
-                <XCircle className="h-4 w-4 mr-1.5 text-primary" /> Ver Todas as Carteiras
-              </Button>
+            {isOperacional ? (
+              <div className="flex items-center gap-2 rounded-xl border-2 border-emerald-500/30 bg-background/90 px-3.5 py-1.5 shadow-sm">
+                <Briefcase className="h-4 w-4 text-emerald-500" />
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                  Carteira:
+                </span>
+                <span className="text-sm font-bold text-foreground">
+                  {currentUser.carteira || carteira}
+                </span>
+                <span className="ml-1 rounded border bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 text-[10px] font-semibold">
+                  Sua Carteira
+                </span>
+              </div>
             ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2.5 text-xs font-bold text-primary">
-                <Layers className="h-4 w-4" /> Visão Geral Consolidada
-              </span>
+              <>
+                <div className="flex items-center gap-2 rounded-xl border-2 border-primary/30 bg-background/90 px-3.5 py-1.5 shadow-sm hover:border-primary transition-all">
+                  <Briefcase className="h-4 w-4 text-primary" />
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                    Carteira:
+                  </span>
+                  <Select value={carteira} onValueChange={setCarteira}>
+                    <SelectTrigger className="h-8 min-w-44 border-0 bg-transparent text-sm font-bold text-foreground focus:ring-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={TODAS_CARTEIRAS} className="text-xs font-bold text-primary">
+                        ★ Todas as Carteiras (Consolidado)
+                      </SelectItem>
+                      {nomesCarteiras.map((c) => {
+                        const catObj = carteirasCad.find(
+                          (x) => normalizarCarteira(x.nome) === normalizarCarteira(c),
+                        );
+                        return (
+                          <SelectItem key={c} value={c} className="text-xs">
+                            <span className="font-semibold">{c}</span>
+                            {catObj?.categoria && (
+                              <span className="ml-2 rounded border bg-muted/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                                {catObj.categoria}
+                              </span>
+                            )}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Botão de alternar para Todas */}
+                {carteira !== TODAS_CARTEIRAS ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCarteira(TODAS_CARTEIRAS)}
+                    className="h-11 rounded-xl border-primary/30 text-xs font-semibold hover:bg-primary hover:text-primary-foreground transition-all shadow-sm"
+                  >
+                    <XCircle className="h-4 w-4 mr-1.5 text-primary" /> Ver Todas as Carteiras
+                  </Button>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2.5 text-xs font-bold text-primary">
+                    <Layers className="h-4 w-4" /> Visão Geral Consolidada
+                  </span>
+                )}
+              </>
             )}
           </div>
 

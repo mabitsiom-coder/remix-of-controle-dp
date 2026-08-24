@@ -74,12 +74,22 @@ function GruposPage() {
   const [busca, setBusca] = useState("");
 
   const podeCriar = canCreateGroup(currentUser);
+  const isOperacional = !canManageGroup(currentUser);
 
-  const gruposFiltrados = grupos.filter(
+  // Analistas visualizam apenas grupos que possuem empresas da sua carteira
+  const gruposPermitidos = isOperacional
+    ? grupos.filter((g) => g.empresaIds.some((id) => empresas.some((e) => e.id === id)))
+    : grupos;
+
+  const gruposFiltrados = gruposPermitidos.filter(
     (g) =>
       g.nome.toLowerCase().includes(busca.toLowerCase()) ||
       g.codigo.toLowerCase().includes(busca.toLowerCase()) ||
       g.responsavel.toLowerCase().includes(busca.toLowerCase()),
+  );
+
+  const empresasAgrupadas = Array.from(
+    new Set(gruposPermitidos.flatMap((g) => g.empresaIds.filter((id) => empresas.some((e) => e.id === id)))),
   );
 
   return (
@@ -97,8 +107,8 @@ function GruposPage() {
             <Layers className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Grupos Cadastrados</p>
-            <p className="text-xl font-bold">{grupos.length}</p>
+            <p className="text-xs text-muted-foreground">Grupos no seu Escopo</p>
+            <p className="text-xl font-bold">{gruposPermitidos.length}</p>
           </div>
         </div>
 
@@ -109,7 +119,7 @@ function GruposPage() {
           <div>
             <p className="text-xs text-muted-foreground">Empresas Agrupadas</p>
             <p className="text-xl font-bold">
-              {Array.from(new Set(grupos.flatMap((g) => g.empresaIds))).length} de {empresas.length}
+              {empresasAgrupadas.length} de {empresas.length}
             </p>
           </div>
         </div>

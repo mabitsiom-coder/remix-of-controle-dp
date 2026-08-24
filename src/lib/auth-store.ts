@@ -86,12 +86,165 @@ function gravarCache(chave: string, valor: unknown) {
   }
 }
 
+const initialDefaultUsers: Usuario[] = [
+  {
+    id: "usr-admin-01",
+    nome: "Administrador do Sistema",
+    email: "admin@dpcontrol.com.br",
+    cargo: "Diretor de DP / CKO",
+    perfil: "Administração",
+    departamento: "Diretoria",
+    status: "ativo",
+    criadoEm: "01/01/2026",
+    ultimoAcesso: "Hoje",
+  },
+  {
+    id: "usr-coord-01",
+    nome: "Coordenação Geral",
+    email: "coordenacao@dpcontrol.com.br",
+    cargo: "Coordenador de DP",
+    perfil: "Coordenação",
+    departamento: "Coordenação Operacional",
+    status: "ativo",
+    criadoEm: "01/01/2026",
+    ultimoAcesso: "Hoje",
+  },
+  {
+    id: "usr-sup-01",
+    nome: "Supervisor Operacional",
+    email: "supervisor@dpcontrol.com.br",
+    cargo: "Supervisor de Atendimento",
+    perfil: "Supervisor",
+    departamento: "Supervisão",
+    carteirasPermitidas: ["RH-G-01", "RH-G-02", "RH-G-03"],
+    status: "ativo",
+    criadoEm: "05/01/2026",
+    ultimoAcesso: "Hoje",
+  },
+  {
+    id: "usr-ana-01",
+    nome: "Ariany",
+    email: "ariany@dpcontrol.com.br",
+    cargo: "Analista de DP",
+    perfil: "Analista",
+    departamento: "Operações DP",
+    carteira: "RH-G-01",
+    carteirasPermitidas: ["RH-G-01"],
+    status: "ativo",
+    criadoEm: "10/01/2026",
+    ultimoAcesso: "Hoje",
+  },
+  {
+    id: "usr-ana-02",
+    nome: "Gleisi",
+    email: "gleisi@dpcontrol.com.br",
+    cargo: "Analista de DP",
+    perfil: "Analista",
+    departamento: "Operações DP",
+    carteira: "RH-G-02",
+    carteirasPermitidas: ["RH-G-02"],
+    status: "ativo",
+    criadoEm: "10/01/2026",
+    ultimoAcesso: "Hoje",
+  },
+  {
+    id: "usr-ana-03",
+    nome: "Gabriel",
+    email: "gabriel@dpcontrol.com.br",
+    cargo: "Analista de DP",
+    perfil: "Analista",
+    departamento: "Operações DP",
+    carteira: "RH-G-03",
+    carteirasPermitidas: ["RH-G-03"],
+    status: "ativo",
+    criadoEm: "10/01/2026",
+    ultimoAcesso: "Hoje",
+  },
+  {
+    id: "usr-ana-04",
+    nome: "Roberta",
+    email: "roberta@dpcontrol.com.br",
+    cargo: "Analista de DP",
+    perfil: "Analista",
+    departamento: "Operações DP",
+    carteira: "RH-G-04",
+    carteirasPermitidas: ["RH-G-04"],
+    status: "ativo",
+    criadoEm: "10/01/2026",
+    ultimoAcesso: "Hoje",
+  },
+  {
+    id: "usr-ana-05",
+    nome: "Vitória",
+    email: "vitoria@dpcontrol.com.br",
+    cargo: "Analista de DP",
+    perfil: "Analista",
+    departamento: "Operações DP",
+    carteira: "RH-G-05",
+    carteirasPermitidas: ["RH-G-05"],
+    status: "ativo",
+    criadoEm: "10/01/2026",
+    ultimoAcesso: "Hoje",
+  },
+  {
+    id: "usr-ana-06",
+    nome: "Simeane",
+    email: "simeane@dpcontrol.com.br",
+    cargo: "Analista de DP",
+    perfil: "Analista",
+    departamento: "Operações DP",
+    carteira: "RH-G-06",
+    carteirasPermitidas: ["RH-G-06"],
+    status: "ativo",
+    criadoEm: "10/01/2026",
+    ultimoAcesso: "Hoje",
+  },
+];
+
+const MAPA_CARTEIRAS_ANALISTAS: Record<string, string> = {
+  ariany: "RH-G-01",
+  gleisi: "RH-G-02",
+  gabriel: "RH-G-03",
+  roberta: "RH-G-04",
+  vitoria: "RH-G-05",
+  vitória: "RH-G-05",
+  simeane: "RH-G-06",
+};
+
 export function getStoredUsers(): Usuario[] {
-  return lerCache<Usuario[]>(CACHE_USERS, []);
+  const usuarios = lerCache<Usuario[]>(CACHE_USERS, initialDefaultUsers);
+  if (!usuarios || usuarios.length === 0) return initialDefaultUsers;
+
+  // Corrige analistas que porventura estejam sem carteira definida
+  return usuarios.map((u) => {
+    const perfilNorm = normalizarNomePerfil(u.perfil);
+    if ((perfilNorm === "Analista" || perfilNorm === "CS") && (!u.carteira || u.carteira === "none")) {
+      const primeiroNome = u.nome.split(" ")[0].toLowerCase();
+      const carteiraAtribuida = MAPA_CARTEIRAS_ANALISTAS[primeiroNome] || "RH-G-01";
+      return {
+        ...u,
+        carteira: carteiraAtribuida,
+        carteirasPermitidas: [carteiraAtribuida],
+      };
+    }
+    return u;
+  });
 }
 
 export function getCurrentUser(): Usuario {
-  return lerCache<Usuario>(CACHE_CURRENT, usuarioVazio);
+  const cur = lerCache<Usuario>(CACHE_CURRENT, initialDefaultUsers[0]);
+  if (!cur || !cur.id) return initialDefaultUsers[0];
+  const perfilNorm = normalizarNomePerfil(cur.perfil);
+  if ((perfilNorm === "Analista" || perfilNorm === "CS") && (!cur.carteira || cur.carteira === "none")) {
+    const primeiroNome = cur.nome.split(" ")[0].toLowerCase();
+    const carteiraAtribuida = MAPA_CARTEIRAS_ANALISTAS[primeiroNome] || "RH-G-01";
+    return {
+      ...cur,
+      carteira: carteiraAtribuida,
+      carteirasPermitidas: [carteiraAtribuida],
+    };
+  }
+  return cur;
 }
 
 /** Normaliza perfis para a nomenclatura padronizada */

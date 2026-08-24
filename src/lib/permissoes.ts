@@ -1,5 +1,6 @@
 import type { PerfilAcesso, Usuario } from "@/lib/auth-store";
 import type { Empresa } from "@/lib/mock-data";
+import { carteirasBatem, normalizarCarteira } from "./carteiras-core";
 
 /**
  * Níveis de Acesso:
@@ -215,13 +216,14 @@ export const canManageUsers = (user?: Usuario | PerfilAcesso | string | null) =>
 export const canManagePermissions = (user?: Usuario | PerfilAcesso | string | null) => hasPermission(user, "alterar_perfil_permissoes");
 
 /**
- * Escopo de visualização de dados
+ * Escopo de visualização de dados — Regra Central de Segurança
+ * Analistas e CS visualizam EXCLUSIVAMENTE empresas pertencentes à sua carteira autorizada.
  */
 export function filtrarEmpresasPorEscopo(empresas: Empresa[], usuario?: Usuario | null): Empresa[] {
   if (!usuario || !usuario.id) return empresas;
   const perfil = normalizarPerfil(usuario.perfil);
 
-  // Nível 3 (Admin, Coordenação, CKO): Acesso a todas as empresas
+  // Nível 3 (Admin, Coordenação, CKO): Acesso irrestrito a todas as empresas
   if (isNivelAdmin(perfil)) {
     return empresas;
   }
@@ -231,46 +233,80 @@ export function filtrarEmpresasPorEscopo(empresas: Empresa[], usuario?: Usuario 
     return empresas;
   }
 
-  // Nível 2 - Gerente: Visão ampla de carteiras e grupos
+  // Nível 2 - Gerente: Visão ampla de suas carteiras ou total
   if (perfil === "Gerente") {
     if (usuario.carteirasPermitidas && usuario.carteirasPermitidas.length > 0) {
-      return empresas.filter((e) => usuario.carteirasPermitidas!.includes(e.carteira));
+      return empresas.filter((e) =>
+        usuario.carteirasPermitidas!.some((c) => carteirasBatem(e.carteira, c)),
+      );
     }
     return empresas;
   }
 
-  // Nível 2 - Supervisor: Empresas sob sua supervisão ou de suas carteiras
+  // Nível 2 - Supervisor: Empresas sob sua supervisão ou de suas carteiras permitidas
   if (perfil === "Supervisor") {
     const nome = usuario.nome.toLowerCase();
     const carteirasPermitidas = usuario.carteirasPermitidas ?? [];
     if (carteirasPermitidas.length > 0) {
       return empresas.filter(
         (e) =>
-          carteirasPermitidas.includes(e.carteira) ||
+          carteirasPermitidas.some((c) => carteirasBatem(e.carteira, c)) ||
           e.supervisor?.toLowerCase().includes(nome),
       );
     }
-    return empresas.filter((e) => e.supervisor?.toLowerCase().includes(nome) || e.carteira === usuario.carteira);
+    return empresas.filter(
+      (e) =>
+        (e.supervisor && e.supervisor.toLowerCase().includes(nome)) ||
+        (usuario.carteira && carteirasBatem(e.carteira, usuario.carteira)),
+    );
   }
 
-  // Nível 1 - Analista / CS: Prioritariamente sua carteira ou empresas onde é analista
-  const nomeAnalista = usuario.nome.toLowerCase();
-  const carteiraUsuario = usuario.carteira;
-  const carteirasPermitidas = usuario.carteirasPermitidas ?? [];
+  // Nível 1 - Analista / CS: RESTRIÇÃO ESTRITA À PRÓPRIA CARTEIRA
+  const carteiraUsuario = usuario.carteira?.trim();
+  const carteirasPermitidas = usuario.carteirasPermitidas?.filter(Boolean) ?? [];
+
+  // Se não possuir nenhuma carteira vinculada, não tem acesso a dados de empresas
+  if (!carteiraUsuario && carteirasPermitidas.length === 0) {
+    return [];
+  }
 
   return empresas.filter((e) => {
-    if (carteirasPermitidas.length > 0 && carteirasPermitidas.includes(e.carteira)) return true;
-    if (carteiraUsuario && e.carteira === carteiraUsuario) return true;
-    if (e.analista?.toLowerCase().includes(nomeAnalista)) return true;
-    if (usuario.grupoTrabalho && e.responsavel?.toLowerCase().includes(usuario.grupoTrabalho.toLowerCase())) return true;
+    if (carteirasPermitidas.length > 0 && carteirasPermitidas.some((c) => carteirasBatem(e.carteira, c))) {
+      return true;
+    }
+    if (carteiraUsuario && carteirasBatem(e.carteira, carteiraUsuario)) {
+      return true;
+    }
     return false;
   });
+}
+
+/**
+ * Valida se uma empresa pertence à carteira autorizada do usuário.
+ */
+export function empresaPertenceAoEscopo(empresa: Empresa | undefined | null, usuario?: Usuario | null): boolean {
+  if (!empresa) return false;
+  if (!usuario || !usuario.id) return true;
+  const perfil = normalizarPerfil(usuario.perfil);
+  if (isNivelAdmin(perfil) || perfil === "Auditoria") return true;
+
+  if (isNivelOperacional(perfil)) {
+    const carteiraUsuario = usuario.carteira?.trim();
+    const carteirasPermitidas = usuario.carteirasPermitidas?.filter(Boolean) ?? [];
+    if (!carteiraUsuario && carteirasPermitidas.length === 0) return false;
+
+    if (carteirasPermitidas.some((c) => carteirasBatem(empresa.carteira, c))) return true;
+    if (carteiraUsuario && carteirasBatem(empresa.carteira, carteiraUsuario)) return true;
+    return false;
+  }
+
+  return filtrarEmpresasPorEscopo([empresa], usuario).length > 0;
 }
 
 /** Rotas da área de Visão Geral — liberadas para todos os usuários. */
 export const ROTAS_VISAO_GERAL = ["/", "/bi"];
 
-/** Rotas da área de Operação — liberadas para todos os usuários. */
+/** Rotas da área de Operação — liberadas para todos os usuários (com escopo interno de carteira). */
 export const ROTAS_OPERACAO = [
   "/empresas",
   "/grupos",
@@ -281,17 +317,22 @@ export const ROTAS_OPERACAO = [
   "/folha",
   "/tarefas",
   "/gantt",
+];
+
+/** Rotas da área de Conhecimento — restritas a Gestão e Administração (bloqueado para Analistas/CS). */
+export const ROTAS_CONHECIMENTO = [
   "/documentos",
   "/erros",
   "/treinamentos",
   "/assistente",
+  "/conhecimento",
 ];
 
 /** Rotas restritas a Gestão (Nível 2 e 3) */
-export const ROTAS_GESTAO = ["/cadastros"];
+export const ROTAS_GESTAO = ["/cadastros", "/configuracoes"];
 
 /** Rotas restritas exclusivamente a Administração (Nível 3) */
-export const ROTAS_ADMIN = ["/usuarios", "/integracoes"];
+export const ROTAS_ADMIN = ["/usuarios", "/integracoes", "/administracao", "/permissoes"];
 
 export function podeAcessarRota(perfil: PerfilAcesso | string | null | undefined, pathname: string): boolean {
   const norm = normalizarPerfil(perfil);
@@ -299,13 +340,18 @@ export function podeAcessarRota(perfil: PerfilAcesso | string | null | undefined
   // Nível 3 tem acesso total a todas as rotas
   if (isNivelAdmin(norm)) return true;
 
-  // Nível 3 apenas para rotas restritas de usuários e integrações
+  // Rotas restritas de usuários e administração
   if (ROTAS_ADMIN.some((r) => pathname === r || pathname.startsWith(`${r}/`))) {
     return isNivelAdmin(norm);
   }
 
-  // Rotas de gestão (cadastros)
+  // Rotas de gestão (cadastros mestre)
   if (ROTAS_GESTAO.some((r) => pathname === r || pathname.startsWith(`${r}/`))) {
+    return isNivelGestao(norm) || isNivelAdmin(norm);
+  }
+
+  // Área de Conhecimento (bloqueada para Nível 1 Operacional: Analista e CS)
+  if (ROTAS_CONHECIMENTO.some((r) => pathname === r || pathname.startsWith(`${r}/`))) {
     return isNivelGestao(norm) || isNivelAdmin(norm);
   }
 

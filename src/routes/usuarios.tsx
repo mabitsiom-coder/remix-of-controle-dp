@@ -56,6 +56,7 @@ import { useEmpresas } from "@/lib/empresas-store";
 import {
   PERFIS_ADMIN_TOTAL,
   isNivelAdmin,
+  isNivelOperacional,
   normalizarPerfil,
 } from "@/lib/permissoes";
 import { AcessoRestrito } from "@/components/acesso-restrito";
@@ -387,13 +388,17 @@ function UsuariosPage() {
                           {usr.carteirasPermitidas && usr.carteirasPermitidas.length > 0 ? (
                             <div className="flex flex-wrap gap-1 max-w-[150px]">
                               {usr.carteirasPermitidas.map((c) => (
-                                <Badge key={c} variant="outline" className="text-[10px] py-0">
+                                <Badge key={c} variant="outline" className="text-[10px] py-0 font-medium">
                                   {c}
                                 </Badge>
                               ))}
                             </div>
                           ) : usr.carteira ? (
-                            <span>{usr.carteira}</span>
+                            <Badge variant="outline" className="text-[10px] py-0 font-medium">
+                              {usr.carteira}
+                            </Badge>
+                          ) : isNivelOperacional(perfilNorm) ? (
+                            <span className="text-destructive font-semibold text-[11px]">Sem Carteira (Obrigatório)</span>
                           ) : (
                             <span className="text-muted-foreground/60 italic">Todas / Global</span>
                           )}
@@ -515,6 +520,11 @@ function NovoUsuarioDialog() {
     }
     if (!/^[^\s@]+@[^\s@]+$/.test(emailLimpo)) {
       toast.error("Informe um e-mail válido.");
+      return;
+    }
+
+    if (isNivelOperacional(perfil) && (!carteira || carteira === "none")) {
+      toast.error("Selecione uma carteira para o usuário Analista.");
       return;
     }
 
@@ -784,6 +794,10 @@ function EditarUsuarioDialog({ usuario }: { usuario: Usuario }) {
     }
     if (!/^[^\s@]+@[^\s@]+$/.test(emailLimpo)) {
       toast.error("Informe um e-mail válido.");
+      return;
+    }
+    if (isNivelOperacional(perfil) && (!carteira || carteira === "none")) {
+      toast.error("Selecione uma carteira para o usuário Analista.");
       return;
     }
     try {
