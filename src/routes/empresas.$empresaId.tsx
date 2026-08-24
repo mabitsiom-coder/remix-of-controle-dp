@@ -153,13 +153,15 @@ function EmpresaDetalhe() {
   const handleSalvar = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const duplicada = encontrarEmpresaDuplicada(formData.nome, formData.cnpj, empresa.id);
+    const duplicada = encontrarEmpresaDuplicada(formData.nome, formData.cnpj, formData.codigoDominio, empresa.id);
     if (duplicada) {
       toast.error("Empresa duplicada — alteração bloqueada", {
         description:
           duplicada.motivo === "cnpj"
             ? `O CNPJ ${duplicada.empresa.cnpj} já pertence a "${duplicada.empresa.nome}".`
-            : `Já existe outra empresa cadastrada como "${duplicada.empresa.nome}".`,
+            : duplicada.motivo === "codigoDominio"
+              ? `O Código no Domínio "${duplicada.empresa.codigoDominio}" já pertence a "${duplicada.empresa.nome}".`
+              : `Já existe outra empresa cadastrada como "${duplicada.empresa.nome}".`,
       });
       setActiveTab("dados");
       return;

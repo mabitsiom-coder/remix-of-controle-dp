@@ -185,14 +185,18 @@ function normalizarNome(valor: string) {
     .replace(/\s+/g, " ");
 }
 
+export type MotivoDuplicidade = "cnpj" | "codigoDominio" | "nome";
+
 export class EmpresaDuplicadaError extends Error {
   empresa: Empresa;
-  motivo: "cnpj" | "nome";
-  constructor(empresa: Empresa, motivo: "cnpj" | "nome") {
+  motivo: MotivoDuplicidade;
+  constructor(empresa: Empresa, motivo: MotivoDuplicidade) {
     super(
       motivo === "cnpj"
         ? `O CNPJ ${empresa.cnpj} já está cadastrado para "${empresa.nome}".`
-        : `Já existe uma empresa cadastrada com o nome "${empresa.nome}".`,
+        : motivo === "codigoDominio"
+          ? `O Código no Domínio "${empresa.codigoDominio}" já pertence à empresa "${empresa.nome}".`
+          : `Já existe uma empresa cadastrada com o nome "${empresa.nome}".`,
     );
     this.name = "EmpresaDuplicadaError";
     this.empresa = empresa;
@@ -200,21 +204,40 @@ export class EmpresaDuplicadaError extends Error {
   }
 }
 
-/** Retorna a empresa já cadastrada que conflita com os dados informados. */
+/** Retorna a empresa já cadastrada que conflita com os dados informados por CNPJ, Código no Domínio ou Nome. */
 export function encontrarEmpresaDuplicada(
   nome: string,
   cnpj: string,
+  codigoDominio?: string | null,
   ignorarId?: string,
-): { empresa: Empresa; motivo: "cnpj" | "nome" } | undefined {
+): { empresa: Empresa; motivo: MotivoDuplicidade } | undefined {
   const digitos = (cnpj || "").replace(/\D/g, "");
+  const codNorm = (codigoDominio || "").trim();
   const nomeNorm = normalizarNome(nome || "");
   const lista = getTodasEmpresas().filter((e) => e.id !== ignorarId);
 
+  // 1. Verificação prioritária por CNPJ
   if (digitos.length >= 11) {
-    const porCnpj = lista.find((e) => e.cnpj.replace(/\D/g, "") === digitos);
+    const porCnpj = lista.find((e) => e.cnpj && e.cnpj.replace(/\D/g, "") === digitos);
     if (porCnpj) return { empresa: porCnpj, motivo: "cnpj" };
   }
 
+  // 2. Verificação estrita por Código no Domínio
+  if (codNorm) {
+    const porCodigo = lista.find((e) => {
+      if (!e.codigoDominio) return false;
+      const codEmp = e.codigoDominio.trim();
+      if (!codEmp) return false;
+      if (codEmp.toLowerCase() === codNorm.toLowerCase()) return true;
+      const numEmp = Number(codEmp);
+      const numReq = Number(codNorm);
+      if (!isNaN(numEmp) && !isNaN(numReq) && numEmp === numReq && numEmp > 0) return true;
+      return false;
+    });
+    if (porCodigo) return { empresa: porCodigo, motivo: "codigoDominio" };
+  }
+
+  // 3. Verificação por Razão Social / Nome Fantasia
   if (nomeNorm) {
     const porNome = lista.find((e) => normalizarNome(e.nome) === nomeNorm);
     if (porNome) return { empresa: porNome, motivo: "nome" };
@@ -224,7 +247,7 @@ export function encontrarEmpresaDuplicada(
 }
 
 export function createEmpresa(dados: NovaEmpresaForm, criadoPor?: string): Empresa {
-  const duplicada = encontrarEmpresaDuplicada(dados.nome, dados.cnpj);
+  const duplicada = encontrarEmpresaDuplicada(dados.nome, dados.cnpj, dados.codigoDominio);
   if (duplicada) throw new EmpresaDuplicadaError(duplicada.empresa, duplicada.motivo);
 
   const slug = dados.nome
@@ -300,6 +323,9 @@ export function createEmpresa(dados: NovaEmpresaForm, criadoPor?: string): Empre
 }
 
 export function updateEmpresa(id: string, dados: NovaEmpresaForm): Empresa | undefined {
+  const duplicada = encontrarEmpresaDuplicada(dados.nome, dados.cnpj, dados.codigoDominio, id);
+  if (duplicada) throw new EmpresaDuplicadaError(duplicada.empresa, duplicada.motivo);
+
   const atuais = getTodasEmpresas();
   const atual = atuais.find((e) => e.id === id);
   if (!atual) return undefined;

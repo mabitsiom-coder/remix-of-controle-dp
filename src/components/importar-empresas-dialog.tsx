@@ -208,9 +208,9 @@ export function ImportarEmpresasDialog({
           };
 
 
-          // Se o CNPJ já existe, atualiza os dados da empresa em vez de bloquear
-          const existente = encontrarEmpresaDuplicada(nome, cnpj);
-          if (existente && existente.motivo === "cnpj") {
+          // Se o CNPJ ou Código no Domínio já existe, atualiza os dados da empresa em vez de duplicar
+          const existente = encontrarEmpresaDuplicada(nome, cnpj, codigoDominio);
+          if (existente && (existente.motivo === "cnpj" || existente.motivo === "codigoDominio")) {
             const atual = existente.empresa;
             updateEmpresa(atual.id, { ...empresaToForm(atual), ...dados });
             updatedCount++;

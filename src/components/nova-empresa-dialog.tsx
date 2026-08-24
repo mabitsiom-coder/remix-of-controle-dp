@@ -85,13 +85,15 @@ export function NovaEmpresaDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const duplicada = encontrarEmpresaDuplicada(formData.nome, formData.cnpj);
+    const duplicada = encontrarEmpresaDuplicada(formData.nome, formData.cnpj, formData.codigoDominio);
     if (duplicada) {
       toast.error("Empresa duplicada — cadastro bloqueado", {
         description:
           duplicada.motivo === "cnpj"
             ? `O CNPJ ${duplicada.empresa.cnpj} já pertence a "${duplicada.empresa.nome}".`
-            : `Já existe uma empresa cadastrada como "${duplicada.empresa.nome}".`,
+            : duplicada.motivo === "codigoDominio"
+              ? `O Código no Domínio "${duplicada.empresa.codigoDominio}" já pertence a "${duplicada.empresa.nome}".`
+              : `Já existe uma empresa cadastrada como "${duplicada.empresa.nome}".`,
       });
       setActiveTab("dados");
       return;
