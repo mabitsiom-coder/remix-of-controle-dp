@@ -36,6 +36,7 @@ import {
   UserCheck,
   XCircle,
   Layers,
+  Users,
 } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
@@ -552,6 +553,10 @@ function Dashboard() {
     (e) => e.tipo !== "sem-movimento",
   ).length;
   const semMovimento = totalEmpresas - comMovimento;
+  const totalVidas = empresasFiltradas.reduce(
+    (acc, e) => acc + (Number(e.funcionarios) || 0),
+    0,
+  );
 
   // Total de demandas para visão geral
   const totalDemandas =
@@ -762,13 +767,24 @@ function Dashboard() {
       {/* ── LINHA 2 — Visão Geral do Setor ──────────────────────────────────── */}
       <div>
         <SectionTitle icon={BarChart3}>Visão Geral do Setor</SectionTitle>
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
           <BigKpiCard
             icon={Building2}
             label="Total de Empresas"
             value={totalEmpresas}
             tone="info"
           />
+          <BigKpiCard
+            icon={Users}
+            label={
+              carteira && carteira !== TODAS_CARTEIRAS
+                ? `Vidas / Empregados — ${carteira}`
+                : "Vidas / Empregados"
+            }
+            value={totalVidas.toLocaleString("pt-BR")}
+            tone="info"
+          />
+
           <BigKpiCard
             icon={CheckCircle2}
             label="Com Movimento"
