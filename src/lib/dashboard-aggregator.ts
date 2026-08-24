@@ -1176,7 +1176,7 @@ export function calcularTransmissoesFolhaPorVencimento(
       responsavel: emp.responsavel || emp.analista || "Não informado",
       status,
       transmitida,
-      dataConclusao: tarefa?.dataConclusao || tarefa?.dataPublicacao || undefined,
+      dataConclusao: (tarefa?.dataConclusao || tarefa?.dataPublicacao) as string | undefined,
       tipoPonto: tarefa?.tipoPonto,
       empregados: tarefa?.empregados ?? emp.funcionarios ?? 0,
     });

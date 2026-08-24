@@ -23,7 +23,7 @@ import { useAuth } from "@/lib/auth-store";
 import { resetDados } from "@/lib/reset-dados";
 import { PortaoAcesso } from "@/components/portao-acesso";
 import { AcessoRestrito } from "@/components/acesso-restrito";
-import { PERFIS_GESTAO, podeAcessarRota } from "@/lib/permissoes";
+import { PERFIS_GESTAO, PERFIS_ADMIN_TOTAL, ROTAS_ADMIN, podeAcessarRota } from "@/lib/permissoes";
 
 function NotFoundComponent() {
   return (
@@ -180,7 +180,17 @@ function RootComponent() {
               </div>
             </header>
             <main className="min-w-0 flex-1 p-4 md:p-6">
-              {liberado ? <Outlet /> : <AcessoRestrito perfisPermitidos={PERFIS_GESTAO} />}
+              {liberado ? (
+                <Outlet />
+              ) : (
+                <AcessoRestrito
+                  perfisPermitidos={
+                    ROTAS_ADMIN.some((r) => pathname === r || pathname.startsWith(`${r}/`))
+                      ? PERFIS_ADMIN_TOTAL
+                      : PERFIS_GESTAO
+                  }
+                />
+              )}
             </main>
           </div>
         </div>

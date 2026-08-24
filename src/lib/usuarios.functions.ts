@@ -3,13 +3,25 @@ import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const perfilSchema = z.enum(["Administrador", "Gerente", "Coordenador", "Supervisor", "Analista"]);
+export const perfilSchema = z.enum([
+  "Analista",
+  "CS",
+  "Supervisor",
+  "Gerente",
+  "Auditoria",
+  "Coordenação",
+  "Administração",
+  "CKO",
+  "Administrador",
+  "Coordenador",
+]);
 
 const criarSchema = z.object({
   nome: z.string().min(1),
   email: z.string().email(),
   senha: z.string().min(6),
   perfil: perfilSchema,
+  cargo: z.string().optional().default(""),
   departamento: z.string().default(""),
   status: z.enum(["ativo", "inativo"]).default("ativo"),
 });
@@ -40,7 +52,7 @@ export const registrarPrimeiroAdmin = createServerFn({ method: "POST" })
       id: criado.user.id,
       nome: data.nome,
       email: data.email,
-      perfil: "Administrador",
+      perfil: "Administração",
       departamento: "Diretoria & Tecnologia",
       status: "ativo",
     });
@@ -49,13 +61,27 @@ export const registrarPrimeiroAdmin = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-async function exigirAdmin(supabase: {
+/**
+ * Validação de permissão no backend:
+ * Apenas usuários de Nível 3 (Coordenação, Administração, CKO, Administrador, Coordenador)
+ * podem executar operações administrativas de usuários.
+ */
+async function exigirNivelAdmin(supabase: {
   from: (t: string) => any;
 }, userId: string) {
   const { data, error } = await supabase.from("usuarios").select("perfil").eq("id", userId).maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data || data.perfil !== "Administrador") {
-    throw new Error("Apenas administradores podem gerenciar usuários.");
+  
+  const perfisAutorizados = [
+    "Coordenação",
+    "Administração",
+    "CKO",
+    "Administrador",
+    "Coordenador",
+  ];
+
+  if (!data || !perfisAutorizados.includes(data.perfil)) {
+    throw new Error("Acesso negado: Apenas Coordenação, Administração e CKO podem gerenciar usuários e permissões.");
   }
 }
 
@@ -63,7 +89,7 @@ export const criarUsuario = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => criarSchema.parse(data))
   .handler(async ({ data, context }) => {
-    await exigirAdmin(context.supabase, context.userId);
+    await exigirNivelAdmin(context.supabase, context.userId);
     const { getAdminClient } = await import("./supabase-admin.server");
     const admin = getAdminClient();
 
@@ -103,7 +129,7 @@ export const atualizarUsuario = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    await exigirAdmin(context.supabase, context.userId);
+    await exigirNivelAdmin(context.supabase, context.userId);
     const { getAdminClient } = await import("./supabase-admin.server");
     const admin = getAdminClient();
 
@@ -135,7 +161,7 @@ export const removerUsuario = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
-    await exigirAdmin(context.supabase, context.userId);
+    await exigirNivelAdmin(context.supabase, context.userId);
     if (data.id === context.userId) throw new Error("Você não pode remover o seu próprio acesso.");
 
     const { getAdminClient } = await import("./supabase-admin.server");
@@ -147,9 +173,15 @@ export const removerUsuario = createServerFn({ method: "POST" })
 
 /** Indica se já existe algum usuário cadastrado (usado na primeira configuração). */
 export const existeUsuario = createServerFn({ method: "GET" }).handler(async () => {
-  const { getAdminClient } = await import("./supabase-admin.server");
-  const admin = getAdminClient();
-  const { count, error } = await admin.from("usuarios").select("id", { count: "exact", head: true });
-  if (error) throw new Error(error.message);
-  return { existe: (count ?? 0) > 0 };
+  const url = process.env["SUPABASE_URL"];
+  const key = process.env["SUPABASE_PUBLISHABLE_KEY"];
+  if (!url || !key) throw new Error("Configuração do banco de dados indisponível.");
+
+  const res = await fetch(`${url}/rest/v1/rpc/existe_usuario`, {
+    method: "POST",
+    headers: { apikey: key, "content-type": "application/json" },
+    body: "{}",
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return { existe: Boolean(await res.json()) };
 });

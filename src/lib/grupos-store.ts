@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { registrarAuditoria } from "./auditoria-store";
 
 export type GrupoEmpresarial = {
   id: string;
@@ -72,6 +73,15 @@ export function addGrupo(dados: {
 
   const atuais = getStoredGrupos();
   saveGrupos([...atuais, novoGrupo]);
+
+  registrarAuditoria({
+    operacao: "Criação de Grupo",
+    grupoAfetado: novoGrupo.nome,
+    registroId: novoGrupo.id,
+    novaInformacao: `Código: ${novoGrupo.codigo} | Responsável: ${novoGrupo.responsavel}`,
+    detalhes: `${novoGrupo.empresaIds.length} empresas associadas inicialmente.`,
+  });
+
   return novoGrupo;
 }
 
@@ -80,6 +90,7 @@ export function updateGrupo(
   novosDados: Partial<Omit<GrupoEmpresarial, "id">>,
 ): GrupoEmpresarial | undefined {
   const atuais = getStoredGrupos();
+  const anterior = atuais.find((g) => g.id === id);
   let atualizado: GrupoEmpresarial | undefined;
 
   const novaLista = atuais.map((g) => {
@@ -92,6 +103,15 @@ export function updateGrupo(
 
   if (atualizado) {
     saveGrupos(novaLista);
+
+    registrarAuditoria({
+      operacao: "Alteração de Grupo",
+      grupoAfetado: atualizado.nome,
+      registroId: id,
+      informacaoAnterior: anterior ? `Resp: ${anterior.responsavel}` : undefined,
+      novaInformacao: `Resp: ${atualizado.responsavel}`,
+      detalhes: `Descrição ou responsáveis atualizados.`,
+    });
   }
 
   return atualizado;
@@ -99,13 +119,24 @@ export function updateGrupo(
 
 export function removeGrupo(id: string) {
   const atuais = getStoredGrupos();
+  const anterior = atuais.find((g) => g.id === id);
   saveGrupos(atuais.filter((g) => g.id !== id));
+
+  if (anterior) {
+    registrarAuditoria({
+      operacao: "Exclusão de Grupo",
+      grupoAfetado: anterior.nome,
+      registroId: id,
+      informacaoAnterior: `Código: ${anterior.codigo}`,
+      novaInformacao: "Removido",
+    });
+  }
 }
 
 export function vincularEmpresaAoGrupo(grupoId: string, empresaId: string) {
   const atuais = getStoredGrupos();
+  const grupo = atuais.find((g) => g.id === grupoId);
   const novaLista = atuais.map((g) => {
-    // Remover a empresa de outros grupos se estiver associada
     const empresaIdsFiltrados = g.empresaIds.filter((eId) => eId !== empresaId);
     if (g.id === grupoId) {
       return { ...g, empresaIds: [...empresaIdsFiltrados, empresaId] };
@@ -113,10 +144,20 @@ export function vincularEmpresaAoGrupo(grupoId: string, empresaId: string) {
     return { ...g, empresaIds: empresaIdsFiltrados };
   });
   saveGrupos(novaLista);
+
+  if (grupo) {
+    registrarAuditoria({
+      operacao: "Vinculação de Empresa a Grupo",
+      grupoAfetado: grupo.nome,
+      registroId: empresaId,
+      novaInformacao: `Empresa ${empresaId} vinculada ao grupo ${grupo.nome}`,
+    });
+  }
 }
 
 export function desvincularEmpresaDoGrupo(grupoId: string, empresaId: string) {
   const atuais = getStoredGrupos();
+  const grupo = atuais.find((g) => g.id === grupoId);
   const novaLista = atuais.map((g) => {
     if (g.id === grupoId) {
       return { ...g, empresaIds: g.empresaIds.filter((eId) => eId !== empresaId) };
@@ -124,6 +165,16 @@ export function desvincularEmpresaDoGrupo(grupoId: string, empresaId: string) {
     return g;
   });
   saveGrupos(novaLista);
+
+  if (grupo) {
+    registrarAuditoria({
+      operacao: "Desvinculação de Empresa de Grupo",
+      grupoAfetado: grupo.nome,
+      registroId: empresaId,
+      informacaoAnterior: `Empresa ${empresaId} no grupo ${grupo.nome}`,
+      novaInformacao: "Desvinculada",
+    });
+  }
 }
 
 export function useGrupos() {

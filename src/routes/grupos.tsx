@@ -14,6 +14,8 @@ import {
   Check,
   UserCheck,
   Building,
+  ShieldCheck,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,6 +46,13 @@ import {
   desvincularEmpresaDoGrupo,
   type GrupoEmpresarial,
 } from "@/lib/grupos-store";
+import { useAuth } from "@/lib/auth-store";
+import {
+  canCreateGroup,
+  canDeleteGroup,
+  canManageGroup,
+  isNivelAdmin,
+} from "@/lib/permissoes";
 
 export const Route = createFileRoute("/grupos")({
   head: () => ({
@@ -61,7 +70,10 @@ export const Route = createFileRoute("/grupos")({
 function GruposPage() {
   const { empresas } = useEmpresas();
   const { grupos } = useGrupos();
+  const { currentUser } = useAuth();
   const [busca, setBusca] = useState("");
+
+  const podeCriar = canCreateGroup(currentUser);
 
   const gruposFiltrados = grupos.filter(
     (g) =>
@@ -75,7 +87,7 @@ function GruposPage() {
       <PageHeader
         title="Grupos"
         description="Agrupe empresas do mesmo grupo empresarial para gestão consolidada e relatórios unificados"
-        actions={<CriarGrupoDialog />}
+        actions={podeCriar ? <CriarGrupoDialog /> : undefined}
       />
 
       {/* SUMÁRIO */}
@@ -137,11 +149,13 @@ function GruposPage() {
           <Layers className="h-10 w-10 text-muted-foreground/50 mb-3" />
           <h3 className="text-base font-semibold">Nenhum Grupo Econômico Encontrado</h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-            Crie um grupo para reunir empresas da mesma holding ou grupo familiar.
+            Reúna empresas sob o mesmo grupo econômico para gestão centralizada.
           </p>
-          <div className="mt-4">
-            <CriarGrupoDialog />
-          </div>
+          {podeCriar && (
+            <div className="mt-4">
+              <CriarGrupoDialog />
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-6">
@@ -156,7 +170,10 @@ function GruposPage() {
 
 function GrupoCard({ grupo }: { grupo: GrupoEmpresarial }) {
   const { empresas } = useEmpresas();
+  const { currentUser } = useAuth();
   const [expandido, setExpandido] = useState(false);
+
+  const podeGerenciar = canManageGroup(currentUser);
 
   const empresasDoGrupo = empresas.filter((e) => grupo.empresaIds.includes(e.id));
   const totalFuncionarios = empresasDoGrupo.reduce((sum, e) => sum + (e.funcionarios || 0), 0);
@@ -166,7 +183,7 @@ function GrupoCard({ grupo }: { grupo: GrupoEmpresarial }) {
 
   return (
     <div className="surface-panel overflow-hidden rounded-xl border transition-all">
-      {/* CABEÇALHO DO GRUPO — CLICÁVEL PARA EXPANDIR */}
+      {/* CABEÇALHO DO GRUPO */}
       <button
         type="button"
         onClick={() => setExpandido(!expandido)}
@@ -191,14 +208,14 @@ function GrupoCard({ grupo }: { grupo: GrupoEmpresarial }) {
         </div>
 
         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-          <GerenciarMembrosGrupoDialog grupo={grupo} />
+          {podeGerenciar && <GerenciarMembrosGrupoDialog grupo={grupo} />}
           <div className="flex h-8 w-8 items-center justify-center rounded-md border bg-background text-muted-foreground">
             {expandido ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </div>
         </div>
       </button>
 
-      {/* METRICAS CONSOLIDADAS — SEMPRE VISÍVEIS NO CARD */}
+      {/* METRICAS CONSOLIDADAS */}
       <div className="grid gap-4 p-5 sm:grid-cols-3 border-b bg-background/50 text-xs">
         <div>
           <p className="font-semibold text-muted-foreground uppercase tracking-wider text-[10px]">
@@ -238,15 +255,17 @@ function GrupoCard({ grupo }: { grupo: GrupoEmpresarial }) {
         </div>
       </div>
 
-      {/* LISTA DE EMPRESAS INTEGRANTES DO GRUPO — EXIBIDO AO CLICAR */}
+      {/* LISTA DE EMPRESAS INTEGRANTES DO GRUPO */}
       {expandido && (
         <div className="p-5">
           {empresasDoGrupo.length === 0 ? (
             <div className="text-center py-6 text-xs text-muted-foreground">
               <p>Nenhuma empresa foi associada a este grupo ainda.</p>
-              <div className="mt-2">
-                <GerenciarMembrosGrupoDialog grupo={grupo} />
-              </div>
+              {podeGerenciar && (
+                <div className="mt-2">
+                  <GerenciarMembrosGrupoDialog grupo={grupo} />
+                </div>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -301,7 +320,7 @@ function GrupoCard({ grupo }: { grupo: GrupoEmpresarial }) {
   );
 }
 
-// MODAL PARA CRIAR NOVO GRUPO
+// MODAL PARA CRIAR NOVO GRUPO (Apenas Nível 3)
 function CriarGrupoDialog() {
   const [open, setOpen] = useState(false);
   const { empresas } = useEmpresas();
@@ -461,10 +480,13 @@ function CriarGrupoDialog() {
   );
 }
 
-// MODAL PARA EDITAR MEMBROS DO GRUPO
+// MODAL PARA EDITAR MEMBROS DO GRUPO (Nível 2 e Nível 3)
 function GerenciarMembrosGrupoDialog({ grupo }: { grupo: GrupoEmpresarial }) {
   const [open, setOpen] = useState(false);
   const { empresas } = useEmpresas();
+  const { currentUser } = useAuth();
+
+  const podeExcluir = canDeleteGroup(currentUser);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -479,7 +501,7 @@ function GerenciarMembrosGrupoDialog({ grupo }: { grupo: GrupoEmpresarial }) {
             Integrantes de {grupo.nome}
           </DialogTitle>
           <DialogDescription className="text-xs text-muted-foreground">
-            Marque as empresas que pertencem a este Grupo Econômico.
+            Vincule ou desvincule as empresas pertencentes a este Grupo Econômico.
           </DialogDescription>
         </DialogHeader>
 
@@ -511,18 +533,22 @@ function GerenciarMembrosGrupoDialog({ grupo }: { grupo: GrupoEmpresarial }) {
         </div>
 
         <DialogFooter className="mt-4 flex justify-between items-center sm:justify-between border-t pt-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:bg-destructive/10 text-xs gap-1"
-            onClick={() => {
-              removeGrupo(grupo.id);
-              toast.info(`Grupo "${grupo.nome}" removido.`);
-              setOpen(false);
-            }}
-          >
-            <Trash2 className="h-3.5 w-3.5" /> Excluir Grupo
-          </Button>
+          {podeExcluir ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:bg-destructive/10 text-xs gap-1"
+              onClick={() => {
+                if (confirm(`Tem certeza de que deseja excluir o grupo "${grupo.nome}"?`)) {
+                  removeGrupo(grupo.id);
+                  toast.info(`Grupo "${grupo.nome}" removido.`);
+                  setOpen(false);
+                }
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Excluir Grupo
+            </Button>
+          ) : <div />}
           <Button size="sm" onClick={() => setOpen(false)} className="text-xs">
             Concluído
           </Button>

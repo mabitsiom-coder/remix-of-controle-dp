@@ -40,6 +40,8 @@ import {
 } from "@/lib/empresas-store";
 import { useCadastros, resolverVinculoPorAnalista, resolverSupervisorPorCarteira } from "@/lib/cadastros-store";
 import { useGrupos } from "@/lib/grupos-store";
+import { useAuth } from "@/lib/auth-store";
+import { canChangePortfolio, canDeleteCompany } from "@/lib/permissoes";
 
 export const Route = createFileRoute("/empresas/$empresaId")({
   loader: ({ params }): { empresa: Empresa } => {
@@ -77,6 +79,8 @@ function EmpresaDetalhe() {
   const [isLoadingCnpj, setIsLoadingCnpj] = useState(false);
   const [formData, setFormData] = useState<NovaEmpresaForm>(() => empresaToForm(empresa));
 
+  const { currentUser } = useAuth();
+  const podeAlterarCarteira = canChangePortfolio(currentUser);
   const { analistas, supervisores, carteiras } = useCadastros();
   const { grupos } = useGrupos();
 
@@ -375,9 +379,17 @@ function EmpresaDetalhe() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor="edit-carteira" className="text-xs font-medium">Carteira Operacional</Label>
+                    <Label htmlFor="edit-carteira" className="text-xs font-medium flex items-center justify-between">
+                      <span>Carteira Operacional</span>
+                      {!podeAlterarCarteira && (
+                        <span className="text-[10px] text-amber-500 font-normal">
+                          (Restrito à Gestão)
+                        </span>
+                      )}
+                    </Label>
                     <Select
                       value={formData.carteira}
+                      disabled={!podeAlterarCarteira}
                       onValueChange={(val) => {
                         const sup = resolverSupervisorPorCarteira(val);
                         setFormData({ ...formData, carteira: val, ...(sup ? { supervisor: sup } : {}) });

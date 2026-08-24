@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { type Empresa } from "./mock-data";
+import { vincularEmpresaAoGrupo } from "./grupos-store";
+import { registrarAuditoria } from "./auditoria-store";
 
 const mockEmpresas: Empresa[] = [];
-import { vincularEmpresaAoGrupo } from "./grupos-store";
 
 const STORAGE_KEY = "dp_control_empresas_v1";
 const EVENT_NAME = "empresas-updated";
@@ -97,6 +98,17 @@ export function excluirEmpresa(id: string, usuario = "Sistema"): Empresa | undef
     ],
   };
   saveEmpresas(todas.map((e) => (e.id === id ? atualizada : e)));
+
+  registrarAuditoria({
+    operacao: "Exclusão de Empresa (Soft Delete)",
+    empresaAfetada: atual.nome,
+    carteiraAfetada: atual.carteira,
+    registroId: id,
+    informacaoAnterior: `Status: ${atual.status} | Carteira: ${atual.carteira}`,
+    novaInformacao: "Excluída (Histórico Preservado)",
+    detalhes: `Excluída por ${usuario}. Proteção com soft delete ativada.`,
+  });
+
   return atualizada;
 }
 
@@ -118,9 +130,19 @@ export function restaurarEmpresa(id: string, usuario = "Sistema"): Empresa | und
   delete restaurada.excluidaEm;
   delete restaurada.excluidaPor;
   saveEmpresas(todas.map((e) => (e.id === id ? restaurada : e)));
+
+  registrarAuditoria({
+    operacao: "Restauração de Empresa",
+    empresaAfetada: atual.nome,
+    carteiraAfetada: restaurada.carteira,
+    registroId: id,
+    informacaoAnterior: "Excluída",
+    novaInformacao: `Ativa na carteira: ${restaurada.carteira}`,
+    detalhes: `Restaurada por ${usuario}.`,
+  });
+
   return restaurada;
 }
-
 
 export type NovaEmpresaForm = {
   nome: string;
@@ -257,6 +279,15 @@ export function createEmpresa(dados: NovaEmpresaForm, criadoPor?: string): Empre
     vincularEmpresaAoGrupo(dados.grupoId, id);
   }
 
+  registrarAuditoria({
+    operacao: "Cadastro de Empresa",
+    empresaAfetada: nova.nome,
+    carteiraAfetada: nova.carteira,
+    registroId: nova.id,
+    novaInformacao: `CNPJ: ${nova.cnpj} | Carteira: ${nova.carteira} | Analista: ${nova.analista}`,
+    detalhes: `Cadastrada por ${usuarioCriador}.`,
+  });
+
   return nova;
 }
 
@@ -279,6 +310,10 @@ export function updateEmpresa(id: string, dados: NovaEmpresaForm): Empresa | und
         : atual.particularidades.fechamento === "Sem Movimento" || atual.particularidades.fechamento === "Sem movimento"
           ? "Fechamento padrão até dia 20 de cada mês."
           : atual.particularidades.fechamento || "Fechamento padrão até dia 20 de cada mês.";
+
+  const carteiraMudou = dados.carteira && dados.carteira !== atual.carteira;
+  const analistaMudou = dados.analista && dados.analista !== atual.analista;
+  const supervisorMudou = dados.supervisor && dados.supervisor !== atual.supervisor;
 
   const atualizada: Empresa = {
     ...atual,
@@ -311,7 +346,9 @@ export function updateEmpresa(id: string, dados: NovaEmpresaForm): Empresa | und
       {
         data: dataFormatada,
         usuario: dados.analista || "Sistema",
-        descricao: "Cadastro da empresa atualizado.",
+        descricao: carteiraMudou
+          ? `Carteira alterada de "${atual.carteira}" para "${dados.carteira}".`
+          : "Cadastro da empresa atualizado.",
       },
       ...atual.historico,
     ],
@@ -321,6 +358,36 @@ export function updateEmpresa(id: string, dados: NovaEmpresaForm): Empresa | und
 
   if (dados.grupoId && dados.grupoId !== "none") {
     vincularEmpresaAoGrupo(dados.grupoId, id);
+  }
+
+  if (carteiraMudou) {
+    registrarAuditoria({
+      operacao: "Alteração de Carteira",
+      empresaAfetada: atualizada.nome,
+      carteiraAfetada: atualizada.carteira,
+      registroId: id,
+      informacaoAnterior: `Carteira anterior: ${atual.carteira}`,
+      novaInformacao: `Nova carteira: ${atualizada.carteira}`,
+      detalhes: `Transferência de empresa entre carteiras.`,
+    });
+  } else if (analistaMudou || supervisorMudou) {
+    registrarAuditoria({
+      operacao: "Alteração de Responsáveis",
+      empresaAfetada: atualizada.nome,
+      carteiraAfetada: atualizada.carteira,
+      registroId: id,
+      informacaoAnterior: `Analista: ${atual.analista} | Supervisor: ${atual.supervisor}`,
+      novaInformacao: `Analista: ${atualizada.analista} | Supervisor: ${atualizada.supervisor}`,
+      detalhes: `Equipe responsável atualizada.`,
+    });
+  } else {
+    registrarAuditoria({
+      operacao: "Alteração de Empresa",
+      empresaAfetada: atualizada.nome,
+      carteiraAfetada: atualizada.carteira,
+      registroId: id,
+      detalhes: `Ficha cadastral atualizada.`,
+    });
   }
 
   return atualizada;
@@ -379,6 +446,7 @@ export function useEmpresas() {
     empresas,
     empresasExcluidas,
     createEmpresa,
+    updateEmpresa,
     excluirEmpresa,
     restaurarEmpresa,
     refresh: () => {

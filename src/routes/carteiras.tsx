@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useEmpresas } from "@/lib/empresas-store";
 import { useCadastros } from "@/lib/cadastros-store";
+import { useAuth } from "@/lib/auth-store";
+import { canChangePortfolio } from "@/lib/permissoes";
 
 export const Route = createFileRoute("/carteiras")({
   head: () => ({
@@ -38,6 +40,8 @@ export const Route = createFileRoute("/carteiras")({
 function CarteirasPage() {
   const { empresas } = useEmpresas();
   const { carteiras } = useCadastros();
+  const { currentUser } = useAuth();
+  const podeGerenciarCarteiras = canChangePortfolio(currentUser);
 
   const [busca, setBusca] = useState("");
   const [carteiraSelecionada, setCarteiraSelecionada] = useState<string | null>(null);
@@ -109,13 +113,15 @@ function CarteirasPage() {
         title="Carteiras"
         description="Distribuição operacional de empresas, equipe e capacidade por carteira"
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button asChild variant="outline" className="gap-1.5 text-xs shadow-sm">
-              <Link to="/cadastros">
-                <Briefcase className="h-4 w-4" /> Gerenciar Equipe & Carteiras
-              </Link>
-            </Button>
-          </div>
+          podeGerenciarCarteiras ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button asChild variant="outline" className="gap-1.5 text-xs shadow-sm">
+                <Link to="/cadastros">
+                  <Briefcase className="h-4 w-4" /> Gerenciar Equipe & Carteiras
+                </Link>
+              </Button>
+            </div>
+          ) : undefined
         }
       />
 

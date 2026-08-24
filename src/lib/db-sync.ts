@@ -25,6 +25,7 @@ const MAPA: Entrada[] = [
     evento: "particularidades-updated",
   },
   { chave: "reunioes", storage: "dp_control_reunioes_v1", evento: "reunioes-updated" },
+  { chave: "auditoria", storage: "dp_control_auditoria_v1", evento: "auditoria-updated" },
 ];
 
 const snapshot = new Map<string, string>();

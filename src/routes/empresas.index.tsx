@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { AlertTriangle, Users, Building2, Copy, Check, Trash2 } from "lucide-react";
+import { AlertTriangle, Users, Building2, Copy, Check, Trash2, ShieldCheck, Filter } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,12 +20,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useEmpresas, excluirEmpresa } from "@/lib/empresas-store";
 import { useAuth } from "@/lib/auth-store";
+import {
+  canCreateCompany,
+  canDeleteCompany,
+  filtrarEmpresasPorEscopo,
+  isNivelAdmin,
+} from "@/lib/permissoes";
 import { carteiraDaEmpresa } from "@/lib/carteiras-core";
 import type { Empresa } from "@/lib/mock-data";
 import { EmpresasExcluidas } from "@/components/empresas-excluidas";
 import { NovaEmpresaDialog } from "@/components/nova-empresa-dialog";
 import { ImportarEmpresasDialog } from "@/components/importar-empresas-dialog";
-
 
 export const Route = createFileRoute("/empresas/")({
   head: () => ({
@@ -46,6 +52,14 @@ function Empresas() {
   const [busca, setBusca] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const { empresas, empresasExcluidas } = useEmpresas();
+  const { currentUser } = useAuth();
+
+  const podeCadastrar = canCreateCompany(currentUser);
+  const podeExcluir = canDeleteCompany(currentUser);
+  const isAdmin = isNivelAdmin(currentUser.perfil);
+
+  // Aplica escopo de visualização por perfil/carteira/grupo
+  const empresasNoEscopo = filtrarEmpresasPorEscopo(empresas, currentUser);
 
   const handleCopy = (e: React.MouseEvent, texto: string, tipo: string) => {
     e.preventDefault();
@@ -56,7 +70,7 @@ function Empresas() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const lista = empresas.filter((e) => {
+  const lista = empresasNoEscopo.filter((e) => {
     const q = busca.trim().toLowerCase();
     if (!q) return true;
     const cod = (e.codigoDominio || e.id || "").toLowerCase();
@@ -75,12 +89,30 @@ function Empresas() {
         title="Cadastro de Empresas"
         description="Ficha permanente, particularidades e histórico de cada cliente"
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <ImportarEmpresasDialog />
-            <NovaEmpresaDialog />
-          </div>
+          podeCadastrar ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <ImportarEmpresasDialog />
+              <NovaEmpresaDialog />
+            </div>
+          ) : undefined
         }
       />
+
+      {/* BANNER DE ESCOPO PARA USUÁRIOS COM RESTRIÇÃO */}
+      {!isAdmin && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs">
+          <div className="flex items-center gap-2 text-primary font-medium">
+            <Filter className="h-4 w-4 shrink-0" />
+            <span>
+              Escopo Ativo ({currentUser.perfil}): Exibindo empresas vinculadas à sua carteira (
+              <strong>{currentUser.carteira || "Atribuída"}</strong>) e atribuições diretas.
+            </span>
+          </div>
+          <Badge variant="outline" className="bg-background text-[11px]">
+            {empresasNoEscopo.length} de {empresas.length} empresas
+          </Badge>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <Input
@@ -90,7 +122,7 @@ function Empresas() {
           className="max-w-md"
         />
         <div className="text-xs text-muted-foreground">
-          Total: <strong className="text-foreground">{empresas.length}</strong> empresas cadastradas
+          Total: <strong className="text-foreground">{lista.length}</strong> empresas exibidas
         </div>
       </div>
 
@@ -99,11 +131,13 @@ function Empresas() {
           <Building2 className="h-10 w-10 text-muted-foreground/50 mb-3" />
           <h3 className="text-base font-semibold">Nenhuma empresa encontrada</h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-            Nenhuma empresa corresponde aos critérios de busca ou nenhuma empresa foi cadastrada ainda.
+            Nenhuma empresa corresponde aos critérios de busca ou ao seu escopo de acesso atual.
           </p>
-          <div className="mt-4">
-            <NovaEmpresaDialog />
-          </div>
+          {podeCadastrar && (
+            <div className="mt-4">
+              <NovaEmpresaDialog />
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -111,9 +145,11 @@ function Empresas() {
             const codDominio = e.codigoDominio || e.id;
             return (
               <div key={e.id} className="relative">
-                <div className="absolute right-2 top-2 z-10">
-                  <ExcluirEmpresaButton empresa={e} />
-                </div>
+                {podeExcluir && (
+                  <div className="absolute right-2 top-2 z-10">
+                    <ExcluirEmpresaButton empresa={e} />
+                  </div>
+                )}
                 <Link
                   to="/empresas/$empresaId"
                   params={{ empresaId: e.id }}
@@ -158,7 +194,7 @@ function Empresas() {
                         )}
                       </div>
                     </div>
-                    <div className="mr-8">
+                    <div className={podeExcluir ? "mr-8" : ""}>
                       <StatusBadge status={e.status} />
                     </div>
                   </div>
@@ -189,7 +225,7 @@ function Empresas() {
         </div>
       )}
 
-      <EmpresasExcluidas empresas={empresasExcluidas} />
+      {podeExcluir && <EmpresasExcluidas empresas={empresasExcluidas} />}
     </div>
   );
 }
@@ -203,35 +239,34 @@ function ExcluirEmpresaButton({ empresa }: { empresa: Empresa }) {
         <button
           type="button"
           title="Excluir empresa"
-          className="rounded-md border bg-background/90 p-1.5 text-muted-foreground shadow-sm transition-colors hover:border-destructive/40 hover:text-destructive"
+          className="rounded-md border bg-background/90 p-1.5 text-muted-foreground shadow-sm transition-colors hover:border-destructive/40 hover:text-destructive cursor-pointer"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Excluir empresa?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Esta empresa será removida dos controles ativos, mas seu histórico será preservado.
+          <AlertDialogTitle>Excluir empresa "{empresa.nome}"?</AlertDialogTitle>
+          <AlertDialogDescription className="text-xs text-muted-foreground leading-relaxed">
+            Tem certeza de que deseja excluir esta empresa? Esta operação poderá afetar históricos, tarefas e indicadores relacionados.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel className="text-xs">Cancelar</AlertDialogCancel>
           <AlertDialogAction
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-xs"
             onClick={() => {
               excluirEmpresa(empresa.id, currentUser?.nome || "Sistema");
               toast.success(`"${empresa.nome}" movida para Empresas Excluídas. Histórico preservado.`);
             }}
           >
-            Excluir empresa
+            Confirmar Exclusão
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
 }
-
 
 function Info({ label, value }: { label: string; value: string }) {
   return (

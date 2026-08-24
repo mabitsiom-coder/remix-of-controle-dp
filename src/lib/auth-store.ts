@@ -7,8 +7,19 @@ import {
   removerUsuario as removerUsuarioFn,
   registrarPrimeiroAdmin as registrarPrimeiroAdminFn,
 } from "./usuarios.functions";
+import { registrarAuditoria } from "./auditoria-store";
 
-export type PerfilAcesso = "Administrador" | "Gerente" | "Supervisor" | "Coordenador" | "Analista";
+export type PerfilAcesso =
+  | "Analista"
+  | "CS"
+  | "Supervisor"
+  | "Gerente"
+  | "Auditoria"
+  | "Coordenação"
+  | "Administração"
+  | "CKO"
+  | "Administrador" // Alias
+  | "Coordenador";  // Alias
 
 export type Usuario = {
   id: string;
@@ -16,23 +27,29 @@ export type Usuario = {
   email: string;
   /** Nunca é lida do banco — usada apenas nos formulários de senha. */
   senha?: string;
+  cargo: string;
   perfil: PerfilAcesso;
   departamento: string;
+  grupoTrabalho?: string;
+  carteira?: string;
+  carteirasPermitidas?: string[];
   fotoUrl?: string | undefined;
   status: "ativo" | "inativo";
+  ultimoAcesso?: string;
   criadoEm: string;
 };
 
-const CACHE_USERS = "dp_control_usuarios_cache_v2";
-const CACHE_CURRENT = "dp_control_current_user_cache_v2";
+const CACHE_USERS = "dp_control_usuarios_cache_v3";
+const CACHE_CURRENT = "dp_control_current_user_cache_v3";
 const EVENT_NAME = "auth-state-changed";
 
 const usuarioVazio: Usuario = {
   id: "",
   nome: "Visitante",
   email: "",
+  cargo: "Analista",
   perfil: "Analista",
-  departamento: "",
+  departamento: "Departamento Pessoal",
   status: "ativo",
   criadoEm: "",
 };
@@ -41,6 +58,12 @@ function formatarData(iso?: string | null) {
   if (!iso) return "";
   const d = new Date(iso);
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
+function dataHoraAtual() {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function lerCache<T>(chave: string, fallback: T): T {
@@ -71,6 +94,13 @@ export function getCurrentUser(): Usuario {
   return lerCache<Usuario>(CACHE_CURRENT, usuarioVazio);
 }
 
+/** Normaliza perfis para a nomenclatura padronizada */
+export function normalizarNomePerfil(p: string): PerfilAcesso {
+  if (p === "Administrador") return "Administração";
+  if (p === "Coordenador") return "Coordenação";
+  return (p as PerfilAcesso) || "Analista";
+}
+
 /** Recarrega o usuário logado e a lista de usuários direto do banco. */
 export async function recarregarUsuarios(): Promise<{ atual: Usuario; lista: Usuario[] }> {
   const { data: sessao } = await getSupabase().auth.getSession();
@@ -84,7 +114,7 @@ export async function recarregarUsuarios(): Promise<{ atual: Usuario; lista: Usu
 
   const { data, error } = await getSupabase()
     .from("usuarios")
-    .select("id,nome,email,perfil,departamento,status,created_at")
+    .select("*")
     .order("created_at", { ascending: true });
 
   const usuariosLocais = getStoredUsers();
@@ -101,7 +131,13 @@ export async function recarregarUsuarios(): Promise<{ atual: Usuario; lista: Usu
     perfil: string;
     departamento: string;
     status: string;
+    cargo?: string;
+    grupo_trabalho?: string;
+    carteira?: string;
+    carteiras_permitidas?: string[];
+    foto_url?: string;
     created_at: string;
+    updated_at?: string;
   };
 
   const lista: Usuario[] = ((data ?? []) as Linha[]).map((u) => {
@@ -110,10 +146,15 @@ export async function recarregarUsuarios(): Promise<{ atual: Usuario; lista: Usu
       id: u.id,
       nome: u.nome,
       email: u.email,
-      perfil: u.perfil as PerfilAcesso,
+      cargo: u.cargo || local?.cargo || u.departamento || "Analista DP",
+      perfil: normalizarNomePerfil(u.perfil),
       departamento: u.departamento,
-      fotoUrl: local?.fotoUrl,
+      grupoTrabalho: u.grupo_trabalho || local?.grupoTrabalho || "",
+      carteira: u.carteira || local?.carteira || "",
+      carteirasPermitidas: u.carteiras_permitidas || local?.carteirasPermitidas || [],
+      fotoUrl: u.foto_url || local?.fotoUrl,
       status: (u.status === "inativo" ? "inativo" : "ativo") as "ativo" | "inativo",
+      ultimoAcesso: local?.ultimoAcesso || formatarData(u.updated_at || u.created_at),
       criadoEm: formatarData(u.created_at),
     };
   });
@@ -131,11 +172,21 @@ export async function loginUser(email: string, senha: string): Promise<Usuario> 
   });
   if (error) throw new Error("E-mail ou senha incorretos.");
 
-  const { atual } = await recarregarUsuarios();
+  const { atual, lista } = await recarregarUsuarios();
   if (atual.status === "inativo") {
     await getSupabase().auth.signOut();
     throw new Error("Este usuário está inativo no sistema.");
   }
+
+  // Atualiza último acesso
+  const agora = dataHoraAtual();
+  atual.ultimoAcesso = agora;
+  gravarCache(CACHE_CURRENT, atual);
+  gravarCache(
+    CACHE_USERS,
+    lista.map((u) => (u.id === atual.id ? { ...u, ultimoAcesso: agora } : u)),
+  );
+
   return atual;
 }
 
@@ -153,7 +204,7 @@ export async function registrarPrimeiroAdmin(nome: string, email: string, senha:
 export async function addUsuario(
   dados: Omit<Usuario, "id" | "criadoEm"> & { senha?: string },
 ): Promise<Usuario> {
-  await criarUsuarioFn({
+  const resp = await criarUsuarioFn({
     data: {
       nome: dados.nome,
       email: dados.email.trim().toLowerCase(),
@@ -163,18 +214,57 @@ export async function addUsuario(
       status: dados.status,
     },
   });
+
   const { lista } = await recarregarUsuarios();
-  const criado = lista.find((u) => u.email.toLowerCase() === dados.email.trim().toLowerCase())!;
-  if (dados.fotoUrl && criado) {
-    criado.fotoUrl = dados.fotoUrl;
-    const atualizados = lista.map((u) => (u.id === criado.id ? criado : u));
-    gravarCache(CACHE_USERS, atualizados);
-    if (getCurrentUser().id === criado.id) gravarCache(CACHE_CURRENT, criado);
+  let criado = lista.find((u) => u.email.toLowerCase() === dados.email.trim().toLowerCase())!;
+
+  if (!criado) {
+    criado = {
+      id: resp.id,
+      nome: dados.nome,
+      email: dados.email.trim().toLowerCase(),
+      cargo: dados.cargo || "Analista",
+      perfil: dados.perfil,
+      departamento: dados.departamento,
+      grupoTrabalho: dados.grupoTrabalho || "",
+      carteira: dados.carteira || "",
+      carteirasPermitidas: dados.carteirasPermitidas || [],
+      fotoUrl: dados.fotoUrl,
+      status: dados.status,
+      criadoEm: formatarData(new Date().toISOString()),
+    };
+  } else {
+    criado = {
+      ...criado,
+      cargo: dados.cargo || criado.cargo,
+      grupoTrabalho: dados.grupoTrabalho || criado.grupoTrabalho,
+      carteira: dados.carteira || criado.carteira,
+      carteirasPermitidas: dados.carteirasPermitidas || criado.carteirasPermitidas,
+      fotoUrl: dados.fotoUrl || criado.fotoUrl,
+    };
   }
+
+  const atualizados = [...lista.filter((u) => u.id !== criado.id), criado];
+  gravarCache(CACHE_USERS, atualizados);
+
+  registrarAuditoria({
+    operacao: "Criação de Usuário",
+    usuarioNome: getCurrentUser().nome,
+    usuarioId: getCurrentUser().id,
+    perfil: getCurrentUser().perfil,
+    informacaoAnterior: "Nenhum",
+    novaInformacao: `${criado.nome} (${criado.email}) - Perfil: ${criado.perfil}`,
+    registroId: criado.id,
+    detalhes: `Cargo: ${criado.cargo} | Grupo: ${criado.grupoTrabalho || "Geral"} | Carteira: ${criado.carteira || "Todas"}`,
+  });
+
   return criado;
 }
 
 export async function updateUsuario(id: string, novosDados: Partial<Usuario>) {
+  const atuais = getStoredUsers();
+  const anterior = atuais.find((u) => u.id === id);
+
   await atualizarUsuarioFn({
     data: {
       id,
@@ -186,25 +276,55 @@ export async function updateUsuario(id: string, novosDados: Partial<Usuario>) {
       ...(novosDados.status !== undefined ? { status: novosDados.status } : {}),
     },
   });
-  const { lista } = await recarregarUsuarios();
-  const atuais = getStoredUsers();
-  const atualizados = atuais.map((u) => {
+
+  await recarregarUsuarios();
+  const atualizados = getStoredUsers().map((u) => {
     if (u.id === id) {
       return { ...u, ...novosDados };
     }
     return u;
   });
   gravarCache(CACHE_USERS, atualizados);
+
   const cur = getCurrentUser();
   if (cur.id === id) {
     gravarCache(CACHE_CURRENT, { ...cur, ...novosDados });
   }
+
+  if (anterior) {
+    registrarAuditoria({
+      operacao: "Edição de Usuário",
+      usuarioNome: cur.nome,
+      usuarioId: cur.id,
+      perfil: cur.perfil,
+      informacaoAnterior: `Perfil: ${anterior.perfil} | Status: ${anterior.status} | Cargo: ${anterior.cargo}`,
+      novaInformacao: `Perfil: ${novosDados.perfil ?? anterior.perfil} | Status: ${novosDados.status ?? anterior.status} | Cargo: ${novosDados.cargo ?? anterior.cargo}`,
+      registroId: id,
+      detalhes: `Usuário afetado: ${anterior.nome} (${anterior.email})`,
+    });
+  }
+
   return atualizados.find((u) => u.id === id);
 }
 
 export async function removeUsuario(id: string) {
+  const atuais = getStoredUsers();
+  const removido = atuais.find((u) => u.id === id);
+
   await removerUsuarioFn({ data: { id } });
   await recarregarUsuarios();
+
+  if (removido) {
+    registrarAuditoria({
+      operacao: "Exclusão de Usuário",
+      usuarioNome: getCurrentUser().nome,
+      usuarioId: getCurrentUser().id,
+      perfil: getCurrentUser().perfil,
+      informacaoAnterior: `${removido.nome} (${removido.email}) - Perfil: ${removido.perfil}`,
+      novaInformacao: "Removido do sistema",
+      registroId: id,
+    });
+  }
 }
 
 export function useAuth() {
@@ -227,14 +347,23 @@ export function useAuth() {
     };
   }, []);
 
+  const perfilNorm = normalizarNomePerfil(currentUser.perfil);
+  const isAdmin = ["Administração", "Administrador", "Coordenação", "Coordenador", "CKO"].includes(perfilNorm);
+  const isNivel3 = isAdmin;
+  const isGestao = ["Supervisor", "Gerente", "Auditoria", "Coordenação", "Administração", "CKO", "Administrador", "Coordenador"].includes(perfilNorm);
+  const isSupervisor = ["Supervisor", "Gerente", "Coordenação", "Administração", "CKO"].includes(perfilNorm);
+  const isAnalista = perfilNorm === "Analista" || perfilNorm === "CS";
+
   return {
     currentUser,
     usuarios,
     autenticado: Boolean(currentUser.id),
-    isAdmin: currentUser.perfil === "Administrador",
-    isGestao: ["Administrador", "Gerente", "Coordenador", "Supervisor"].includes(currentUser.perfil),
-    isSupervisor: ["Supervisor", "Gerente", "Administrador"].includes(currentUser.perfil),
-    isCoordenador: ["Coordenador", "Gerente", "Administrador"].includes(currentUser.perfil),
+    isAdmin,
+    isNivel3,
+    isGestao,
+    isSupervisor,
+    isAnalista,
+    hasFullAccess: isNivel3,
     login: loginUser,
     logout: logoutUser,
     addUsuario,
