@@ -272,7 +272,7 @@ export function createEmpresa(dados: NovaEmpresaForm, criadoPor?: string): Empre
     cnpj: dados.cnpj,
     regime: dados.regime || "Optante pelo Simples Nacional",
     tipo: dados.tipo || "com-movimento",
-    funcionariosDomesticos: dados.tipo === "domestico-pf" ? (dados.funcionariosDomesticos ?? []) : undefined,
+    funcionariosDomesticos: dados.tipo === "domestico-pf" ? (dados.funcionariosDomesticos ?? []) : [],
     codigoDominio: dados.codigoDominio || "",
     responsavel: dados.responsavel || "Não informado",
     carteira: dados.carteira || "Carteira Geral",
