@@ -26,16 +26,16 @@ export type Usuario = {
   nome: string;
   email: string;
   /** Nunca é lida do banco — usada apenas nos formulários de senha. */
-  senha?: string;
+  senha?: string | undefined;
   cargo: string;
   perfil: PerfilAcesso;
   departamento: string;
-  grupoTrabalho?: string;
-  carteira?: string;
-  carteirasPermitidas?: string[];
+  grupoTrabalho?: string | undefined;
+  carteira?: string | undefined;
+  carteirasPermitidas?: string[] | undefined;
   fotoUrl?: string | undefined;
   status: "ativo" | "inativo";
-  ultimoAcesso?: string;
+  ultimoAcesso?: string | undefined;
   criadoEm: string;
 };
 

@@ -1026,9 +1026,9 @@ export type EmpresaFolhaVencimento = {
   responsavel: string;
   status: StatusFolha;
   transmitida: boolean;
-  dataConclusao?: string;
-  tipoPonto?: string;
-  empregados?: number;
+  dataConclusao?: string | undefined;
+  tipoPonto?: string | undefined;
+  empregados?: number | undefined;
 };
 
 export type ItemTransmissaoFolhaVencimento = {
