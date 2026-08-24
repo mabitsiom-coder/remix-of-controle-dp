@@ -49,8 +49,17 @@ export function PortaoAcesso({ children }: { children: ReactNode }) {
       }
     })();
 
+    const { data: sub } = getSupabase().auth.onAuthStateChange((event) => {
+      if (!ativo) return;
+      if (event === "SIGNED_OUT") {
+        setSenha("");
+        setEstado("login");
+      }
+    });
+
     return () => {
       ativo = false;
+      sub.subscription.unsubscribe();
     };
   }, []);
 
