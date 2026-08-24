@@ -230,7 +230,7 @@ function DefinirAcessoDialog({
         email: emailLimpo,
         senha: senha.trim(),
         perfil,
-        cargo: pessoa.cargo ?? "",
+        cargo: pessoa.origem || "Analista",
         departamento: pessoa.departamento,
         fotoUrl: pessoa.fotoUrl,
         status: "ativo",
