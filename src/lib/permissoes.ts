@@ -1,4 +1,6 @@
 import type { PerfilAcesso, Usuario } from "@/lib/auth-store";
+
+export type { PerfilAcesso };
 import type { Empresa } from "@/lib/mock-data";
 import { carteirasBatem, normalizarCarteira } from "./carteiras-core";
 
