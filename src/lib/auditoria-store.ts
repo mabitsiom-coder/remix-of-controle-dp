@@ -9,13 +9,13 @@ export type RegistroAuditoria = {
   usuarioNome: string;
   perfil: string;
   operacao: string;
-  empresaAfetada?: string;
-  grupoAfetado?: string;
-  carteiraAfetada?: string;
-  informacaoAnterior?: string;
-  novaInformacao?: string;
-  registroId?: string;
-  detalhes?: string;
+  empresaAfetada?: string | undefined;
+  grupoAfetado?: string | undefined;
+  carteiraAfetada?: string | undefined;
+  informacaoAnterior?: string | undefined;
+  novaInformacao?: string | undefined;
+  registroId?: string | undefined;
+  detalhes?: string | undefined;
 };
 
 const STORAGE_KEY = "dp_control_auditoria_v1";
@@ -58,16 +58,16 @@ function saveAuditorias(lista: RegistroAuditoria[]) {
 
 export function registrarAuditoria(dados: {
   operacao: string;
-  empresaAfetada?: string;
-  grupoAfetado?: string;
-  carteiraAfetada?: string;
-  informacaoAnterior?: string;
-  novaInformacao?: string;
-  registroId?: string;
-  detalhes?: string;
-  usuarioNome?: string;
-  usuarioId?: string;
-  perfil?: string;
+  empresaAfetada?: string | undefined;
+  grupoAfetado?: string | undefined;
+  carteiraAfetada?: string | undefined;
+  informacaoAnterior?: string | undefined;
+  novaInformacao?: string | undefined;
+  registroId?: string | undefined;
+  detalhes?: string | undefined;
+  usuarioNome?: string | undefined;
+  usuarioId?: string | undefined;
+  perfil?: string | undefined;
 }): RegistroAuditoria {
   const usuarioAtual = getCurrentUser();
   const id = `aud-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;

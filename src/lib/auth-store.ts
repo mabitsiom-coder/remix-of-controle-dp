@@ -26,16 +26,16 @@ export type Usuario = {
   nome: string;
   email: string;
   /** Nunca é lida do banco — usada apenas nos formulários de senha. */
-  senha?: string;
+  senha?: string | undefined;
   cargo: string;
   perfil: PerfilAcesso;
   departamento: string;
-  grupoTrabalho?: string;
-  carteira?: string;
-  carteirasPermitidas?: string[];
+  grupoTrabalho?: string | undefined;
+  carteira?: string | undefined;
+  carteirasPermitidas?: string[] | undefined;
   fotoUrl?: string | undefined;
   status: "ativo" | "inativo";
-  ultimoAcesso?: string;
+  ultimoAcesso?: string | undefined;
   criadoEm: string;
 };
 
@@ -219,7 +219,7 @@ export function getStoredUsers(): Usuario[] {
   return usuarios.map((u) => {
     const perfilNorm = normalizarNomePerfil(u.perfil);
     if ((perfilNorm === "Analista" || perfilNorm === "CS") && (!u.carteira || u.carteira === "none")) {
-      const primeiroNome = u.nome.split(" ")[0].toLowerCase();
+      const primeiroNome = (u.nome.split(" ")[0] ?? "").toLowerCase();
       const carteiraAtribuida = MAPA_CARTEIRAS_ANALISTAS[primeiroNome] || "RH-G-01";
       return {
         ...u,
@@ -232,11 +232,12 @@ export function getStoredUsers(): Usuario[] {
 }
 
 export function getCurrentUser(): Usuario {
-  const cur = lerCache<Usuario>(CACHE_CURRENT, initialDefaultUsers[0]);
-  if (!cur || !cur.id) return initialDefaultUsers[0];
+  const padrao = initialDefaultUsers[0] as Usuario;
+  const cur = lerCache<Usuario>(CACHE_CURRENT, padrao);
+  if (!cur || !cur.id) return padrao;
   const perfilNorm = normalizarNomePerfil(cur.perfil);
   if ((perfilNorm === "Analista" || perfilNorm === "CS") && (!cur.carteira || cur.carteira === "none")) {
-    const primeiroNome = cur.nome.split(" ")[0].toLowerCase();
+    const primeiroNome = (cur.nome.split(" ")[0] ?? "").toLowerCase();
     const carteiraAtribuida = MAPA_CARTEIRAS_ANALISTAS[primeiroNome] || "RH-G-01";
     return {
       ...cur,
