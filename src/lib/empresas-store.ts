@@ -157,6 +157,7 @@ export type NovaEmpresaForm = {
   cnpj: string;
   regime: string;
   tipo?: "com-movimento" | "sem-movimento" | "domestico-pf";
+  funcionariosDomesticos?: string[];
   codigoDominio?: string;
   grupoId?: string;
   responsavel: string;
@@ -271,6 +272,7 @@ export function createEmpresa(dados: NovaEmpresaForm, criadoPor?: string): Empre
     cnpj: dados.cnpj,
     regime: dados.regime || "Optante pelo Simples Nacional",
     tipo: dados.tipo || "com-movimento",
+    funcionariosDomesticos: dados.tipo === "domestico-pf" ? (dados.funcionariosDomesticos ?? []) : undefined,
     codigoDominio: dados.codigoDominio || "",
     responsavel: dados.responsavel || "Não informado",
     carteira: dados.carteira || "Carteira Geral",
@@ -355,6 +357,7 @@ export function updateEmpresa(id: string, dados: NovaEmpresaForm): Empresa | und
     cnpj: dados.cnpj || atual.cnpj,
     regime: dados.regime || atual.regime,
     tipo: tipoFinal,
+    funcionariosDomesticos: tipoFinal === "domestico-pf" ? (dados.funcionariosDomesticos ?? atual.funcionariosDomesticos ?? []) : undefined,
     codigoDominio: dados.codigoDominio ?? atual.codigoDominio ?? "",
     responsavel: dados.responsavel || atual.responsavel,
     carteira: dados.carteira || atual.carteira,
@@ -434,6 +437,7 @@ export function empresaToForm(empresa: Empresa): NovaEmpresaForm {
     cnpj: empresa.cnpj,
     regime: empresa.regime,
     tipo: empresa.tipo ?? "com-movimento",
+    funcionariosDomesticos: empresa.funcionariosDomesticos ?? [],
     codigoDominio: empresa.codigoDominio ?? "",
     grupoId: "none",
     responsavel: empresa.responsavel,

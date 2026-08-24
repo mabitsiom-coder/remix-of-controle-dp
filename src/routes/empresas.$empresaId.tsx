@@ -4,6 +4,9 @@ import {
   ArrowLeft,
   CheckCircle2,
   Pencil,
+  Plus,
+  Trash2,
+  UserPlus,
   X,
   Save,
   Building2,
@@ -99,6 +102,7 @@ function EmpresaDetalhe() {
   const [activeTab, setActiveTab] = useState("dados");
   const [isLoadingCnpj, setIsLoadingCnpj] = useState(false);
   const [formData, setFormData] = useState<NovaEmpresaForm>(() => empresaToForm(empresa));
+  const [novoFuncionario, setNovoFuncionario] = useState("");
 
   const { currentUser } = useAuth();
   const podeAlterarCarteira = canChangePortfolio(currentUser);
@@ -386,6 +390,87 @@ function EmpresaDetalhe() {
                   />
                 </div>
               </div>
+
+              {/* Funcionários Domésticos — visível apenas quando tipo = Doméstico (PF) */}
+              {formData.tipo === "domestico-pf" && (
+                <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50/60 dark:border-blue-800 dark:bg-blue-950/30 p-4 space-y-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <UserPlus className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                      Funcionários Domésticos
+                    </span>
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {(formData.funcionariosDomesticos ?? []).length} cadastrado(s)
+                    </span>
+                  </div>
+
+                  {(formData.funcionariosDomesticos ?? []).length > 0 && (
+                    <ul className="space-y-1.5">
+                      {(formData.funcionariosDomesticos ?? []).map((nome, idx) => (
+                        <li key={idx} className="flex items-center justify-between rounded-md bg-white dark:bg-muted/40 border px-3 py-1.5 text-sm">
+                          <span className="truncate">{nome}</span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                funcionariosDomesticos: (prev.funcionariosDomesticos ?? []).filter((_, i) => i !== idx),
+                              }))
+                            }
+                            className="ml-2 text-destructive hover:text-destructive/70 transition-colors"
+                            title="Remover funcionário"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Nome do(a) funcionário(a) doméstico(a)"
+                      value={novoFuncionario}
+                      onChange={(e) => setNovoFuncionario(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const nome = novoFuncionario.trim();
+                          if (nome) {
+                            setFormData((prev) => ({
+                              ...prev,
+                              funcionariosDomesticos: [...(prev.funcionariosDomesticos ?? []), nome],
+                            }));
+                            setNovoFuncionario("");
+                          }
+                        }
+                      }}
+                      className="text-sm h-8"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="h-8 px-3 shrink-0"
+                      onClick={() => {
+                        const nome = novoFuncionario.trim();
+                        if (nome) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            funcionariosDomesticos: [...(prev.funcionariosDomesticos ?? []), nome],
+                          }));
+                          setNovoFuncionario("");
+                        }
+                      }}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Pressione Enter ou clique em Adicionar para incluir cada funcionário.
+                  </p>
+                </div>
+              )}
             </TabsContent>
 
             {/* ABA 2 — Equipe & Risco */}

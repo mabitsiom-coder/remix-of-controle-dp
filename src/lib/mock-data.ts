@@ -37,6 +37,7 @@ export type Empresa = {
   cnpj: string;
   regime: string;
   tipo?: "com-movimento" | "sem-movimento" | "domestico-pf";
+  funcionariosDomesticos?: string[];
   codigoDominio?: string;
   grupoId?: string;
   responsavel: string;
