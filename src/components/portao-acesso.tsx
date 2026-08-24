@@ -49,10 +49,9 @@ export function PortaoAcesso({ children }: { children: ReactNode }) {
       }
     })();
 
-    const { data: sub } = getSupabase().auth.onAuthStateChange((event, session) => {
+    const { data: sub } = getSupabase().auth.onAuthStateChange((event) => {
       if (!ativo) return;
       if (event === "SIGNED_OUT") {
-        void session;
         setSenha("");
         setEstado("login");
       }
