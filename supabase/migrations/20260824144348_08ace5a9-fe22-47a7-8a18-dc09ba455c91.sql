@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.protege_perfil() FROM PUBLIC, anon, authenticated;
