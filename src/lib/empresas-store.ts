@@ -357,7 +357,7 @@ export function updateEmpresa(id: string, dados: NovaEmpresaForm): Empresa | und
     cnpj: dados.cnpj || atual.cnpj,
     regime: dados.regime || atual.regime,
     tipo: tipoFinal,
-    funcionariosDomesticos: tipoFinal === "domestico-pf" ? (dados.funcionariosDomesticos ?? atual.funcionariosDomesticos ?? []) : undefined,
+    funcionariosDomesticos: tipoFinal === "domestico-pf" ? (dados.funcionariosDomesticos ?? atual.funcionariosDomesticos ?? []) : [],
     codigoDominio: dados.codigoDominio ?? atual.codigoDominio ?? "",
     responsavel: dados.responsavel || atual.responsavel,
     carteira: dados.carteira || atual.carteira,
