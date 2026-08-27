@@ -259,6 +259,12 @@ export function resolverSupervisorPorCarteira(nomeCarteira: string): string | un
   return getSupervisores().find((s) => (s.carteiraIds || []).includes(carteira.id))?.nome;
 }
 
+export function resolverAnalistaPorCarteira(nomeCarteira: string): string | undefined {
+  const carteira = getCarteiras().find((c) => c.nome === nomeCarteira);
+  if (!carteira) return undefined;
+  return getAnalistas().find((a) => a.carteiraId === carteira.id)?.nome;
+}
+
 // Sincronização: cria carteiras, analistas e supervisores a partir das empresas já cadastradas
 function norm(v: string) {
   return (v || "")

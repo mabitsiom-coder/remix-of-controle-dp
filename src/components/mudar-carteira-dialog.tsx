@@ -25,6 +25,7 @@ import { empresaToForm, updateEmpresa, useEmpresas } from "@/lib/empresas-store"
 import {
   useCadastros,
   resolverSupervisorPorCarteira,
+  resolverAnalistaPorCarteira,
   resolverVinculoPorAnalista,
 } from "@/lib/cadastros-store";
 import { carteiraDaEmpresa, listarNomesCarteiras } from "@/lib/carteiras-core";
@@ -78,6 +79,12 @@ export function MudarCarteiraDialog({
 
   const handleCarteiraChange = (novaCarteira: string) => {
     setCarteiraSelecionada(novaCarteira);
+
+    // Auto-preenche o analista vinculado a essa carteira, se houver
+    const anal = resolverAnalistaPorCarteira(novaCarteira);
+    if (anal) {
+      setAnalistaSelecionado(anal);
+    }
 
     // Auto-preenche o supervisor associado a essa carteira, se houver
     const sup = resolverSupervisorPorCarteira(novaCarteira);
