@@ -31,7 +31,9 @@ import { carteiraDaEmpresa, listarNomesCarteiras } from "@/lib/carteiras-core";
 import type { Empresa } from "@/lib/mock-data";
 
 interface MudarCarteiraDialogProps {
-  empresa: Empresa;
+  empresa: Empresa | null;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   trigger?: React.ReactNode;
   onSuccess?: (novaCarteira: string) => void;
   className?: string;
@@ -39,23 +41,35 @@ interface MudarCarteiraDialogProps {
 
 export function MudarCarteiraDialog({
   empresa,
+  open: controlledOpen,
+  onOpenChange: setControlledOpen,
   trigger,
   onSuccess,
   className,
 }: MudarCarteiraDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (val: boolean) => {
+    if (isControlled) {
+      setControlledOpen?.(val);
+    } else {
+      setInternalOpen(val);
+    }
+  };
+
   const { todasEmpresas } = useEmpresas({ ignorarEscopo: true });
   const { carteiras, analistas, supervisores } = useCadastros();
 
-  const [carteiraSelecionada, setCarteiraSelecionada] = useState(empresa.carteira || "");
-  const [analistaSelecionado, setAnalistaSelecionado] = useState(empresa.analista || "");
-  const [supervisorSelecionado, setSupervisorSelecionado] = useState(empresa.supervisor || "");
+  const [carteiraSelecionada, setCarteiraSelecionada] = useState(empresa?.carteira || "");
+  const [analistaSelecionado, setAnalistaSelecionado] = useState(empresa?.analista || "");
+  const [supervisorSelecionado, setSupervisorSelecionado] = useState(empresa?.supervisor || "");
 
   // Lista consolidada de todas as carteiras disponíveis
   const listaCarteiras = listarNomesCarteiras(todasEmpresas, carteiras);
 
   useEffect(() => {
-    if (open) {
+    if (open && empresa) {
       setCarteiraSelecionada(empresa.carteira || "");
       setAnalistaSelecionado(empresa.analista || "");
       setSupervisorSelecionado(empresa.supervisor || "");
@@ -114,6 +128,8 @@ export function MudarCarteiraDialog({
       toast.error("Erro ao transferir carteira.");
     }
   };
+
+  if (!empresa) return null;
 
   const carteiraAtual = carteiraDaEmpresa(empresa);
   const codDominio = empresa.codigoDominio || empresa.id;

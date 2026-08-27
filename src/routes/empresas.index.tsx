@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { AlertTriangle, Users, Building2, Copy, Check, Trash2, ShieldCheck, Filter, Download } from "lucide-react";
+import { AlertTriangle, Users, Building2, Copy, Check, Trash2, ShieldCheck, Filter, Download, ArrowLeftRight } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
@@ -54,6 +54,7 @@ export const Route = createFileRoute("/empresas/")({
 function Empresas() {
   const [busca, setBusca] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [empresaParaMudarCarteira, setEmpresaParaMudarCarteira] = useState<Empresa | null>(null);
   const { empresas, empresasExcluidas } = useEmpresas();
   const { currentUser } = useAuth();
 
@@ -222,7 +223,19 @@ function Empresas() {
                     <Info label="Regime" value={e.regime} />
                     <div className="min-w-0">
                       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Carteira</p>
-                      <MudarCarteiraDialog empresa={e} />
+                      <button
+                        type="button"
+                        onClick={(ev) => {
+                          ev.preventDefault();
+                          ev.stopPropagation();
+                          setEmpresaParaMudarCarteira(e);
+                        }}
+                        title={`Clique para mudar de carteira (${carteiraDaEmpresa(e)})`}
+                        className="group/carteira-btn inline-flex items-center gap-1.5 rounded px-1.5 py-0.5 -ml-1.5 text-xs font-semibold text-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer border border-transparent hover:border-primary/30 max-w-full text-left"
+                      >
+                        <span className="truncate">{carteiraDaEmpresa(e) || "Sem Carteira"}</span>
+                        <ArrowLeftRight className="h-3 w-3 text-muted-foreground group-hover/carteira-btn:text-primary transition-colors shrink-0" />
+                      </button>
                     </div>
                     <Info label="Analista" value={e.analista} />
                     <Info label="Supervisor" value={e.supervisor} />
@@ -248,6 +261,15 @@ function Empresas() {
       )}
 
       {podeExcluir && <EmpresasExcluidas empresas={empresasExcluidas} />}
+
+      {/* DIALOG ÚNICO GLOBAL PARA OTIMIZAÇÃO DE MEMÓRIA */}
+      <MudarCarteiraDialog
+        empresa={empresaParaMudarCarteira}
+        open={Boolean(empresaParaMudarCarteira)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setEmpresaParaMudarCarteira(null);
+        }}
+      />
     </div>
   );
 }

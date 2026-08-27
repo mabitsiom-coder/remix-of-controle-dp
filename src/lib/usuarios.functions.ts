@@ -28,7 +28,7 @@ const criarSchema = z.object({
 
 /** Cria o primeiro administrador quando ainda não existe nenhum usuário. */
 export const registrarPrimeiroAdmin = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z.object({ nome: z.string().min(1), email: z.string().email(), senha: z.string().min(6) }).parse(data),
   )
   .handler(async ({ data }) => {
@@ -87,7 +87,7 @@ async function exigirNivelAdmin(supabase: {
 
 export const criarUsuario = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => criarSchema.parse(data))
+  .validator((data: unknown) => criarSchema.parse(data))
   .handler(async ({ data, context }) => {
     await exigirNivelAdmin(context.supabase, context.userId);
     const { getAdminClient } = await import("./supabase-admin.server");
@@ -115,7 +115,7 @@ export const criarUsuario = createServerFn({ method: "POST" })
 
 export const atualizarUsuario = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) =>
+  .validator((data: unknown) =>
     z
       .object({
         id: z.string().uuid(),
@@ -159,7 +159,7 @@ export const atualizarUsuario = createServerFn({ method: "POST" })
 
 export const removerUsuario = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
+  .validator((data: unknown) => z.object({ id: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }) => {
     await exigirNivelAdmin(context.supabase, context.userId);
     if (data.id === context.userId) throw new Error("Você não pode remover o seu próprio acesso.");
