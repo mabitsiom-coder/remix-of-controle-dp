@@ -32,6 +32,7 @@ import type { Empresa } from "@/lib/mock-data";
 import { EmpresasExcluidas } from "@/components/empresas-excluidas";
 import { NovaEmpresaDialog } from "@/components/nova-empresa-dialog";
 import { ImportarEmpresasDialog } from "@/components/importar-empresas-dialog";
+import { MudarCarteiraDialog } from "@/components/mudar-carteira-dialog";
 import { exportarEmpresasParaExcel } from "@/lib/empresas-excel";
 
 export const Route = createFileRoute("/empresas/")({
@@ -219,7 +220,10 @@ function Empresas() {
 
                   <div className="mt-4 grid grid-cols-2 gap-y-2.5 text-xs">
                     <Info label="Regime" value={e.regime} />
-                    <Info label="Carteira" value={carteiraDaEmpresa(e)} />
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Carteira</p>
+                      <MudarCarteiraDialog empresa={e} />
+                    </div>
                     <Info label="Analista" value={e.analista} />
                     <Info label="Supervisor" value={e.supervisor} />
                   </div>
