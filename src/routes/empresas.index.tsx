@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { AlertTriangle, Users, Building2, Copy, Check, Trash2, ShieldCheck, Filter } from "lucide-react";
+import { AlertTriangle, Users, Building2, Copy, Check, Trash2, ShieldCheck, Filter, Download } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +32,7 @@ import type { Empresa } from "@/lib/mock-data";
 import { EmpresasExcluidas } from "@/components/empresas-excluidas";
 import { NovaEmpresaDialog } from "@/components/nova-empresa-dialog";
 import { ImportarEmpresasDialog } from "@/components/importar-empresas-dialog";
+import { exportarEmpresasParaExcel } from "@/lib/empresas-excel";
 
 export const Route = createFileRoute("/empresas/")({
   head: () => ({
@@ -89,12 +91,28 @@ function Empresas() {
         title="Cadastro de Empresas"
         description="Ficha permanente, particularidades e histórico de cada cliente"
         actions={
-          podeCadastrar ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <ImportarEmpresasDialog />
-              <NovaEmpresaDialog />
-            </div>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (empresasNoEscopo.length === 0) {
+                  toast.error("Nenhuma empresa disponível no seu escopo para exportação.");
+                  return;
+                }
+                exportarEmpresasParaExcel(empresasNoEscopo);
+                toast.success(`${empresasNoEscopo.length} empresa(s) exportada(s) para Excel!`);
+              }}
+              className="gap-2 border-emerald-600/30 bg-emerald-500/5 text-emerald-700 hover:bg-emerald-500/10 hover:text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20 shadow-xs cursor-pointer"
+            >
+              <Download className="h-4 w-4" /> Exportar Excel
+            </Button>
+            {podeCadastrar && (
+              <>
+                <ImportarEmpresasDialog />
+                <NovaEmpresaDialog />
+              </>
+            )}
+          </div>
         }
       />
 

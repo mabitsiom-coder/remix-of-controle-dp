@@ -430,6 +430,159 @@ export function updateEmpresa(id: string, dados: NovaEmpresaForm): Empresa | und
   return atualizada;
 }
 
+export function importarEmpresasEmLote(
+  novas: import("./empresas-excel").NovaEmpresaImportacao[],
+  alteradas: import("./empresas-excel").EmpresaParaAtualizar[],
+  usuarioNome = "Sistema",
+  nomeArquivo = "planilha.xlsx"
+): { criadas: number; atualizadas: number } {
+  const todas = getTodasEmpresas();
+  const hoje = new Date();
+  const dataFormatada = `${String(hoje.getDate()).padStart(2, "0")}/${String(
+    hoje.getMonth() + 1,
+  ).padStart(2, "0")}/${hoje.getFullYear()}`;
+
+  const mapaAtuais = new Map<string, Empresa>();
+  for (const emp of todas) {
+    mapaAtuais.set(emp.id, { ...emp });
+  }
+
+  // 1. Processa Atualizações
+  for (const item of alteradas) {
+    const atual = mapaAtuais.get(item.empresaExistente.id);
+    if (!atual) continue;
+
+    const tipoFinal = item.novosDados.tipo;
+    const fechamentoFinal =
+      tipoFinal === "sem-movimento"
+        ? "Sem Movimento"
+        : atual.particularidades?.fechamento === "Sem Movimento"
+          ? "Fechamento padrão até dia 20 de cada mês."
+          : atual.particularidades?.fechamento || "Fechamento padrão até dia 20 de cada mês.";
+
+    const resumoAlteracoes = item.alteracoes
+      .map((a) => `${a.label}: ${a.valorAtual} → ${a.novoValor}`)
+      .join(" | ");
+
+    const empresaAtualizada: Empresa = {
+      ...atual,
+      nome: item.novosDados.nome || atual.nome,
+      cnpj: item.novosDados.cnpj || atual.cnpj,
+      analista: item.novosDados.analista || atual.analista,
+      supervisor: item.novosDados.supervisor || atual.supervisor,
+      funcionarios: item.novosDados.funcionarios,
+      carteira: item.novosDados.carteira || atual.carteira,
+      convenio: item.novosDados.convenio || atual.convenio,
+      tipo: tipoFinal,
+      ultimaRevisao: dataFormatada,
+      diasSemRevisao: 0,
+      particularidades: {
+        ...(atual.particularidades || {}),
+        fechamento: fechamentoFinal,
+      },
+      historico: [
+        {
+          data: dataFormatada,
+          usuario: usuarioNome,
+          descricao: `Importação Excel (${nomeArquivo}): ${resumoAlteracoes}`,
+        },
+        ...(atual.historico || []),
+      ],
+    };
+
+    mapaAtuais.set(atual.id, empresaAtualizada);
+
+    // Registra auditoria individual para as alterações da empresa
+    for (const alt of item.alteracoes) {
+      registrarAuditoria({
+        operacao: `Importação Excel - ${alt.label}`,
+        empresaAfetada: empresaAtualizada.nome,
+        carteiraAfetada: empresaAtualizada.carteira,
+        registroId: empresaAtualizada.id,
+        informacaoAnterior: String(alt.valorAtual),
+        novaInformacao: String(alt.novoValor),
+        detalhes: `Arquivo: ${nomeArquivo} (Linha ${item.linhaArquivo})`,
+        usuarioNome,
+      });
+    }
+  }
+
+  // 2. Processa Novas Empresas
+  const novasCriadas: Empresa[] = [];
+  for (const n of novas) {
+    const slug = n.nome
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
+
+    const id = `${slug}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    const nova: Empresa = {
+      id,
+      nome: n.nome,
+      cnpj: n.cnpj,
+      regime: "Optante pelo Simples Nacional",
+      tipo: n.tipo,
+      codigoDominio: "",
+      responsavel: "Não informado",
+      carteira: n.carteira || "Carteira Geral",
+      analista: n.analista || "Camila Rocha",
+      supervisor: n.supervisor || "Paulo Serra",
+      funcionarios: n.funcionarios,
+      convenio: n.convenio || "Geral",
+      certificadoDigital: "A1 — Ativo",
+      procuracao: "e-CAC Válida",
+      risco: "baixo",
+      status: "ativa",
+      ultimaRevisao: dataFormatada,
+      diasSemRevisao: 0,
+      particularidades: {
+        fechamento: n.tipo === "sem-movimento" ? "Sem Movimento" : "Fechamento padrão até dia 20 de cada mês.",
+        envio: "Envio por e-mail e portal do cliente.",
+        duplaConferencia: false,
+        fluxoAprovacao: "Analista → Supervisor → Cliente",
+        rubricas: ["Salário base", "INSS", "FGTS", "VT"],
+        eventos: ["Folha mensal"],
+        observacoes: `Cadastrada via importação Excel (${nomeArquivo}).`,
+      },
+      historico: [
+        {
+          data: dataFormatada,
+          usuario: usuarioNome,
+          descricao: `Empresa cadastrada via importação Excel (${nomeArquivo}).`,
+        },
+      ],
+    };
+
+    novasCriadas.push(nova);
+
+    registrarAuditoria({
+      operacao: "Importação Excel - Nova Empresa",
+      empresaAfetada: nova.nome,
+      carteiraAfetada: nova.carteira,
+      registroId: nova.id,
+      novaInformacao: `CNPJ: ${nova.cnpj} | Carteira: ${nova.carteira} | Analista: ${nova.analista}`,
+      detalhes: `Arquivo: ${nomeArquivo} (Linha ${n.linhaArquivo})`,
+      usuarioNome,
+    });
+  }
+
+  const listaFinal = [...novasCriadas, ...Array.from(mapaAtuais.values())];
+  saveEmpresas(listaFinal);
+
+  // Auditoria consolidada do lote
+  registrarAuditoria({
+    operacao: "Importação de Planilha Excel",
+    informacaoAnterior: `${todas.filter((e) => !e.excluida).length} empresas ativas`,
+    novaInformacao: `${novas.length} novas cadastradas, ${alteradas.length} atualizadas`,
+    detalhes: `Arquivo: ${nomeArquivo} processado por ${usuarioNome}.`,
+    usuarioNome,
+  });
+
+  return { criadas: novas.length, atualizadas: alteradas.length };
+}
+
 export function empresaToForm(empresa: Empresa): NovaEmpresaForm {
   const isSemMov = empresa.tipo === "sem-movimento";
   return {
