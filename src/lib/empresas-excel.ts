@@ -27,7 +27,7 @@ export interface EmpresaParaAtualizar {
     funcionarios: number;
     carteira: string;
     convenio: string;
-    tipo: "com-movimento" | "sem-movimento";
+    tipo: "com-movimento" | "sem-movimento" | "domestico-pf";
   };
 }
 
@@ -40,7 +40,7 @@ export interface NovaEmpresaImportacao {
   funcionarios: number;
   carteira: string;
   convenio: string;
-  tipo: "com-movimento" | "sem-movimento";
+  tipo: "com-movimento" | "sem-movimento" | "domestico-pf";
 }
 
 export interface EmpresaSemAlteracao {

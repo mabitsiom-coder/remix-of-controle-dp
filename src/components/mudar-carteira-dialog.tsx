@@ -80,17 +80,37 @@ export function MudarCarteiraDialog({
   const handleCarteiraChange = (novaCarteira: string) => {
     setCarteiraSelecionada(novaCarteira);
 
-    // Auto-preenche o analista vinculado a essa carteira, se houver
-    const anal = resolverAnalistaPorCarteira(novaCarteira);
-    if (anal) {
-      setAnalistaSelecionado(anal);
+    const norm = (v?: string) =>
+      (v || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ");
+
+    // 1) Tenta resolver pelos cadastros (analista/supervisor vinculados à carteira)
+    let anal = resolverAnalistaPorCarteira(novaCarteira);
+    let sup = resolverSupervisorPorCarteira(novaCarteira);
+
+    // 2) Fallback: usa o analista/supervisor mais frequente entre as empresas dessa carteira
+    const maisFrequente = (valores: (string | undefined)[]) => {
+      const contagem = new Map<string, { nome: string; qtd: number }>();
+      for (const v of valores) {
+        const nome = (v || "").trim();
+        if (!nome) continue;
+        const chave = norm(nome);
+        const atual = contagem.get(chave);
+        contagem.set(chave, { nome, qtd: (atual?.qtd || 0) + 1 });
+      }
+      return [...contagem.values()].sort((a, b) => b.qtd - a.qtd)[0]?.nome;
+    };
+
+    if (!anal || !sup) {
+      const daCarteira = todasEmpresas.filter(
+        (e) => norm(carteiraDaEmpresa(e)) === norm(novaCarteira),
+      );
+      if (!anal) anal = maisFrequente(daCarteira.map((e) => e.analista));
+      if (!sup) sup = maisFrequente(daCarteira.map((e) => e.supervisor));
     }
 
-    // Auto-preenche o supervisor associado a essa carteira, se houver
-    const sup = resolverSupervisorPorCarteira(novaCarteira);
-    if (sup) {
-      setSupervisorSelecionado(sup);
-    }
+    // Aplica (ou limpa) sempre que a carteira mudar
+    setAnalistaSelecionado(anal || "");
+    setSupervisorSelecionado(sup || "");
   };
 
   const handleAnalistaChange = (novoAnalista: string) => {
@@ -109,6 +129,8 @@ export function MudarCarteiraDialog({
       toast.error("Por favor, selecione uma carteira de destino.");
       return;
     }
+
+    if (!empresa) return;
 
     try {
       const formAtual = empresaToForm(empresa);
