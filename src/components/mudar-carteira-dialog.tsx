@@ -130,6 +130,8 @@ export function MudarCarteiraDialog({
       return;
     }
 
+    if (!empresa) return;
+
     try {
       const formAtual = empresaToForm(empresa);
       const atualizada = updateEmpresa(empresa.id, {
