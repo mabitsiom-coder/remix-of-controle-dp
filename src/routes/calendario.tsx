@@ -10,6 +10,7 @@ import {
   downloadModeloXLSX,
 } from "@/components/importar-rotinas-dialog";
 import { DetalhesRotinaDialog } from "@/components/detalhes-rotina-dialog";
+import { TarefasDoDiaDialog } from "@/components/tarefas-do-dia-dialog";
 import { useTarefas, type Tarefa } from "@/lib/tarefas-store";
 import { eventosDoMes, diasNoMes, NOMES_MES } from "@/lib/rotinas-view";
 import { Download } from "lucide-react";
@@ -57,6 +58,10 @@ function Calendario() {
   const [rotinaSelecionada, setRotinaSelecionada] = useState<Tarefa | null>(null);
   const [detalhesAberto, setDetalhesAberto] = useState(false);
 
+  const [diaSelecionado, setDiaSelecionado] = useState<number | null>(null);
+  const [dialogDiaAberto, setDialogDiaAberto] = useState(false);
+  const [tarefasDoDia, setTarefasDoDia] = useState<Tarefa[]>([]);
+
   const { tarefas } = useTarefas();
   const tarefasFiltradas = useMemo(() => {
     return (tarefas || []).filter((t) => t && t.periodicidade !== "Diária");
@@ -78,6 +83,13 @@ function Calendario() {
   const abrirDetalhes = (tarefa: Tarefa) => {
     setRotinaSelecionada(tarefa);
     setDetalhesAberto(true);
+  };
+
+  const abrirDia = (dia: number) => {
+    const tarefasDia = eventos.filter((e) => e.dia === dia).map((e) => e.tarefa);
+    setDiaSelecionado(dia);
+    setTarefasDoDia(tarefasDia);
+    setDialogDiaAberto(true);
   };
 
   return (
@@ -156,7 +168,11 @@ function Calendario() {
           </div>
           <div className="grid grid-cols-7">
             {celulas.map((dia, i) => (
-              <div key={i} className="min-h-28 border-b border-r p-1.5 last:border-r-0 hover:bg-muted/10 transition-colors">
+              <div 
+                key={i} 
+                className="min-h-28 border-b border-r p-1.5 last:border-r-0 hover:bg-muted/10 transition-colors cursor-pointer"
+                onClick={() => dia && abrirDia(dia)}
+              >
                 {dia && (
                   <>
                     <span className="text-xs font-semibold text-muted-foreground">{dia}</span>
@@ -166,7 +182,10 @@ function Calendario() {
                         .map((e) => (
                           <div
                             key={e.id}
-                            onClick={() => abrirDetalhes(e.tarefa)}
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              abrirDetalhes(e.tarefa);
+                            }}
                             className={`group flex items-center justify-between cursor-pointer rounded border px-1.5 py-0.5 text-[10px] font-medium transition-all shadow-2xs ${corCategoria(
                               e.categoria,
                             )}`}
@@ -242,6 +261,15 @@ function Calendario() {
         tarefa={rotinaSelecionada}
         open={detalhesAberto}
         onOpenChange={setDetalhesAberto}
+      />
+
+      <TarefasDoDiaDialog
+        dia={diaSelecionado ?? 1}
+        mes={NOMES_MES[mes] ?? ""}
+        ano={ano}
+        tarefas={tarefasDoDia}
+        open={dialogDiaAberto}
+        onOpenChange={setDialogDiaAberto}
       />
     </div>
   );
